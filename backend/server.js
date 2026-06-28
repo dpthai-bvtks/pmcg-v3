@@ -31,6 +31,13 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'success', message: 'T.I.M.E.S. Backend is running!' });
 });
 
+// Serve new UI
+const newUiPath = path.join(__dirname, 'frontend', 'dist');
+app.use('/app', express.static(newUiPath));
+app.get('/app/*', (req, res) => {
+  res.sendFile(path.join(newUiPath, 'index.html'));
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);

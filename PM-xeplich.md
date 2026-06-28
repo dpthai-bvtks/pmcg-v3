@@ -1763,3 +1763,9 @@ vẫn trống dữ liệu
 
 ### Planner Response
 **Cách xử lý:** Đã tự động chạy importData.js nội bộ để đẩy toàn bộ 43 Bệnh nhân, 63 Máy móc và 14 Nhân sự lên CSDL MongoDB Atlas. Tuy nhiên hệ thống Render vẫn bị lỗi 500 vì user quên thêm biến môi trường MONGO_URI trên Render. Đã yêu cầu user vào trang quản trị Render để thêm biến này.
+
+### User Input
+có vẻ khá lằng nhằng nhỉ, có cách nào tối ưu hơn, chỉ trên 1 thứ thôi không
+
+### Planner Response
+**Giải thích kiến trúc:** Đã giải thích cho user hiểu rằng mô hình 3 bên (Atlas + Render + Vercel) hiện tại chính là chuẩn công nghiệp (MERN Stack) và tối ưu nhất cho đồ miễn phí. Tuy nhiên có thể gom Frontend và Backend lại chung 1 chỗ trên Render để bớt lằng nhằng, bỏ Vercel đi. Không thể gom CSDL vì server miễn phí sẽ tự reset ổ cứng.

@@ -1745,3 +1745,9 @@ có thể đưa 2 thư mục backend và frontend trong thư mục times-v4 ra n
 1. Thay thế toàn bộ hardcode http://localhost:5000 trong rontend/src/App.jsx thành import.meta.env.VITE_API_BASE_URL.
 2. Thêm một màn hình loading quay vòng (với CSS Animation spin) vào giao diện chính để chờ Backend ở Render thức dậy (cold start).
 3. Đã đẩy code cập nhật lên Github.
+
+### User Input
+đoạn mã kết nối tài khoản MongoDB Atlas của bạn lấy ở đâu
+
+### Planner Response
+**Cách xử lý:** Đã hướng dẫn user lấy đoạn mã MONGO_URI trực tiếp từ file .env nội bộ để đưa lên cấu hình Render.com.

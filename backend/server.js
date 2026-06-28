@@ -34,7 +34,7 @@ app.get('/api/health', (req, res) => {
 // Serve new UI
 const newUiPath = path.join(__dirname, 'frontend', 'dist');
 app.use('/app', express.static(newUiPath));
-app.get('/app/*', (req, res) => {
+app.get(/^\/app(\/.*)?$/, (req, res) => {
   res.sendFile(path.join(newUiPath, 'index.html'));
 });
 

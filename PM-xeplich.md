@@ -1692,3 +1692,34 @@ Cách xử lý:
 3. Ô chọn ngày ở Trang chủ sẽ tự động lùi về đúng ngày chưa chốt sổ (ví dụ lùi về 27/06 thay vì hiện 28/06).
 4. Các con số thống kê và bảng xem trước trên Dashboard sẽ khớp hoàn toàn 100% với dữ liệu hiển thị trên các tab Lịch Trình, Bệnh Nhân, Nhân Sự. 
 5. Người dùng chỉ cần vào nhấn nút **CHỐT SỔ & SANG NGÀY MỚI**, sau đó tải lại trang (hoặc ấn Làm Mới ở Dashboard) là mọi thứ sẽ reset sang ngày Chủ Nhật trống trơn.
+
+### User Input
+mình nhập thử bệnh nhân Gián bận từ 8:00 đến 9:00 nhưng khi xếp lịch vẫn bị dính vào khoáng đó là sao\nmình nhập giờ bận của nhân viên từ 8:00 đến 9:00 thì 9:01 mới làm ca tiếp theo, nhưng hiện tại lại xếp luôn từ 9:00
+
+### Planner Response
+**Nguyên nhân:**
+1. Form lưu giờ bận của bệnh nhân truyền mảng dữ liệu (Array) nhưng CSDL MongoDB chỉ chấp nhận Chuỗi (String), gây lỗi từ chối lưu ngầm (Patient validation failed).
+2. Thuật toán scheduler.js bị khuyết phần đọc dữ liệu gioBan của bệnh nhân sau khi chuyển đổi sang MongoDB.
+3. Thuật toán xếp lịch cho nhân viên không có khoảng đệm 1 phút ở đuôi giờ bận, khiến hệ thống cho phép xếp đè luôn vào phút cuối cùng của giờ bận (ví dụ bận đến 9:00 thì 9:00 xếp luôn ca mới).
+4. Lỗi sập API tải danh sách do dùng hàm .join() trên kiểu Chuỗi của cột giờ bận.
+
+**Cách xử lý:**
+1. Sửa legacyAdapter.js (ddBenhNhan, editBenhNhan, getBenhNhan) để đồng bộ toàn bộ biến gioBan thành kiểu Chuỗi (String).
+2. Khôi phục hàm ixBusyString phân tích giờ bận của bệnh nhân trong scheduler.js.
+3. Thêm bộ đệm +1 phút vào đuôi mảng timeline giờ bận của nhân viên trong scheduler.js để thuật toán tự động nhích xuống phút tiếp theo (9:01).
+4. Khởi tạo Git repository và đẩy code backup lên Github main branch.
+
+### User Input
+xem có file nào trong thư mục D:\PM-DPT\PM-xeplich\khung_pm\ban_web\v3-test thừa thì xóa đi nhé. ngoài ra sao đã lên 143 MB rồi\nadmin với local thì sao
+
+### Planner Response
+**Nguyên nhân:**
+1. Có một số file nháp từ quá trình debug như extract_css.js, scratch_cache_update.js và toàn bộ thư mục scripts.
+2. Dung lượng MongoDB tăng lên 143MB là do MongoDB Atlas tự động tải dữ liệu mẫu (Sample Dataset) khi tạo cluster.
+3. User thắc mắc về 2 database dmin và local.
+
+**Cách xử lý:**
+1. Xóa toàn bộ file nháp trong 3-test và thư mục scripts.
+2. Giải thích cho user cách xóa các DB sample_ trên giao diện Atlas.
+3. Giải thích dmin và local là CSDL hệ thống của MongoDB, không được phép xóa.
+4. Đẩy code lên nhánh main.

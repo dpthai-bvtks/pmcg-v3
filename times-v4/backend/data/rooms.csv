@@ -1,0 +1,7 @@
+ID,Tên Phòng,Bác Sĩ,KTV,Danh Sách Máy,Số Giường,Danh Sách Giường
+1,Hà Chip,BS Hoa,"KTV Hà chip, Phụ 1, Phụ 2","Máy DC MS: 0972, Máy DC MS: 0973, Máy DC MS: 1090, Máy DC MS: 1091, Máy DC MS: 1169, DX 01 - Máy 1A, Đèn HN 01, Đèn HN 02, Đèn HN 03, Đèn HN 04, Sáp PA 01, Sáp PA 02, Sáp PA 03, Sáp PA 04, Sáp PA 05",15,"G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G11, G12, G13, G14, G15"
+2,Duyên,Bs Thái,"KTV Hà chip, Phụ 1, Phụ 2","Máy DC MS: 1172, Máy DC MS: 1173, Máy DC MS: 1174, Máy DC MS: 1175, Máy DC MS: 1176, DX 02 - Máy 1.1A, Đèn HN 05, Đèn HN 06, Đèn HN 07, Đèn HN 08, Sáp PA 06, Sáp PA 07, Sáp PA 08, Sáp PA 09, Sáp PA 10",15,"G16, G17, G18, G19, G20, G21, G22, G23, G24, G25, G26, G27, G28, G29, G30"
+3,Hiền Phan,BS Thảo,"KTV Phan Hiền, Phụ 3, Phụ 4","Máy DC MS: 1177, Máy DC MS: 1178, Máy DC MS: 1179, Máy DC MS: 1180, Máy DC MS: 1247, DX 03 - Máy 1B, Đèn HN 09, Đèn HN 10, Đèn HN 11, Đèn HN 12, Sáp PA 11, Sáp PA 12, Sáp PA 13, Sáp PA 14, Sáp PA 15",15,"G31, G32, G33, G34, G35, G36, G37, G38, G39, G40, G41, G42, G43, G44, G45"
+4,Xuân Lương,BS Đạt,"KTV Lương, Phụ 5, Phụ 6","Máy DC MS: 1266, Máy DC MS: 1270, Máy DC MS: 1273, Máy DC MS: 1274, Máy DC MS: 1300, DX 04 - Máy 1.1B, Đèn HN 13, Đèn HN 14, Đèn HN 15, Đèn HN 16, Sáp PA 16, Sáp PA 17, Sáp PA 18, Sáp PA 19, Sáp PA 20",15,"G46, G47, G48, G49, G50, G51, G52, G53, G54, G55, G56, G57, G58, G59, G60"
+5,Sóng ngắn,,"KTV Hà chip, KTV Lương, KTV Phan Hiền",Máy SN 01,0,
+6,Cấy chỉ,"BS Đạt, BS Thảo, Bs Thái, Bs Khuyến, BS Hoa, BS Hằng","Phụ 1, Phụ 2, Phụ 3, Phụ 4, Phụ 5, Phụ 6",,0,

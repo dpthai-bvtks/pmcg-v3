@@ -1,0 +1,17 @@
+ID,Tên,Viết Tắt,Hệ,Phân Loại,Loại Máy,Thời Gian Thực Hiện,Thời Gian Thủ Thuật,Khoảng Cách,Cần Rút Máy,Càn Người Phụ,DS Người Phụ
+1,điện châm,DC,YHCT,Loại 2,điện châm,5,25,6,Có,Có,Tất cả Điều dưỡng
+2,điện châm liệt,DCTB,YHCT,Loại 2,điện châm,5,30,6,Có,Có,Tất cả Điều dưỡng
+3,thủy châm,TC,YHCT,Loại 2,Thủ công,10,25,11,Không,Có,Tất cả Điều dưỡng
+11,XBBH,XBBH,YHCT,Loại 2,Thủ công,30,30,31,Không,Không,
+12,cấy chỉ,CC,YHCT,Loại 1,Thủ công,30,30,31,Không,Có,Tất cả Điều dưỡng
+6,điện xung,DX,PHCN,Loại 3,điện xung,3,15,4,Có,Không,Tất cả Điều dưỡng
+7,parafin,PA,PHCN,Loại 3,parafin,2,20,3,Có,Không,Tất cả Điều dưỡng
+8,hồng ngoại,HN,PHCN,Chưa phân loại,hồng ngoại,2,15,3,Có,Không,Tất cả Điều dưỡng
+7,tập trợ giúp,TTG,PHCN,Loại 3,Thủ công,20,20,21,Không,Không,
+10,sóng ngắn,SN,PHCN,Loại 3,sóng ngắn,2,15,3,Có,Không,Tất cả Điều dưỡng
+9,siêu âm,SA,PHCN,Loại 3,siêu âm,15,15,16,Không,Không,
+12,kéo giãn,KG,PHCN,Loại 3,kéo giãn,3,15,4,Có,Không,Tất cả Điều dưỡng
+13,xoa bóp vùng,XBV,PHCN,Loại 3,Thủ công,15,15,16,Không,Không,
+14,tập kháng trở,TTK,PHCN,Loại 3,Thủ công,20,20,21,Không,Không,
+15,tập thở,HH,PHCN,Loại 3,Thủ công,20,20,21,Không,Không,
+16,hào châm,HC,YHCT,Loại 2,Thủ công,5,25,6,Không,Có,Tất cả Điều dưỡng

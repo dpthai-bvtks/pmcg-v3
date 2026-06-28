@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './index.css';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
 function Sidebar({ activeTab, setActiveTab }) {
   return (
     <div className="sidebar">
@@ -188,7 +190,7 @@ function ScheduleTab() {
     setLoading(true);
     setResult(null);
     try {
-      const res = await axios.post('http://localhost:5000/api/schedule', {
+      const res = await axios.post(`${API_BASE_URL}/schedule`, {
         date: new Date().toISOString().split('T')[0],
         strategy: 'opt_rare',
         skipProcs: ''
@@ -258,7 +260,7 @@ function GenericDataTab({ title, endpoint, columns }) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/${endpoint}`);
+        const res = await axios.get(`${API_BASE_URL}/${endpoint}`);
         setData(res.data.data);
       } catch (err) {
         console.error("Error fetching " + endpoint, err);
@@ -318,14 +320,16 @@ function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [stats, setStats] = useState({ totalPatients: 0, completedProcedures: 0, waitingPatients: 0, activeStaff: 0 });
   const [patients, setPatients] = useState([]);
+  const [globalLoading, setGlobalLoading] = useState(true);
 
   useEffect(() => {
     // Fetch real data from Node.js backend
     const fetchData = async () => {
+      setGlobalLoading(true);
       try {
         const [statsRes, patsRes] = await Promise.all([
-          axios.get('http://localhost:5000/api/dashboard'),
-          axios.get('http://localhost:5000/api/patients')
+          axios.get(`${API_BASE_URL}/dashboard`),
+          axios.get(`${API_BASE_URL}/patients`)
         ]);
         setStats(statsRes.data.data);
         setPatients(patsRes.data.data);
@@ -335,6 +339,7 @@ function App() {
         setStats({ totalPatients: 45, completedProcedures: 12, waitingPatients: 15, activeStaff: 8 });
         setPatients([{ id: 1, ten: "Dữ liệu Mẫu (API lỗi)", namSinh: "1980", phong: "Phòng 1", thuThuat: ["Lỗi"], gioVao: "08:00", status: "Đang chờ" }]);
       }
+      setGlobalLoading(false);
     };
     fetchData();
   }, [activeTab]); // Tải lại dữ liệu khi chuyển tab
@@ -356,40 +361,48 @@ function App() {
             </div>
           </div>
           <div className="global-marquee-container">
-            <marquee id="thong-bao-chay">Hệ thống đang kết nối với Backend Node.js chạy tại http://localhost:5000.</marquee>
+            <marquee id="thong-bao-chay">Hệ thống đang kết nối với Backend API tại {API_BASE_URL}</marquee>
           </div>
         </div>
         
-        <div className="tab-scroll-content">
-          {activeTab === 'home' && <Dashboard stats={stats} patients={patients} />}
-          {activeTab === 'schedule' && <ScheduleTab />}
-          {activeTab === 'patients' && <PatientsTab patients={patients} />}
-          {activeTab === 'machines' && <GenericDataTab title="Quản Lý Máy Móc" endpoint="machines" columns={[
-            {label: 'Tên Máy', key: 'ten'},
-            {label: 'Phòng', key: 'phong'},
-            {label: 'Trạng Thái', key: 'trangThai'}
-          ]} />}
-          {activeTab === 'procedures' && <GenericDataTab title="Quản Lý Thủ Thuật" endpoint="procedures" columns={[
-            {label: 'Tên', key: 'ten'},
-            {label: 'Viết Tắt', key: 'vietTat'},
-            {label: 'Hệ', key: 'he'},
-            {label: 'Loại Máy', key: 'may'},
-            {label: 'T.G. Thực Hiện', key: 'thoiGianThucHien'},
-            {label: 'T.G. Thủ Thuật', key: 'thoiGianThuThuat'}
-          ]} />}
-          {activeTab === 'staff' && <GenericDataTab title="Quản Lý Nhân Sự" endpoint="staff" columns={[
-            {label: 'Tên', key: 'ten'},
-            {label: 'Vai Trò', key: 'vaiTro'},
-            {label: 'Trạng Thái', key: 'trangThai'},
-            {label: 'Kỹ Năng', key: 'kyNang'},
-            {label: 'Thời Gian Làm', key: 'thoiGianLam'}
-          ]} />}
-          {activeTab === 'rooms' && <GenericDataTab title="Quản Lý Phòng" endpoint="rooms" columns={[
-            {label: 'Tên Phòng', key: 'ten'},
-            {label: 'Khoa', key: 'khoa'},
-            {label: 'Trạng Thái', key: 'trangThai'}
-          ]} />}
-        </div>
+        {globalLoading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '50vh' }}>
+            <div className="spinner" style={{ border: '4px solid #f3f3f3', borderTop: '4px solid #3498db', borderRadius: '50%', width: '40px', height: '40px', animation: 'spin 1s linear infinite' }}></div>
+            <p style={{ marginTop: '20px', color: '#7f8c8d', fontWeight: 'bold' }}>Đang kết nối tới máy chủ, vui lòng đợi giây lát (có thể mất 30-50s nếu máy chủ vừa ngủ gật)...</p>
+            <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+          </div>
+        ) : (
+          <div className="tab-scroll-content">
+            {activeTab === 'home' && <Dashboard stats={stats} patients={patients} />}
+            {activeTab === 'schedule' && <ScheduleTab />}
+            {activeTab === 'patients' && <PatientsTab patients={patients} />}
+            {activeTab === 'machines' && <GenericDataTab title="Quản Lý Máy Móc" endpoint="machines" columns={[
+              {label: 'Tên Máy', key: 'ten'},
+              {label: 'Phòng', key: 'phong'},
+              {label: 'Trạng Thái', key: 'trangThai'}
+            ]} />}
+            {activeTab === 'procedures' && <GenericDataTab title="Quản Lý Thủ Thuật" endpoint="procedures" columns={[
+              {label: 'Tên', key: 'ten'},
+              {label: 'Viết Tắt', key: 'vietTat'},
+              {label: 'Hệ', key: 'he'},
+              {label: 'Loại Máy', key: 'may'},
+              {label: 'T.G. Thực Hiện', key: 'thoiGianThucHien'},
+              {label: 'T.G. Thủ Thuật', key: 'thoiGianThuThuat'}
+            ]} />}
+            {activeTab === 'staff' && <GenericDataTab title="Quản Lý Nhân Sự" endpoint="staff" columns={[
+              {label: 'Tên', key: 'ten'},
+              {label: 'Vai Trò', key: 'vaiTro'},
+              {label: 'Trạng Thái', key: 'trangThai'},
+              {label: 'Kỹ Năng', key: 'kyNang'},
+              {label: 'Thời Gian Làm', key: 'thoiGianLam'}
+            ]} />}
+            {activeTab === 'rooms' && <GenericDataTab title="Quản Lý Phòng" endpoint="rooms" columns={[
+              {label: 'Tên Phòng', key: 'ten'},
+              {label: 'Khoa', key: 'khoa'},
+              {label: 'Trạng Thái', key: 'trangThai'}
+            ]} />}
+          </div>
+        )}
       </div>
     </div>
   );

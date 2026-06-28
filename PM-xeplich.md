@@ -1723,3 +1723,16 @@ xem có file nào trong thư mục D:\PM-DPT\PM-xeplich\khung_pm\ban_web\v3-test
 2. Giải thích cho user cách xóa các DB sample_ trên giao diện Atlas.
 3. Giải thích dmin và local là CSDL hệ thống của MongoDB, không được phép xóa.
 4. Đẩy code lên nhánh main.
+
+### User Input
+có thể đưa 2 thư mục backend và frontend trong thư mục times-v4 ra ngoài và xóa thư mục times-v4 đi được không
+
+### Planner Response
+**Nguyên nhân:** User muốn rút gọn cấu trúc thư mục, bỏ đi lớp trung gian 	imes-v4 dư thừa.
+
+**Cách xử lý:**
+1. Tắt các process Node và Vite đang chạy ngầm trong thư mục cũ.
+2. Di chuyển ackend và rontend ra ngoài 3-test.
+3. Xóa thư mục 	imes-v4.
+4. Khởi động lại Server và Frontend.
+5. Đẩy sự thay đổi cấu trúc này lên Github.

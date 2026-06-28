@@ -1751,3 +1751,9 @@ có thể đưa 2 thư mục backend và frontend trong thư mục times-v4 ra n
 
 ### Planner Response
 **Cách xử lý:** Đã hướng dẫn user lấy đoạn mã MONGO_URI trực tiếp từ file .env nội bộ để đưa lên cấu hình Render.com.
+
+### User Input
+tưởng phải giao diện cũ cho dễ dùng chứ nhỉ
+
+### Planner Response
+**Cách xử lý:** Giải thích cho user rằng Giao diện cũ (13,000 dòng code HTML) vẫn được giữ nguyên và đang được host trực tiếp trên Render cùng với Backend. Chỉ cần truy cập link Render là dùng được giao diện cũ. Đồng thời tự động replace các link Google Apps Script cũ thành /api/rpc để giao diện cũ gọi đúng dữ liệu từ MongoDB.

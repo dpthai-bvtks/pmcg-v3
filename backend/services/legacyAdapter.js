@@ -285,7 +285,11 @@ const adapter = {
     return "Hệ thống đang chạy trên MongoDB Atlas";
   },
   layDanhSachLienKet: async () => {
-    return [];
+    return [
+      { url: '#', icon: '📖', ten: 'Hướng dẫn sử dụng phần mềm' },
+      { url: '#', icon: '📝', ten: 'Tra cứu Văn bản & BHXH' },
+      { url: '#', icon: '📊', ten: 'Hòm thư góp ý' }
+    ];
   },
   getTimRanhData: async () => {
     return { staffList: [], roomList: [] };

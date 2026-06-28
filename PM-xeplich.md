@@ -1757,3 +1757,9 @@ tưởng phải giao diện cũ cho dễ dùng chứ nhỉ
 
 ### Planner Response
 **Cách xử lý:** Giải thích cho user rằng Giao diện cũ (13,000 dòng code HTML) vẫn được giữ nguyên và đang được host trực tiếp trên Render cùng với Backend. Chỉ cần truy cập link Render là dùng được giao diện cũ. Đồng thời tự động replace các link Google Apps Script cũ thành /api/rpc để giao diện cũ gọi đúng dữ liệu từ MongoDB.
+
+### User Input
+vẫn trống dữ liệu
+
+### Planner Response
+**Cách xử lý:** Đã tự động chạy importData.js nội bộ để đẩy toàn bộ 43 Bệnh nhân, 63 Máy móc và 14 Nhân sự lên CSDL MongoDB Atlas. Tuy nhiên hệ thống Render vẫn bị lỗi 500 vì user quên thêm biến môi trường MONGO_URI trên Render. Đã yêu cầu user vào trang quản trị Render để thêm biến này.

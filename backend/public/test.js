@@ -6919,3 +6919,19 @@ document.addEventListener('DOMContentLoaded', function() {
     observer.observe(document.body, { childList: true, subtree: true });
 })();
 
+
+document.addEventListener('DOMContentLoaded', () => {
+  const btnChotSo = document.getElementById('btn-chot-so');
+  if (btnChotSo) {
+    btnChotSo.addEventListener('click', () => {
+      if (confirm('Bạn có chắc chắn muốn chốt sổ ngày hôm nay? Toàn bộ Giờ bận và Lịch trình sẽ được lưu vào lịch sử, sau đó hệ thống sẽ tự động dọn dẹp để chuẩn bị cho ngày mai!')) {
+        google.script.run.withSuccessHandler(function(res) {
+          alert(res);
+          window.location.reload();
+        }).withFailureHandler(function(err) {
+          alert('Lỗi: ' + err.message || err);
+        }).luuLichSuXepLich();
+      }
+    });
+  }
+});

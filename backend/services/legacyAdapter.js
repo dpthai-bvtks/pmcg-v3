@@ -4,6 +4,7 @@ const Procedure = require('../models/Procedure');
 const Staff = require('../models/Staff');
 const Room = require('../models/Room');
 const Patient = require('../models/Patient');
+const ScheduleHistory = require('../models/ScheduleHistory');
 const scheduler = require('./scheduler');
 
 // Helper to reliably get the item by its "array index"
@@ -294,11 +295,62 @@ const adapter = {
   getTimRanhData: async () => {
     return { staffList: [], roomList: [] };
   },
-  luuLichSuXepLich: async (log) => {
-    return "Đã lưu lịch sử";
+  luuLichSuXepLich: async () => {
+    const sched = global.latestSched || [];
+    const rot = global.latestRot || [];
+    
+    const patients = await Patient.find({});
+    const staff = await Staff.find({});
+    
+    const lichSuBenhNhan = patients
+      .filter(p => p.gioBan || p.gioRa)
+      .map(p => ({
+        ten: p.ten, namSinh: p.namSinh, phong: p.phong, 
+        gioBan: p.gioBan || "", gioRa: p.gioRa || ""
+      }));
+      
+    const lichSuNhanSu = staff
+      .filter(s => s.gioBan && s.gioBan.length > 0)
+      .map(s => ({
+        ten: s.ten, vaiTro: s.vaiTro, gioBan: s.gioBan
+      }));
+      
+    const tzOffset = (new Date()).getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
+    
+    await ScheduleHistory.create({
+      ngayDuKien: localISOTime,
+      schedule: sched,
+      unscheduled: rot,
+      lichSuNhanSu,
+      lichSuBenhNhan
+    });
+    
+    const patientsToDelete = patients
+      .filter(p => p.gioRa && p.gioRa.trim() !== '' && p.gioRa.trim().toLowerCase() !== 'none')
+      .map(p => p._id);
+      
+    if (patientsToDelete.length > 0) {
+      await Patient.deleteMany({ _id: { $in: patientsToDelete } });
+    }
+    
+    await Patient.updateMany({}, { $set: { gioVao: "", gioBan: "", gioRa: "" } });
+    await Staff.updateMany({}, { $set: { gioBan: [] } });
+    
+    global.latestSched = null;
+    global.latestRot = null;
+    
+    return "Đã chốt sổ và dọn dẹp dữ liệu ngày cũ thành công!";
   },
   layLichSuXepLich: async () => {
-    return [];
+    const history = await ScheduleHistory.find().sort({ ngayChot: -1 }).limit(30);
+    return history.map(h => ({
+      id: h._id,
+      ngayChot: h.ngayChot,
+      ngayDuKien: h.ngayDuKien,
+      soCaThanhCong: h.schedule.length,
+      soCaRot: h.unscheduled.length
+    }));
   }
 };
 

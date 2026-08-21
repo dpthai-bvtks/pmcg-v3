@@ -418,3 +418,12 @@
 **Files đã sửa:** index.html, js/app.js, PM-xeplich-v3.md (Version 3.7).
 
 **Phiên bản:** 3.6 → 3.7
+
+### AO. Dọn Dẹp Thư Mục & Chuẩn Bị Tiếp Nhận Dữ Liệu v2 (v3.7 - 21/08/2026)
+
+**Yêu cầu người dùng:** Dọn dẹp thư mục rác và kiểm tra thư mục Data_v3. Bác sĩ lưu ý: Bản v2 đang chạy đến 16h15 sẽ chốt sổ, sau đó sẽ xuất toàn bộ dữ liệu v2 về để nạp vào Cloudflare D1 cho v3.
+
+**Đã thực hiện:**
+1. Đã xóa thư mục Data_v3/node_modules rác để giải phóng dung lượng đĩa.
+2. Giữ nguyên các file dữ liệu mẫu PMCG Database v3.xlsx và các file JSON trong Data_v3 để làm tài nguyên đối chiếu.
+3. Giữ sạch sẽ thư mục làm việc gốc và backend Cloudflare sẵn sàng tiếp nhận dữ liệu v2 sau 16h15.

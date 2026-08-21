@@ -59,9 +59,9 @@
     }
     </script>
     <meta name="theme-color" content="#1e3d2b">
-    <link rel="icon" type="image/png" sizes="128x128" href="favicon-128.png?v=3.6">
+    <link rel="icon" type="image/png" sizes="128x128" href="favicon-128.png?v=3.7">
     <!-- Thêm icon cho iOS -->
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=3.6">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=3.7">
 
 
 
@@ -72,9 +72,9 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
     <!-- CSS Custom -->
-    <link rel="stylesheet" href="css/style.css?v=3.6">
+    <link rel="stylesheet" href="css/style.css?v=3.7">
     <!-- JS Thư viện kéo thả nội bộ -->
-    <script src="js/sortable.min.js?v=3.6"></script></script>
+    <script src="js/sortable.min.js?v=3.7"></script></script>
     <!-- Chart.js for Thống Kê & ExcelJS -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
@@ -2360,13 +2360,59 @@
                                         </div>
 
                                         <div style="border-top: 1px solid #e2e8f0; padding-top: 15px;">
-                                            <label style="font-size: 13px; font-weight: 700; color: #334155; display: block; margin-bottom: 8px;">⏰ Chu kỳ tự động sao lưu & Nhắc nhở:</label>
-                                            <select id="backup-reminder-period" onchange="saveBackupReminderSetting(this.value)" style="padding: 9px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; width: 100%; max-width: 300px; outline: none;">
-                                                <option value="none">Tắt nhắc nhở</option>
-                                                <option value="daily">Hàng ngày (Daily)</option>
-                                                <option value="weekly">Hàng tuần (Weekly)</option>
-                                                <option value="monthly">Hàng tháng (Monthly)</option>
-                                            </select>
+                                            <label style="font-size: 13.5px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 10px;">⏰ Cấu Hình Lịch Nhắc Nhở & Tự Động Sao Lưu Chi Tiết:</label>
+                                            
+                                            <div style="display: flex; flex-direction: column; gap: 12px; max-width: 500px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #cbd5e1;">
+                                                <!-- Chu kỳ -->
+                                                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                                                    <label style="font-size: 13px; font-weight: 600; color: #334155;">Chu kỳ sao lưu:</label>
+                                                    <select id="backup-reminder-period" onchange="onBackupScheduleUIChange()" style="padding: 7px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; width: 200px;">
+                                                        <option value="none">Tắt tự động</option>
+                                                        <option value="daily">Hàng ngày (Daily)</option>
+                                                        <option value="weekly">Hàng tuần (Weekly)</option>
+                                                        <option value="monthly">Hàng tháng (Monthly)</option>
+                                                    </select>
+                                                </div>
+
+                                                <!-- Chọn Thứ trong tuần (Dành cho Hàng tuần) -->
+                                                <div id="backup-dow-container" style="display: none; align-items: center; justify-content: space-between; gap: 10px;">
+                                                    <label style="font-size: 13px; font-weight: 600; color: #334155;">Thứ trong tuần:</label>
+                                                    <select id="backup-reminder-dow" onchange="onBackupScheduleUIChange()" style="padding: 7px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; width: 200px;">
+                                                        <option value="1">Thứ Hai</option>
+                                                        <option value="2">Thứ Ba</option>
+                                                        <option value="3">Thứ Tư</option>
+                                                        <option value="4">Thứ Năm</option>
+                                                        <option value="5">Thứ Sáu</option>
+                                                        <option value="6">Thứ Bảy</option>
+                                                        <option value="0">Chủ Nhật</option>
+                                                    </select>
+                                                </div>
+
+                                                <!-- Chọn Ngày trong tháng (Dành cho Hàng tháng) -->
+                                                <div id="backup-dom-container" style="display: none; align-items: center; justify-content: space-between; gap: 10px;">
+                                                    <label style="font-size: 13px; font-weight: 600; color: #334155;">Ngày trong tháng:</label>
+                                                    <select id="backup-reminder-dom" onchange="onBackupScheduleUIChange()" style="padding: 7px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; width: 200px;">
+                                                        <option value="1">Ngày 1</option>
+                                                        <option value="5">Ngày 5</option>
+                                                        <option value="10">Ngày 10</option>
+                                                        <option value="15">Ngày 15</option>
+                                                        <option value="20">Ngày 20</option>
+                                                        <option value="25">Ngày 25</option>
+                                                        <option value="28">Ngày 28</option>
+                                                        <option value="last">Ngày cuối tháng</option>
+                                                    </select>
+                                                </div>
+
+                                                <!-- Chọn Giờ sao lưu trong ngày -->
+                                                <div id="backup-time-container" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                                                    <label style="font-size: 13px; font-weight: 600; color: #334155;">Giờ tự động sao lưu:</label>
+                                                    <input type="time" id="backup-reminder-time" value="17:00" onchange="onBackupScheduleUIChange()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; width: 200px; text-align: center;">
+                                                </div>
+
+                                                <button type="button" onclick="saveBackupScheduleSettings()" style="width: 100%; margin-top: 5px; padding: 10px; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
+                                                    💾 Lưu Cấu Hình Lịch Sao Lưu
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -2713,9 +2759,9 @@
 
                     <h4><span class="f-icon">⚙️</span> <span>THÔNG TIN HỆ THỐNG</span></h4>
 
-                    <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.6</span></p>
+                    <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.7</span></p>
 
-                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 14:13 21/08/2026</span></p>
+                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 14:27 21/08/2026</span></p>
 
                     <p><span class="f-icon">👨‍💻</span> <span>Thiết kế & Phát triển: <b>Bác sĩ Thái</b></span></p>
 

@@ -8557,41 +8557,113 @@ window.importFullDatabaseBackup = function(event) {
     reader.readAsText(file);
 };
 
-window.saveBackupReminderSetting = function(val) {
-    localStorage.setItem('backup_reminder_period', val);
-    showCustomAlert("Thông báo", "Đã lưu thiết lập lịch nhắc sao lưu định kỳ!");
+window.onBackupScheduleUIChange = function() {
+    const periodEl = document.getElementById('backup-reminder-period');
+    const period = periodEl ? periodEl.value : 'none';
+    const dowContainer = document.getElementById('backup-dow-container');
+    const domContainer = document.getElementById('backup-dom-container');
+    const timeContainer = document.getElementById('backup-time-container');
+
+    if (period === 'none') {
+        if (dowContainer) dowContainer.style.display = 'none';
+        if (domContainer) domContainer.style.display = 'none';
+        if (timeContainer) timeContainer.style.display = 'none';
+    } else if (period === 'daily') {
+        if (dowContainer) dowContainer.style.display = 'none';
+        if (domContainer) domContainer.style.display = 'none';
+        if (timeContainer) timeContainer.style.display = 'flex';
+    } else if (period === 'weekly') {
+        if (dowContainer) dowContainer.style.display = 'flex';
+        if (domContainer) domContainer.style.display = 'none';
+        if (timeContainer) timeContainer.style.display = 'flex';
+    } else if (period === 'monthly') {
+        if (dowContainer) dowContainer.style.display = 'none';
+        if (domContainer) domContainer.style.display = 'flex';
+        if (timeContainer) timeContainer.style.display = 'flex';
+    }
+};
+
+window.saveBackupScheduleSettings = function() {
+    const period = document.getElementById('backup-reminder-period').value;
+    const time = document.getElementById('backup-reminder-time').value || '17:00';
+    const dow = document.getElementById('backup-reminder-dow').value || '1';
+    const dom = document.getElementById('backup-reminder-dom').value || '1';
+
+    localStorage.setItem('backup_reminder_period', period);
+    localStorage.setItem('backup_reminder_time', time);
+    localStorage.setItem('backup_reminder_dow', dow);
+    localStorage.setItem('backup_reminder_dom', dom);
+
+    const configObj = { period, time, dow, dom };
+    callApi('saveSystemSettings', ['backup_schedule_config', JSON.stringify(configObj)], null, null);
+
+    showCustomAlert("Thành công", "Đã lưu cấu hình lịch tự động sao lưu & nhắc nhở thành công!");
 };
 
 window.checkBackupReminder = function() {
     const period = localStorage.getItem('backup_reminder_period') || 'none';
-    const selectEl = document.getElementById('backup-reminder-period');
-    if (selectEl) selectEl.value = period;
+    const time = localStorage.getItem('backup_reminder_time') || '17:00';
+    const dow = localStorage.getItem('backup_reminder_dow') || '1';
+    const dom = localStorage.getItem('backup_reminder_dom') || '1';
 
+    const periodEl = document.getElementById('backup-reminder-period');
+    if (periodEl) periodEl.value = period;
+    const timeEl = document.getElementById('backup-reminder-time');
+    if (timeEl) timeEl.value = time;
+    const dowEl = document.getElementById('backup-reminder-dow');
+    if (dowEl) dowEl.value = dow;
+    const domEl = document.getElementById('backup-reminder-dom');
+    if (domEl) domEl.value = dom;
+
+    if (typeof window.onBackupScheduleUIChange === 'function') window.onBackupScheduleUIChange();
     if (typeof window.loadGoogleDriveSettingsUI === 'function') window.loadGoogleDriveSettingsUI();
 
     if (period === 'none') return;
 
-    const lastBackup = parseInt(localStorage.getItem('last_backup_timestamp') || '0', 10);
-    const now = Date.now();
-    let thresholdMs = 0;
-    if (period === 'daily') thresholdMs = 24 * 3600 * 1000;
-    else if (period === 'weekly') thresholdMs = 7 * 24 * 3600 * 1000;
-    else if (period === 'monthly') thresholdMs = 30 * 24 * 3600 * 1000;
+    const now = new Date();
+    const currentDow = String(now.getDay()); // 0 = Sunday, 1 = Monday...
+    const currentDom = String(now.getDate());
+    const currentHourMin = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
 
-    if (now - lastBackup > thresholdMs) {
+    let isTimeToBackup = false;
+    if (period === 'daily') {
+        isTimeToBackup = (currentHourMin >= time);
+    } else if (period === 'weekly') {
+        isTimeToBackup = (currentDow === dow && currentHourMin >= time);
+    } else if (period === 'monthly') {
+        if (dom === 'last') {
+            const isLastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() === now.getDate();
+            isTimeToBackup = (isLastDay && currentHourMin >= time);
+        } else {
+            isTimeToBackup = (currentDom === dom && currentHourMin >= time);
+        }
+    }
+
+    const todayYMD = now.toISOString().slice(0, 10);
+    const lastDoneDate = localStorage.getItem('last_backup_done_date') || '';
+
+    if (isTimeToBackup && lastDoneDate !== todayYMD) {
+        localStorage.setItem('last_backup_done_date', todayYMD);
+        
+        callApi('exportDatabase', [], async data => {
+            if (data && data.tables) {
+                await window.autoSaveToLocalDir(data);
+            }
+        });
+
         setTimeout(() => {
             const toast = document.createElement('div');
-            toast.style.cssText = 'position:fixed; bottom:20px; right:20px; background:#1e293b; color:#fff; padding:14px 18px; border-radius:8px; z-index:99999; box-shadow:0 10px 25px rgba(0,0,0,0.3); font-size:13px; display:flex; align-items:center; gap:12px; border-left:4px solid #3b82f6;';
+            toast.style.cssText = 'position:fixed; bottom:20px; right:20px; background:#1e293b; color:#fff; padding:16px 20px; border-radius:8px; z-index:99999; box-shadow:0 10px 25px rgba(0,0,0,0.3); font-size:13px; display:flex; align-items:center; gap:12px; border-left:4px solid #10b981;';
             toast.innerHTML = `
                 <div>
-                    <strong style="display:block; color:#60a5fa;">⏰ Nhắc sao lưu định kỳ</strong>
-                    <span>Đã đến hạn sao lưu dữ liệu (${period === 'daily' ? 'Hàng ngày' : period === 'weekly' ? 'Hàng tuần' : 'Hàng tháng'}).</span>
+                    <strong style="display:block; color:#34d399; font-size:14px;">⏰ Đến lịch sao lưu dữ liệu (${time})</strong>
+                    <span>Hệ thống đã tự động sao lưu dữ liệu D1 theo lịch chọn!</span>
                 </div>
-                <button onclick="exportFullDatabaseBackup(); this.parentElement.remove();" style="padding:6px 12px; background:#2563eb; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">Bắt đầu sao lưu</button>
+                <button onclick="exportFullDatabaseBackup(); this.parentElement.remove();" style="padding:6px 14px; background:#059669; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">Tải về bản sao (.json)</button>
                 <span onclick="this.parentElement.remove();" style="cursor:pointer; color:#94a3b8; font-weight:bold; font-size:16px;">✕</span>
             `;
             document.body.appendChild(toast);
-        }, 3000);
+        }, 2000);
     }
 };
 

@@ -402,3 +402,19 @@
 **Files đã sửa:** ackend/src/index.js, ackend/wrangler.toml, index.html, js/app.js, PM-xeplich-v3.md (Version 3.6).
 
 **Phiên bản:** 3.5 → 3.6
+
+### AN. Bổ Sung Chọn Ngày/Giờ/Thứ Cho Lịch Tự Động Sao Lưu & Nhắc Nhở (v3.7 - 21/08/2026)
+
+**Yêu cầu người dùng:** Bổ sung giao diện và logic cho phép chọn chi tiết Ngày/Giờ/Thứ để tự động sao lưu và nhắc nhở.
+
+**Các tính năng bổ sung:**
+1. **Cấu hình chọn Ngày / Giờ / Thứ chi tiết (index.html & js/app.js)**:
+   - **Giờ tự động sao lưu**: Chọn chính xác giờ trong ngày (Ví dụ: 17:00).
+   - **Thứ trong tuần** (Khi chọn Hàng tuần): Chọn Thứ 2, Thứ 3, ..., Thứ 7, Chủ Nhật.
+   - **Ngày trong tháng** (Khi chọn Hàng tháng): Chọn Ngày 1, Ngày 5, Ngày 15, ..., Ngày 28 hoặc Ngày cuối tháng.
+2. **Logic Tự Động Đối Chiếu Chi Tiết (checkBackupReminder)**:
+   - Tự động kiểm tra thời gian thực. Khi trùng khớp đúng Giờ / Thứ / Ngày đã chọn, phần mềm tự động xuất file sao lưu D1 ghi trực tiếp vào Thư mục Máy tính đã kết nối và hiển thị thông báo nhắc nhở nhẹ nhàng.
+
+**Files đã sửa:** index.html, js/app.js, PM-xeplich-v3.md (Version 3.7).
+
+**Phiên bản:** 3.6 → 3.7

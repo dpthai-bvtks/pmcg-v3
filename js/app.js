@@ -4725,28 +4725,29 @@ window.showGlobalLoading = function (text) {
                 const btn = document.getElementById('btn-chot-so');
                 btn.innerText = '⏳ Đang xử lý...'; btn.disabled = true;
                 window._chotSoDone = false;
-                window.viewingImportedScheduleFile = true;
 
                 if (window.showGlobalLoading) window.showGlobalLoading("Đang thực hiện chốt sổ ngày cũ và mở sổ ngày mới...");
-                google.script.run
-                    .withSuccessHandler(res => {
-                        window.currentScheduleData = [];
-                        window.lastUnscheduledData = [];
-                        window.currentRotData = [];
-                        localStorage.removeItem('meds_success');
-                        localStorage.removeItem('meds_schedule_date');
-                        localStorage.removeItem('meds_unscheduled');
-                        window.dataCacheTime = {};
-                        sessionStorage.setItem('chot_so_success_toast', 'true');
-                        location.reload();
-                    })
-                    .withFailureHandler(err => {
-                        if (window.hideGlobalLoading) window.hideGlobalLoading();
-                        alert("Lỗi: " + err.message);
-                        btn.disabled = false;
-                        window.viewingImportedScheduleFile = false;
-                    })
-                    .chuyenNgayMoi();
+
+                callApi('chuyenNgayMoi', [], res => {
+                    // Xóa toàn bộ cache phía client để tải lại dữ liệu mới
+                    window.currentScheduleData = [];
+                    window.lastUnscheduledData = [];
+                    window.currentRotData = [];
+                    if (window.dataCache) window.dataCache = {};
+                    if (window.dataCacheTime) window.dataCacheTime = {};
+                    if (window._historyCache) window._historyCache = {};
+                    localStorage.removeItem('meds_success');
+                    localStorage.removeItem('meds_schedule_date');
+                    localStorage.removeItem('meds_unscheduled');
+                    sessionStorage.setItem('chot_so_success_toast', 'true');
+                    if (window.hideGlobalLoading) window.hideGlobalLoading();
+                    location.reload();
+                }, err => {
+                    if (window.hideGlobalLoading) window.hideGlobalLoading();
+                    alert("Lỗi chốt sổ: " + (typeof err === 'string' ? err : (err && err.message) || JSON.stringify(err)));
+                    btn.innerText = '📋 Chốt sổ';
+                    btn.disabled = false;
+                });
             });
         }
 

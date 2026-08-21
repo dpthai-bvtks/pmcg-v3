@@ -494,3 +494,14 @@ gay_vao (Ngày Vào) trong danh sách Bệnh nhân từ file xuất v2.
 2. Đã tái nạp toàn bộ 39 Bệnh nhân lên cơ sở dữ liệu Cloudflare D1 pmcg-db. Mỗi bệnh nhân hiện tại đã có đầy đủ: Họ tên, Năm sinh, Ngày vào viện, Phòng thủ thuật, Danh sách thủ thuật chỉ định và Trạng thái xếp lịch.
 
 **Phiên bản:** 3.1.0 → 3.1.1
+
+### AU. Khắc Phục Lỗi Chấm Công & Quản Lý Liên Kết Nhanh Trực Tiếp Trên Cloudflare D1 (v3.1.2 - 21/08/2026)
+
+**Khắc phục lỗi:**
+1. **Phần Chấm công bị trống**: Bổ sung hàm 
+ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi tháng dạng 2026-08 /  8/2026. Đã thêm cơ chế fallback tự động lấy dữ liệu chấm công mới nhất trong D1 database nếu chưa có bản ghi của tháng hiện tại.
+2. **Liên kết nhanh bị mất khi F5**: Thêm handler getQuickLinks và saveQuickLinks vào Worker backend để lưu trực tiếp danh sách liên kết vào bảng system_settings. Cập nhật getBootstrapData trả về đúng danh sách quick_links khi mở trang web.
+
+**Files đã sửa:** ackend/src/index.js, index.html, PM-xeplich-v3.md (Version 3.1.2).
+
+**Phiên bản:** 3.1.1 → 3.1.2

@@ -1,19 +1,25 @@
 function normalizeMonthKeys(inputStr) {
   const str = String(inputStr || '').trim();
+  if (!str) {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    return [`${y}-${m}`, `${y}_${m}`, `${m}_${y}`, `${m}-${y}`, `${m}/${y}`];
+  }
   const keys = [str];
-  let m = str.match(/^(\d{4})[-_](\d{1,2})$/);
+  let m = str.match(/^(\d{4})[-_\/](\d{1,2})$/);
   if (m) {
     const y = m[1];
     const mo = m[2].padStart(2, '0');
     const moNoPad = String(parseInt(m[2], 10));
-    keys.push(`${y}-${mo}`, `${y}_${mo}`, `${mo}_${y}`, `${mo}-${y}`, `${moNoPad}_${y}`, `${y}_${moNoPad}`);
+    keys.push(`${y}-${mo}`, `${y}_${mo}`, `${mo}_${y}`, `${mo}-${y}`, `${mo}/${y}`, `${moNoPad}_${y}`, `${y}_${moNoPad}`);
   }
-  m = str.match(/^(\d{1,2})[-_](\d{4})$/);
+  m = str.match(/^(\d{1,2})[-_\/](\d{4})$/);
   if (m) {
     const y = m[2];
     const mo = m[1].padStart(2, '0');
     const moNoPad = String(parseInt(m[1], 10));
-    keys.push(`${y}-${mo}`, `${y}_${mo}`, `${mo}_${y}`, `${mo}-${y}`, `${moNoPad}_${y}`, `${y}_${moNoPad}`);
+    keys.push(`${y}-${mo}`, `${y}_${mo}`, `${mo}_${y}`, `${mo}-${y}`, `${mo}/${y}`, `${moNoPad}_${y}`, `${y}_${moNoPad}`);
   }
   return [...new Set(keys)];
 }
@@ -60,6 +66,8 @@ function parseStringOrJsonArray(val) {
   } catch(e) {}
   return str.split(",").map(x => x.trim()).filter(Boolean);
 }
+
+
 
 let schemaEnsured = false;
 async function ensureSchema(db) {
@@ -279,7 +287,12 @@ async function handleApiAction(action, args, env, request) {
         danhSachGiuong: r.danh_sach_giuong || ""
       }));
 
-      const links = [];
+      let links = [];
+      if (settingsObj.quick_links) {
+        try {
+          links = typeof settingsObj.quick_links === 'string' ? JSON.parse(settingsObj.quick_links) : settingsObj.quick_links;
+        } catch(e) {}
+      }
       const procedures = (proceduresRes.results || []).map(p => ({
         id: p.id,
         ten: p.ten_thu_thuat,
@@ -1334,7 +1347,10 @@ async function handleApiAction(action, args, env, request) {
         case "getChamCong": {
       const keys = normalizeMonthKeys(args[0]);
       const placeholders = keys.map(() => '?').join(',');
-      const rec = await db.prepare(`SELECT data_json FROM chamcong_records WHERE month_year IN (${placeholders}) ORDER BY updated_at DESC LIMIT 1`).bind(...keys).first();
+      let rec = await db.prepare(`SELECT data_json FROM chamcong_records WHERE month_year IN (${placeholders}) ORDER BY updated_at DESC LIMIT 1`).bind(...keys).first();
+      if (!rec) {
+        rec = await db.prepare("SELECT data_json FROM chamcong_records ORDER BY month_year DESC LIMIT 1").first();
+      }
       return success(rec ? JSON.parse(rec.data_json) : null);
     }
 
@@ -1346,13 +1362,17 @@ async function handleApiAction(action, args, env, request) {
       for (const k of keys) {
         await db.prepare("INSERT INTO chamcong_records (month_year, data_json) VALUES (?, ?) ON CONFLICT(month_year) DO UPDATE SET data_json = excluded.data_json, updated_at = CURRENT_TIMESTAMP").bind(k, jsonStr).run();
       }
+      await bumpDataVersion(db);
       return success({ message: "Đã lưu bảng chấm công thành công!" });
     }
 
     case "getThongKeThuThuat": {
       const keys = normalizeMonthKeys(args[0]);
       const placeholders = keys.map(() => '?').join(',');
-      const rec = await db.prepare(`SELECT data_json FROM thongke_records WHERE month_year IN (${placeholders}) ORDER BY updated_at DESC LIMIT 1`).bind(...keys).first();
+      let rec = await db.prepare(`SELECT data_json FROM thongke_records WHERE month_year IN (${placeholders}) ORDER BY updated_at DESC LIMIT 1`).bind(...keys).first();
+      if (!rec) {
+        rec = await db.prepare("SELECT data_json FROM thongke_records ORDER BY month_year DESC LIMIT 1").first();
+      }
       return success(rec ? JSON.parse(rec.data_json) : null);
     }
 
@@ -1364,7 +1384,26 @@ async function handleApiAction(action, args, env, request) {
       for (const k of keys) {
         await db.prepare("INSERT INTO thongke_records (month_year, data_json) VALUES (?, ?) ON CONFLICT(month_year) DO UPDATE SET data_json = excluded.data_json, updated_at = CURRENT_TIMESTAMP").bind(k, jsonStr).run();
       }
+      await bumpDataVersion(db);
       return success({ message: "Đã lưu thống kê thủ thuật thành công!" });
+    }
+
+    case "layDanhSachLienKet":
+    case "getQuickLinks": {
+      const rec = await db.prepare("SELECT value FROM system_settings WHERE key = 'quick_links'").first();
+      let links = [];
+      if (rec && rec.value) {
+        try { links = JSON.parse(rec.value); } catch(e) {}
+      }
+      return success(links);
+    }
+
+    case "saveQuickLinks": {
+      const links = args[0] || [];
+      const jsonStr = typeof links === "string" ? links : JSON.stringify(links);
+      await db.prepare("INSERT INTO system_settings (key, value) VALUES ('quick_links', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP").bind(jsonStr).run();
+      await bumpDataVersion(db);
+      return success({ message: "Đã lưu danh sách liên kết nhanh thành công!" });
     }
 
     case "getEmployees": {
@@ -1439,7 +1478,6 @@ async function handleApiAction(action, args, env, request) {
     // ============================================================
     // 9. TOÀN BỘ CÁC HÀM BỔ SUNG KHỚP 100% CODE.GS-V2.TXT
     // ============================================================
-    case "layDanhSachLienKet":
     case "getDocuments": {
       const res = await db.prepare("SELECT doc_number, title, agency, signed_date, view_link, download_link FROM documents ORDER BY rowid ASC").all();
       return success(res.results || []);
@@ -1569,28 +1607,7 @@ async function handleApiAction(action, args, env, request) {
       return success(backup);
     }
 
-    case "getQuickLinks": {
-      const rec = await db.prepare("SELECT value FROM system_settings WHERE key = 'quick_links'").first();
-      let links = [];
-      if (rec && rec.value) {
-        try { links = JSON.parse(rec.value); } catch(e) {}
-      }
-      if (!links || !links.length) {
-        links = [
-          { icon: "📖", ten: "Hướng dẫn sử dụng phần mềm", url: "#" },
-          { icon: "📋", ten: "Quy trình Kỹ thuật PHCN", url: "#" },
-          { icon: "💰", ten: "Bảng giá Dịch vụ KCB", url: "#" }
-        ];
-      }
-      return success(links);
-    }
 
-    case "saveQuickLinks": {
-      const links = args[0] || [];
-      const linksJson = JSON.stringify(links);
-      await db.prepare("INSERT INTO system_settings (key, value) VALUES ('quick_links', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(linksJson).run();
-      return success({ message: "Đã lưu danh sách Liên Kết Nhanh thành công!" });
-    }
 
     case "getGoogleDriveSettings": {
       const rec = await db.prepare("SELECT value FROM system_settings WHERE key = 'gdrive_webhook_url'").first();

@@ -483,3 +483,14 @@
 **Files đã sửa:** js/app.js, js/init.js, index.html, PM-xeplich-v3.md (Version 3.1.0).
 
 **Phiên bản:** 3.0.9 → 3.1.0
+
+### AT. Cập Nhật Bổ Sung Đầy Đủ Dữ Liệu Trường Ngày Vào Bệnh Nhân (v3.1.1 - 21/08/2026)
+
+**Khắc phục:** Sửa triệt để tình trạng thiếu trường 
+gay_vao (Ngày Vào) trong danh sách Bệnh nhân từ file xuất v2.
+
+**Chi tiết xử lý:**
+1. Đã cập nhật lại bộ chuyển đổi dữ liệu scratch/regenerate_and_import.js tự động định dạng Ngày Vào từ file Excel master PMCG Database v3.xlsx về dạng chuẩn DD/MM/YYYY (ví dụ 17/08/2026).
+2. Đã tái nạp toàn bộ 39 Bệnh nhân lên cơ sở dữ liệu Cloudflare D1 pmcg-db. Mỗi bệnh nhân hiện tại đã có đầy đủ: Họ tên, Năm sinh, Ngày vào viện, Phòng thủ thuật, Danh sách thủ thuật chỉ định và Trạng thái xếp lịch.
+
+**Phiên bản:** 3.1.0 → 3.1.1

@@ -427,3 +427,15 @@
 1. Đã xóa thư mục Data_v3/node_modules rác để giải phóng dung lượng đĩa.
 2. Giữ nguyên các file dữ liệu mẫu PMCG Database v3.xlsx và các file JSON trong Data_v3 để làm tài nguyên đối chiếu.
 3. Giữ sạch sẽ thư mục làm việc gốc và backend Cloudflare sẵn sàng tiếp nhận dữ liệu v2 sau 16h15.
+
+### AP. Cập Nhật Quy Tắc Đánh Số Phiên Bản Dạng Semantic 3 Chữ Số X.X.X (v3.0.7 - 21/08/2026)
+
+**Yêu cầu người dùng:** Cập nhật RULES.md mục 5 quy định đánh số phiên bản chuẩn Semantic dạng X.X.X (bắt đầu từ 3.0.0 -> 3.0.1 ... -> 3.0.9 rồi mới nâng lên 3.1.0).
+
+**Đã thực hiện:**
+1. Cập nhật quy tắc 5 trong RULES.md.
+2. Chuyển đổi toàn bộ hiển thị phiên bản Footer và thẻ tài nguyên trong index.html sang dạng **3.0.7** (Timestamp 14:44 21/08/2026).
+
+**Files đã sửa:** RULES.md, index.html, PM-xeplich-v3.md (Version 3.0.7).
+
+**Phiên bản:** 3.7 → 3.0.7

@@ -2771,7 +2771,7 @@ window.showGlobalLoading = function (text) {
 
         function renderPatientsTable() {
             renderPatientsTable_Original();
-            // filterPatientTable được gọi 1 lần duy nhất ở cuối renderPatientsTable_Original
+            if (typeof loadDashboard === 'function') loadDashboard();
         }
 
         function renderPatientsTable_Original() {
@@ -7369,7 +7369,8 @@ window.showGlobalLoading = function (text) {
                 if (statScheduledEl) statScheduledEl.textContent = dayData.length;
                 if (statDroppedEl) statDroppedEl.textContent = rotData.length;
                 const totalProcsEl = document.getElementById('statTotalProcs');
-                if (totalProcsEl) totalProcsEl.textContent = dayData.length + rotData.length;
+                const schedTotal = dayData.length + rotData.length;
+                if (totalProcsEl) totalProcsEl.textContent = (schedTotal > 0) ? schedTotal : totalProcs;
 
                 if (typeof renderDashboardPreview === 'function') renderDashboardPreview([...dayData, ...rotData]);
                 if (typeof renderCharts === 'function') renderCharts(dayData);
@@ -7675,26 +7676,40 @@ window.showGlobalLoading = function (text) {
             const staffLoadBS = {}, staffLoadKTV = {};
             const procCountYHCT = {}, procCountPHCN = {};
 
-            valid.forEach(r => {
-                const nvChinh = (r[7] || '').trim();
-                const thuThuat = (r[4] || '').trim();
-                const role = staffRoleMap[nvChinh.toLowerCase()] || '';
+            if (valid.length > 0) {
+                valid.forEach(r => {
+                    const nvChinh = (r[7] || '').trim();
+                    const thuThuat = (r[4] || '').trim();
+                    const role = staffRoleMap[nvChinh.toLowerCase()] || '';
 
-                let isDoctor = false;
-                if (role) {
-                    isDoctor = role.includes('b\u00e1c s\u0129') || role.includes('bs');
-                } else {
-                    const lowerName = nvChinh.toLowerCase();
-                    isDoctor = lowerName.startsWith('bs') || lowerName.includes('b\u00e1c s\u0129');
-                }
+                    let isDoctor = false;
+                    if (role) {
+                        isDoctor = role.includes('b\u00e1c s\u0129') || role.includes('bs');
+                    } else {
+                        const lowerName = nvChinh.toLowerCase();
+                        isDoctor = lowerName.startsWith('bs') || lowerName.includes('b\u00e1c s\u0129');
+                    }
 
-                if (isDoctor) staffLoadBS[nvChinh] = (staffLoadBS[nvChinh] || 0) + 1;
-                else staffLoadKTV[nvChinh] = (staffLoadKTV[nvChinh] || 0) + 1;
+                    if (isDoctor) staffLoadBS[nvChinh] = (staffLoadBS[nvChinh] || 0) + 1;
+                    else staffLoadKTV[nvChinh] = (staffLoadKTV[nvChinh] || 0) + 1;
 
-                const cat = procCategoryMap[thuThuat.toLowerCase()] || 'PHCN';
-                if (cat === 'YHCT') procCountYHCT[thuThuat] = (procCountYHCT[thuThuat] || 0) + 1;
-                else procCountPHCN[thuThuat] = (procCountPHCN[thuThuat] || 0) + 1;
-            });
+                    const cat = procCategoryMap[thuThuat.toLowerCase()] || 'PHCN';
+                    if (cat === 'YHCT') procCountYHCT[thuThuat] = (procCountYHCT[thuThuat] || 0) + 1;
+                    else procCountPHCN[thuThuat] = (procCountPHCN[thuThuat] || 0) + 1;
+                });
+            } else {
+                // Fallback: Khi chưa xếp lịch, tính phân bổ thủ thuật từ danh sách bệnh nhân hiện tại (realtime)
+                (dataCache.pat || []).forEach(p => {
+                    if (p.thuThuat) {
+                        const procs = String(p.thuThuat).split(',').map(x => x.trim()).filter(x => x);
+                        procs.forEach(thuThuat => {
+                            const cat = procCategoryMap[thuThuat.toLowerCase()] || 'PHCN';
+                            if (cat === 'YHCT') procCountYHCT[thuThuat] = (procCountYHCT[thuThuat] || 0) + 1;
+                            else procCountPHCN[thuThuat] = (procCountPHCN[thuThuat] || 0) + 1;
+                        });
+                    }
+                });
+            }
 
             const colorsBS   = ['#1a3a5c', '#1f4d7a', '#245f96', '#2a72b3', '#3080c0', '#4a94cf', '#63a5d9', '#7db5e0', '#97c5e8', '#b0d4f0'];
             const colorsKTV  = ['#1e3d2b', '#2d5a3d', '#3e6b4f', '#4a7c5f', '#5a8d70', '#6a9e80', '#7aaf91', '#8abfa2', '#9ad0b3', '#aae0c4'];

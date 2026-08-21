@@ -569,3 +569,13 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   1. Frontend: Chuyển toàn bộ thao tác sửa bệnh nhân lẻ sang chế độ đồng bộ ngầm (Silent background sync) tức thì (0ms). Bỏ modal khóa màn hình, bỏ yêu cầu mạng tải lại toàn bộ danh sách bệnh nhân không cần thiết khi lưu thành công.
   2. Backend: Gộp truy vấn `UPDATE benh_nhan` và `cai_dat` (data_version) vào cùng 1 transaction `db.batch()` trong Cloudflare D1 để giảm một nửa thời gian phản hồi mạng.
 - **File:** `js/app.js`, `backend/src/index.js` (deploy), `index.html` (v3.2.1)
+
+### Cập nhật 21/08/2026 (v3.2.2)
+- **Yêu cầu:** 
+  1. Thẻ "Tổng số ca thủ thuật" trên Dashboard chưa đếm số lượng thủ thuật ở thời điểm hiện tại khi chưa bấm Xếp lịch.
+  2. Biểu đồ "Phân bổ thủ thuật" (YHCT & PHCN) cần cập nhật theo thời gian thực ngay khi thêm/sửa/xóa bệnh nhân ở tab Bệnh nhân.
+- **Giải pháp:**
+  1. `loadDashboard()`: Thẻ "Tổng số ca thủ thuật" (`statTotalProcs`) nếu chưa xếp lịch sẽ đếm tổng toàn bộ số ca thủ thuật yêu cầu từ danh sách bệnh nhân hiện tại (`dataCache.pat`).
+  2. `renderCharts()`: Thêm cơ chế fallback phân tích phân bổ thủ thuật YHCT & PHCN trực tiếp từ danh sách bệnh nhân (`dataCache.pat`) khi lịch chưa xếp.
+  3. Cập nhật `renderPatientsTable()`: Tự động gọi `loadDashboard()` để kích hoạt vẽ lại số liệu Tổng quan và các biểu đồ Phân bổ thủ thuật ngay lập tức (0ms) khi có bất kỳ thao tác nào ở tab Bệnh nhân.
+- **File:** `js/app.js`, `index.html` (v3.2.2)

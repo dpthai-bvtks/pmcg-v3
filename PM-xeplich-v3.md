@@ -293,3 +293,30 @@
 - **Reset Git History**: Xo� to�n b? l?ch s? commit cu (hon 70 b?n) v� t?o l?i commit d?u ti�n d? l�m s?ch Cloudflare Pages.
 - **Reset D1 Database**: D?n d?p to�n b? d? li?u hi?n c� trong Database Cloudflare D1 d? chu?n b? n?p d? li?u m?i t? Excel.
 - **N�ng c?p version**: C?p nh?t m� ngu?n th�nh b?n ho�n ch?nh \3.1\.
+
+### AI. Sửa Hàng Loạt Lỗi Backend & Frontend - Phiên bản 3.2 (21/08/2026)
+
+**Yêu cầu người dùng:** Sửa các lỗi tích lũy sau khi chuyển từ Google Apps Script sang Cloudflare Workers:
+1. Chốt sổ không hoạt động (bảng lịch trình + bệnh nhân + dashboard không reset)
+2. Bảng chấm công và thống kê tổng hợp trống dữ liệu
+3. Quản lý tài khoản không lưu/xóa được
+4. Lưu giờ bận nhân sự/bệnh nhân chậm
+5. Hệ thống hiện cảnh báo "ngày chưa chốt sổ" sau khi seed dữ liệu
+
+**Nguyên nhân & Giải pháp:**
+
+- **Chốt sổ**: callChotSo() còn dùng google.script.run (Apps Script cũ) thay vì callApi() (Cloudflare). Sửa sang callApi('chuyenNgayMoi', ...), xóa toàn bộ cache client sau chốt sổ. Backend cũng sửa để reset status = 'Chưa xếp' cho bệnh nhân còn lại.
+
+- **Seed dữ liệu sai bảng**: Generator generate_perfect_seed.js seed sheet LichTrinh vào bảng schedules (lịch ngày cũ không nên có). Sửa: seed vào history_records thay thế. Xóa 171 dòng schedules ngày 20/08 khỏi D1.
+
+- **Chấm công & thống kê**: Files JSON trong Data_v3/ chưa được seed vào D1. Cập nhật generator để đọc và seed chamcong_records, 	hongke_records, system_settings.
+
+- **init.js load sai thứ tự**: init.js được load ở <head> (trước pp.js) nên google.script.run Proxy chưa tồn tại khi doLogin() và loadTimRanhDataFromServer() được định nghĩa. Sửa: chuyển init.js xuống cuối <body> sau pp.js.
+
+- **Quản lý tài khoản**: loadAccounts(), luuTaiKhoan(), deleteAccount() vẫn dùng google.script.run thay vì callApi. Backend saveAccount trả 	rue (boolean) thay vì message string, frontend hiện alert không rõ ràng. Sửa: chuyển sang callApi trực tiếp, thêm error handler rõ ràng, backend trả message string.
+
+- **Tốc độ lưu chậm**: editNhanSu, editBenhNhan bị coi là mutation bình thường → hiện loading overlay → cảm giác chậm. Sửa: thêm vào isSilentMutation list để không hiện loading overlay, lưu trong nền.
+
+**Files đã sửa:** js/app.js, js/init.js (vị trí load), index.html (thứ tự script, version 3.1→3.2), ackend/src/index.js (chuyenNgayMoi, saveAccount)
+
+**Phiên bản:** 3.1 → 3.2

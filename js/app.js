@@ -8472,7 +8472,10 @@ window.showGlobalLoading = function (text) {
 
         document.addEventListener('DOMContentLoaded', () => {
             initErrorChecker();
-            setTimeout(() => { if (typeof window.checkBackupReminder === 'function') window.checkBackupReminder(); }, 2500);
+            setTimeout(() => {
+                if (typeof window.checkBackupReminder === 'function') window.checkBackupReminder();
+                if (typeof window.loadQuickLinks === 'function') window.loadQuickLinks();
+            }, 1500);
         });
 
 // ============================================================
@@ -8786,5 +8789,88 @@ window.loadGoogleDriveSettingsUI = function() {
             const displayEl = document.getElementById('local-dir-path-display');
             if (displayEl) displayEl.innerText = "📁 Đã chọn: " + handle.name;
         }
+    });
+};
+
+// ============================================================
+// 🔗 QUẢN LÝ LIÊN KẾT NHANH (FOOTER QUICK LINKS)
+// ============================================================
+
+window.loadQuickLinks = function() {
+    callApi('getQuickLinks', [], links => {
+        const uls = document.querySelectorAll('#khu-vuc-lien-ket');
+        if (uls.length) {
+            if (links && Array.isArray(links) && links.length) {
+                const htmlContent = links.map(item => 
+                    `<li><a href="${item.url || '#'}" target="_blank" rel="noopener"><span class="f-icon">${item.icon || '🔗'}</span> <span>${item.ten || item.name}</span></a></li>`
+                ).join('');
+                uls.forEach(ul => { ul.innerHTML = htmlContent; });
+            } else {
+                uls.forEach(ul => { ul.innerHTML = '<li><a href="#"><span class="f-icon">⚠️</span> Chưa có liên kết nào</a></li>'; });
+            }
+        }
+        window.renderAdminQuickLinksUI(links);
+    }, err => {
+        console.warn("[QuickLinks] Lỗi tải danh sách liên kết:", err);
+    });
+};
+
+window.renderAdminQuickLinksUI = function(links) {
+    const container = document.getElementById('admin-quicklinks-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const list = (links && Array.isArray(links) && links.length) ? links : [
+        { icon: "📖", ten: "Hướng dẫn sử dụng phần mềm", url: "#" },
+        { icon: "📋", ten: "Quy trình Kỹ thuật PHCN", url: "#" },
+        { icon: "💰", ten: "Bảng giá Dịch vụ KCB", url: "#" }
+    ];
+
+    list.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'quicklink-admin-item';
+        div.style.cssText = 'display: flex; gap: 8px; align-items: center; background: #fff; padding: 6px; border-radius: 4px; border: 1px solid #cbd5e1;';
+        div.innerHTML = `
+            <input type="text" value="${item.icon || '🔗'}" class="ql-icon" placeholder="Icon" style="width: 45px; text-align: center; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+            <input type="text" value="${item.ten || item.name || ''}" class="ql-ten" placeholder="Tên hiển thị" style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+            <input type="text" value="${item.url || '#'}" class="ql-url" placeholder="URL liên kết (http://...)" style="flex: 2; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+            <button type="button" onclick="this.parentElement.remove()" style="background: #ef4444; color: #fff; border: none; padding: 6px 10px; border-radius: 4px; font-weight: bold; cursor: pointer;">✕</button>
+        `;
+        container.appendChild(div);
+    });
+};
+
+window.addAdminQuickLinkRow = function() {
+    const container = document.getElementById('admin-quicklinks-list');
+    if (!container) return;
+    const div = document.createElement('div');
+    div.className = 'quicklink-admin-item';
+    div.style.cssText = 'display: flex; gap: 8px; align-items: center; background: #fff; padding: 6px; border-radius: 4px; border: 1px solid #cbd5e1;';
+    div.innerHTML = `
+        <input type="text" value="🔗" class="ql-icon" placeholder="Icon" style="width: 45px; text-align: center; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+        <input type="text" value="" class="ql-ten" placeholder="Tên hiển thị" style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+        <input type="text" value="#" class="ql-url" placeholder="URL liên kết (http://...)" style="flex: 2; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+        <button type="button" onclick="this.parentElement.remove()" style="background: #ef4444; color: #fff; border: none; padding: 6px 10px; border-radius: 4px; font-weight: bold; cursor: pointer;">✕</button>
+    `;
+    container.appendChild(div);
+};
+
+window.saveAdminQuickLinks = function(btn) {
+    const items = document.querySelectorAll('.quicklink-admin-item');
+    const links = [];
+    items.forEach(el => {
+        const icon = el.querySelector('.ql-icon').value.trim() || '🔗';
+        const ten = el.querySelector('.ql-ten').value.trim();
+        const url = el.querySelector('.ql-url').value.trim() || '#';
+        if (ten) {
+            links.push({ icon, ten, url });
+        }
+    });
+
+    callApi('saveQuickLinks', [links], res => {
+        showCustomAlert("Thành công", res.message || "Đã lưu danh sách Liên Kết Nhanh!");
+        loadQuickLinks();
+    }, err => {
+        showCustomAlert("Lỗi", "Không thể lưu danh sách liên kết: " + err);
     });
 };

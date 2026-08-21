@@ -1569,6 +1569,29 @@ async function handleApiAction(action, args, env, request) {
       return success(backup);
     }
 
+    case "getQuickLinks": {
+      const rec = await db.prepare("SELECT value FROM system_settings WHERE key = 'quick_links'").first();
+      let links = [];
+      if (rec && rec.value) {
+        try { links = JSON.parse(rec.value); } catch(e) {}
+      }
+      if (!links || !links.length) {
+        links = [
+          { icon: "📖", ten: "Hướng dẫn sử dụng phần mềm", url: "#" },
+          { icon: "📋", ten: "Quy trình Kỹ thuật PHCN", url: "#" },
+          { icon: "💰", ten: "Bảng giá Dịch vụ KCB", url: "#" }
+        ];
+      }
+      return success(links);
+    }
+
+    case "saveQuickLinks": {
+      const links = args[0] || [];
+      const linksJson = JSON.stringify(links);
+      await db.prepare("INSERT INTO system_settings (key, value) VALUES ('quick_links', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(linksJson).run();
+      return success({ message: "Đã lưu danh sách Liên Kết Nhanh thành công!" });
+    }
+
     case "getGoogleDriveSettings": {
       const rec = await db.prepare("SELECT value FROM system_settings WHERE key = 'gdrive_webhook_url'").first();
       return success(rec ? rec.value : "");

@@ -439,3 +439,19 @@
 **Files đã sửa:** RULES.md, index.html, PM-xeplich-v3.md (Version 3.0.7).
 
 **Phiên bản:** 3.7 → 3.0.7
+
+### AQ. Khôi Phục & Xây Dựng Hệ Thống Quản Lý Liên Kết Nhanh Footer (v3.0.8 - 21/08/2026)
+
+**Khắc phục lỗi:** Sửa lỗi cột **LIÊN KẾT NHANH** ở Footer hiển thị ⚠️ Chưa có liên kết nào do bản v3 chuyển sang Cloudflare Worker chưa gọi API nạp liên kết.
+
+**Các thành phần đã xây dựng:**
+1. **Backend API (ackend/src/index.js)**:
+   - getQuickLinks: Lấy danh sách liên kết nhanh từ system_settings D1 (nếu trống sẽ khởi tạo mặc định Hướng dẫn sử dụng, Quy trình Kỹ thuật, Bảng giá Dịch vụ).
+   - saveQuickLinks: Lưu chỉnh sửa danh sách liên kết nhanh vào D1 database.
+2. **Frontend UI (index.html & js/app.js)**:
+   - Nạp và tự động render danh sách liên kết nhanh ở Footer (#khu-vuc-lien-ket).
+   - Thêm thẻ quản lý **🔗 Quản Lý Liên Kết Nhanh (Footer Links)** trong tab **Quản Trị -> ⚙️ Cài Đặt Hệ Thống**, cho phép Admin thêm, sửa icon, tên hiển thị, URL liên kết và lưu 1-click.
+
+**Files đã sửa:** ackend/src/index.js, index.html, js/app.js, PM-xeplich-v3.md (Version 3.0.8).
+
+**Phiên bản:** 3.0.7 → 3.0.8

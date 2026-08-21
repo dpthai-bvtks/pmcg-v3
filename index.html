@@ -59,9 +59,9 @@
     }
     </script>
     <meta name="theme-color" content="#1e3d2b">
-    <link rel="icon" type="image/png" sizes="128x128" href="favicon-128.png?v=3.0.8">
+    <link rel="icon" type="image/png" sizes="128x128" href="favicon-128.png?v=3.0.9">
     <!-- Thêm icon cho iOS -->
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=3.0.8">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=3.0.9">
 
 
 
@@ -72,9 +72,9 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
     <!-- CSS Custom -->
-    <link rel="stylesheet" href="css/style.css?v=3.0.8">
+    <link rel="stylesheet" href="css/style.css?v=3.0.9">
     <!-- JS Thư viện kéo thả nội bộ -->
-    <script src="js/sortable.min.js?v=3.0.8"></script></script>
+    <script src="js/sortable.min.js?v=3.0.9"></script></script>
     <!-- Chart.js for Thống Kê & ExcelJS -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
@@ -1927,6 +1927,10 @@
                                 onclick="switchAdminSection('admin-sec-backup', this)"
                                 style="text-align: left; padding: 12px 15px; border: none; background: #f1f2f6; color: #333; font-weight: bold; border-radius: 6px; cursor: pointer; border-left: 4px solid transparent; transition: all 0.2s; font-size: 13px;">📦
                                 Sao Lưu & Khôi Phục</button>
+                            <button id="nav-btn-quicklinks" class="admin-nav-btn"
+                                onclick="switchAdminSection('admin-sec-quicklinks', this)"
+                                style="text-align: left; padding: 12px 15px; border: none; background: #f1f2f6; color: #333; font-weight: bold; border-radius: 6px; cursor: pointer; border-left: 4px solid transparent; transition: all 0.2s; font-size: 13px;">🔗
+                                Quản Lý Liên Kết Nhanh</button>
                         </div>
 
                         <!-- Cột Nội Dung Phải -->
@@ -2417,6 +2421,39 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- SECTION 6: QUẢN LÝ LIÊN KẾT NHANH (FOOTER LINKS) -->
+                            <div id="admin-sec-quicklinks" class="admin-section"
+                                style="display: none; flex-direction: column; padding: 20px; height: 100%; overflow-y: auto;">
+                                <div class="tab-header-title"
+                                    style="background:#eef2ff; color:#3730a3; margin-top:0; border:none; margin-bottom: 20px; padding: 12px; border-radius: 6px; font-size: 16px;">
+                                    🔗 QUẢN LÝ LIÊN KẾT NHANH (FOOTER LINKS)
+                                </div>
+
+                                <div style="display: flex; flex-direction: column; gap: 20px; max-width: 650px;">
+                                    <div style="background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                                        <h4 style="margin: 0 0 10px 0; color: #1e293b; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                                            <span>🔗</span> Danh Sách Liên Kết Hiển Thị Ở Footer
+                                        </h4>
+                                        <p style="font-size: 13px; color: #64748b; margin-bottom: 16px; line-height: 1.6;">
+                                            Thêm, chỉnh sửa Icon, Tên hiển thị và Đường dẫn URL cho các liên kết nhanh ở chân trang (Footer).
+                                        </p>
+                                        
+                                        <div id="admin-quicklinks-list" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px;">
+                                            <!-- Dynamic Items -->
+                                        </div>
+
+                                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                            <button type="button" onclick="addAdminQuickLinkRow()" style="padding: 10px 18px; background: #4f46e5; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                                                <span>➕</span> Thêm Liên Kết Mới
+                                            </button>
+                                            <button type="button" onclick="saveAdminQuickLinks(this)" style="padding: 10px 18px; background: #059669; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                                                <span>💾</span> Lưu Danh Sách Liên Kết
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2759,9 +2796,9 @@
 
                     <h4><span class="f-icon">⚙️</span> <span>THÔNG TIN HỆ THỐNG</span></h4>
 
-                    <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.0.8</span></p>
+                    <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.0.9</span></p>
 
-                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 14:49 21/08/2026</span></p>
+                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 14:52 21/08/2026</span></p>
 
                     <p><span class="f-icon">👨‍💻</span> <span>Thiết kế & Phát triển: <b>Bác sĩ Thái</b></span></p>
 

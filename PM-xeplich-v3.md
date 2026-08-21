@@ -455,3 +455,19 @@
 **Files đã sửa:** ackend/src/index.js, index.html, js/app.js, PM-xeplich-v3.md (Version 3.0.8).
 
 **Phiên bản:** 3.0.7 → 3.0.8
+
+### AR. Thêm Mục "Quản Lý Liên Kết Nhanh" Vào Menu Quản Trị Sidebar (v3.0.9 - 21/08/2026)
+
+**Khắc phục lỗi:** Thêm nút **🔗 Quản Lý Liên Kết Nhanh** thành 1 mục độc lập, nổi bật trong **Menu Quản Trị (Sidebar Trái)** (index.html) kèm khu vực quản lý riêng biệt (dmin-sec-quicklinks).
+
+**Tóm tắt giao diện Quản Trị mới:**
+- Menu Quản Trị Sidebar có 5 mục:
+  - ⚙️ Cài Đặt Hệ Thống
+  - 🔒 Quản Lý Tài Khoản
+  - 🧑‍⚕️ Nhân Sự Chấm Công
+  - 📦 Sao Lưu & Khôi Phục
+  - 🔗 **Quản Lý Liên Kết Nhanh** (MỚI)
+
+**Files đã sửa:** index.html, PM-xeplich-v3.md (Version 3.0.9).
+
+**Phiên bản:** 3.0.8 → 3.0.9

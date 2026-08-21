@@ -123,11 +123,11 @@ function saveReorderedData(type, list) {
     try {
         localStorage.setItem('times_' + type + '_order', JSON.stringify(list.map(x => x.ten || x.name || x.maMay || x.tenPhong)));
     } catch (e) { }
-    if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run.withSuccessHandler(res => {
-            console.log(`[Reorder]: Đã đồng bộ thứ tự ${type} lên Cloudflare D1!`);
-        }).saveReorderedData(type, list);
-    }
+    callApi('saveReorderedData', [type, list], res => {
+        console.log(`[Reorder]: Đã đồng bộ thứ tự ${type} lên Cloudflare D1!`);
+    }, err => {
+        console.warn('[Reorder] Lỗi đồng bộ:', err);
+    });
 }
 
 function initTableDragAndDrop(tbodyId, arrayRef, onReorderFinish) {
@@ -4104,9 +4104,9 @@ window.showGlobalLoading = function (text) {
                     }, 100);
 
                     // Đồng bộ lưu lịch trình vào D1 SQLite trong nền (15ms, không làm đơ giao diện)
-                    if (sched.length > 0 && typeof google !== 'undefined' && google.script && google.script.run) {
+                    if (sched.length > 0) {
                         const backendSched = sched.map(x => [ x.ngay || dateVal, x.tenBN || '', x.namSinh || '', x.phong || '', x.thuThuat || '', x.gioDienRa || '', x.gioKetThuc || '', x.nvChinh || '', x.nvPhu || '', x.may || '', x.giuong || '' ]);
-                        try { google.script.run.saveSchedule(dateVal, backendSched); } catch(e) {}
+                        callApi('saveSchedule', [dateVal, backendSched], null, null);
                     }
                 } catch(err) {
                     if (window.hideGlobalLoading) window.hideGlobalLoading();
@@ -5897,9 +5897,9 @@ window.showGlobalLoading = function (text) {
                     if (typeof loadDashboard === 'function') loadDashboard();
 
                     // Đồng bộ lưu lịch trình thứ 7 vào D1 SQLite trong nền
-                    if (sched.length > 0 && typeof google !== 'undefined' && google.script && google.script.run) {
+                    if (sched.length > 0) {
                         const backendSched = sched.map(x => [ x.ngay || dateVal, x.tenBN || '', x.namSinh || '', x.phong || '', x.thuThuat || '', x.gioDienRa || '', x.gioKetThuc || '', x.nvChinh || '', x.nvPhu || '', x.may || '', x.giuong || '' ]);
-                        try { google.script.run.saveSchedule(dateVal, backendSched); } catch(e) {}
+                        callApi('saveSchedule', [dateVal, backendSched], null, null);
                     }
                 } catch(err) {
                     btn.innerText = '▶ XẾP LỊCH THỨ 7'; btn.disabled = false;

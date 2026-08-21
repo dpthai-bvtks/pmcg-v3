@@ -737,23 +737,27 @@ async function handleApiAction(action, args, env, request) {
       };
 
       const procs = typeof p.thuThuat === "string" ? p.thuThuat.split(",").map(x => ({ name: x.trim(), status: "Chưa xếp" })) : (p.thu_thuat || []);
-      const res = await db.prepare(
-        "INSERT INTO benh_nhan (name, age, gender, room, bed, arrive_time, leave_time, thu_thuat, status, ngay_vao, gio_ban) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(name) DO UPDATE SET age = excluded.age, room = excluded.room, arrive_time = excluded.arrive_time, leave_time = excluded.leave_time, thu_thuat = excluded.thu_thuat, ngay_vao = excluded.ngay_vao, gio_ban = excluded.gio_ban, updated_at = CURRENT_TIMESTAMP"
-      ).bind(
-        String(p.ten || p.name || ""),
-        parseInt(p.namSinh || p.age) || 0,
-        String(p.gender || "Nam"),
-        String(p.phong || p.room || ""),
-        String(p.bed || ""),
-        String(p.gioVao || p.arriveTime || "07:30"),
-        String(p.gioRa || p.leaveTime || ""),
-        JSON.stringify(procs),
-        String(p.status || "Chưa xếp"),
-        String(p.ngayVao || ""),
-        String(p.gioBan || "")
-      ).run();
-      await bumpDataVersion(db);
-      return success({ id: res.meta.last_row_id });
+      const versionVal = String(Date.now());
+      
+      const res = await db.batch([
+        db.prepare(
+          "INSERT INTO benh_nhan (name, age, gender, room, bed, arrive_time, leave_time, thu_thuat, status, ngay_vao, gio_ban) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(name) DO UPDATE SET age = excluded.age, room = excluded.room, arrive_time = excluded.arrive_time, leave_time = excluded.leave_time, thu_thuat = excluded.thu_thuat, ngay_vao = excluded.ngay_vao, gio_ban = excluded.gio_ban, updated_at = CURRENT_TIMESTAMP"
+        ).bind(
+          String(p.ten || p.name || ""),
+          parseInt(p.namSinh || p.age) || 0,
+          String(p.gender || "Nam"),
+          String(p.phong || p.room || ""),
+          String(p.bed || ""),
+          String(p.gioVao || p.arriveTime || "07:30"),
+          String(p.gioRa || p.leaveTime || ""),
+          JSON.stringify(procs),
+          String(p.status || "Chưa xếp"),
+          String(p.ngayVao || ""),
+          String(p.gioBan || "")
+        ),
+        db.prepare("INSERT INTO cai_dat (key, value) VALUES ('data_version', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(versionVal)
+      ]);
+      return success({ id: res[0]?.meta?.last_row_id || 0 });
     }
 
     case "editBenhNhan": {
@@ -774,8 +778,9 @@ async function handleApiAction(action, args, env, request) {
       const procs = typeof p.thuThuat === "string" ? p.thuThuat.split(",").map(x => ({ name: x.trim(), status: "Chưa xếp" })).filter(x => x.name) : (p.thu_thuat || []);
       const patName = String(p.ten || p.name || "").trim();
       const targetName = String(p.oldTen || patName).trim();
+      const versionVal = String(Date.now());
 
-      const updateRes = await db.prepare(
+      const updateStmt = db.prepare(
         "UPDATE benh_nhan SET name = ?, age = ?, gender = ?, room = ?, bed = ?, arrive_time = ?, leave_time = ?, thu_thuat = ?, status = ?, ngay_vao = ?, gio_ban = ?, updated_at = CURRENT_TIMESTAMP WHERE name = ?"
       ).bind(
         patName,
@@ -790,7 +795,12 @@ async function handleApiAction(action, args, env, request) {
         String(p.ngayVao || ""),
         String(p.gioBan || ""),
         targetName
-      ).run();
+      );
+
+      const bumpStmt = db.prepare("INSERT INTO cai_dat (key, value) VALUES ('data_version', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(versionVal);
+
+      const batchRes = await db.batch([updateStmt, bumpStmt]);
+      const updateRes = batchRes[0];
 
       if (updateRes.meta && updateRes.meta.changes === 0) {
         await db.prepare(
@@ -810,7 +820,6 @@ async function handleApiAction(action, args, env, request) {
         ).run();
       }
 
-      await bumpDataVersion(db);
       return success(true);
     }
 

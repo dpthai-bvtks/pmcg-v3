@@ -559,3 +559,13 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
 - **Nguyên nhân:** Khi đổi tên các thuộc tính trong đối tượng trả về của API `getBootstrapData` trong `backend/src/index.js` ở v3.1.8, các key như `machines`, `rooms`, `procedures`, `staff`, `patients` bị đổi thành tiếng Việt (`may_moc`, `phong`, `thu_thuat`, `nhan_su`, `benh_nhan`). Do đó frontend JS không đọc được thuộc tính cũ dẫn đến treo ở trạng thái "Đang tải...". Thêm vào đó, câu lệnh return ở `getBootstrapData` bị tham chiếu nhầm tên biến local (`machines` thay vì `may_moc`).
 - **Giải pháp:** Sửa đổi `getBootstrapData` và các API endpoint trong Worker để luôn trả về cả 2 định dạng property key (English API contract và Vietnamese alias): `patients`/`benh_nhan`, `staff`/`nhan_su`, `machines`/`may_moc`, `rooms`/`phong`, `procedures`/`thu_thuat`, `accounts`/`tai_khoan`. Đã re-deploy Cloudflare Worker và test phản hồi thành công (17 nhân sự, 63 máy, 6 phòng, 16 thủ thuật).
 - **File:** `backend/src/index.js` (deploy), `index.html` (v3.2.0)
+
+### Cập nhật 21/08/2026 (v3.2.1)
+- **Vấn đề:** Tốc độ lưu/chỉnh sửa thông tin bệnh nhân (lưu form, sửa giờ bận, cập nhật ra viện) đôi lúc bị chậm.
+- **Phân tích nguyên nhân:**
+  1. Frontend: Các hàm thao tác bệnh nhân (`savePatient`, `addPatBusy`, `deleteSinglePatBusy`, `clearPatBusy`, `savePatLeave`, `clearPatLeave`) đã có cập nhật Optimistic UI (vẽ lại bảng ngay 0ms), nhưng lại gọi modal khóa toàn màn hình (`showGlobalLoading`) bắt người dùng chờ mạng, và sau khi nhận phản hồi lại tiếp tục phát 1 yêu cầu mạng thứ 2 để tải lại toàn bộ danh sách bệnh nhân (`loadEntity('getBenhNhan')`).
+  2. Backend: SQL `UPDATE benh_nhan` và SQL cập nhật `data_version` chạy làm 2 truy vấn D1 độc lập.
+- **Giải pháp tối ưu:**
+  1. Frontend: Chuyển toàn bộ thao tác sửa bệnh nhân lẻ sang chế độ đồng bộ ngầm (Silent background sync) tức thì (0ms). Bỏ modal khóa màn hình, bỏ yêu cầu mạng tải lại toàn bộ danh sách bệnh nhân không cần thiết khi lưu thành công.
+  2. Backend: Gộp truy vấn `UPDATE benh_nhan` và `cai_dat` (data_version) vào cùng 1 transaction `db.batch()` trong Cloudflare D1 để giảm một nửa thời gian phản hồi mạng.
+- **File:** `js/app.js`, `backend/src/index.js` (deploy), `index.html` (v3.2.1)

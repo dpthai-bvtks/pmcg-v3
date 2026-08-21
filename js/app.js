@@ -2894,14 +2894,11 @@ window.showGlobalLoading = function (text) {
             const btnSave = document.getElementById('btn-save-pat');
             if (btnSave) { btnSave.disabled = true; btnSave.innerText = 'Đang lưu...'; }
 
-            // Hiển thị màn hình khóa để chống bấm đè gây trùng lặp dữ liệu
-            if (window.showGlobalLoading) window.showGlobalLoading("Đang lưu bệnh nhân...");
-
             // Chụp index TRƯỚC khi cancelEdit reset về -1
             const currentEditIdx = editIndex.pat;
             const currentItem = currentEditIdx > -1 ? dataCache.pat[currentEditIdx] : null;
 
-            // ⚡ Cập nhật tức thời lên giao diện (Optimistic UI Update) để người dùng không phải chờ
+            // ⚡ Cập nhật tức thời lên giao diện (Optimistic UI Update) - 0ms delay!
             if (currentEditIdx > -1 && currentItem) {
                 currentItem.ten = ten;
                 currentItem.namSinh = nam;
@@ -2930,33 +2927,24 @@ window.showGlobalLoading = function (text) {
                 renderPatientsTable();
             }
 
+            // Giải phóng nút và form ngay lập tức cho người dùng thao tác tiếp
+            cancelEdit('pat');
+            if (btnSave) { btnSave.disabled = false; btnSave.innerText = 'Lưu'; }
+            document.getElementById('pat-name').focus();
+
             const onDone = () => {
                 window._savePatientLock = false;
-                if (window.hideGlobalLoading) window.hideGlobalLoading();
-                if (btnSave) { btnSave.disabled = false; btnSave.innerText = 'Lưu'; }
-
-                // Trì hoãn 500ms trước khi đồng bộ lại từ server để tránh render nhiều lần liên tiếp
-                setTimeout(() => {
-                    if (window.dataCacheTime) window.dataCacheTime['pat'] = 0;
-                    loadEntity('getBenhNhan', 'pat', () => {
-                        renderPatientsTable();
-                        if (typeof loadDashboard === 'function') loadDashboard();
-                    }, [], true);
-                }, 500);
+                if (window.dataCacheTime) window.dataCacheTime['pat'] = Date.now();
+                if (typeof loadDashboard === 'function') loadDashboard();
             };
+
             const onError = (e) => {
                 window._savePatientLock = false;
-                if (window.hideGlobalLoading) window.hideGlobalLoading();
-                if (btnSave) { btnSave.disabled = false; btnSave.innerText = 'Lưu'; }
-                alert('Lỗi khi lưu: ' + e);
-
-                // Khôi phục lại dữ liệu gốc từ máy chủ nếu xảy ra lỗi lưu
+                alert('Lỗi khi lưu bệnh nhân: ' + e);
+                // Khôi phục lại dữ liệu gốc từ máy chủ nếu xảy ra lỗi
                 if (window.dataCacheTime) window.dataCacheTime['pat'] = 0;
                 loadEntity('getBenhNhan', 'pat', renderPatientsTable, [], true);
             };
-
-            cancelEdit('pat');
-            document.getElementById('pat-name').focus();
 
             if (currentEditIdx > -1 && currentItem) {
                 const sheetIdx = currentItem.sheetIndex !== undefined ? currentItem.sheetIndex : currentEditIdx;
@@ -3210,16 +3198,12 @@ window.showGlobalLoading = function (text) {
             if (busyInput) busyInput.value = '';
 
             const sheetIdx = p.sheetIndex !== undefined ? p.sheetIndex : idx;
-            if (window.showGlobalLoading) window.showGlobalLoading("Đang lưu giờ bận bệnh nhân...");
             google.script.run
                 .withSuccessHandler(() => {
-                    if (window.hideGlobalLoading) window.hideGlobalLoading();
-                    if (window.dataCacheTime) window.dataCacheTime['pat'] = 0;
-                    loadEntity('getBenhNhan', 'pat', renderPatientsTable, [], true);
+                    if (window.dataCacheTime) window.dataCacheTime['pat'] = Date.now();
                 })
                 .withFailureHandler(err => {
-                    if (window.hideGlobalLoading) window.hideGlobalLoading();
-                    alert("Lỗi lưu giờ bận: " + err.message);
+                    alert("Lỗi lưu giờ bận: " + (err.message || err));
                     if (window.dataCacheTime) window.dataCacheTime['pat'] = 0;
                     loadEntity('getBenhNhan', 'pat', renderPatientsTable, [], true);
                 })
@@ -3248,16 +3232,12 @@ window.showGlobalLoading = function (text) {
                 if (busyInput) busyInput.value = '';
 
                 const sheetIdx = p.sheetIndex !== undefined ? p.sheetIndex : idx;
-                if (window.showGlobalLoading) window.showGlobalLoading("Đang xóa giờ bận bệnh nhân...");
                 google.script.run
                     .withSuccessHandler(() => {
-                        if (window.hideGlobalLoading) window.hideGlobalLoading();
-                        if (window.dataCacheTime) window.dataCacheTime['pat'] = 0;
-                        loadEntity('getBenhNhan', 'pat', renderPatientsTable, [], true);
+                        if (window.dataCacheTime) window.dataCacheTime['pat'] = Date.now();
                     })
                     .withFailureHandler(err => {
-                        if (window.hideGlobalLoading) window.hideGlobalLoading();
-                        alert("Lỗi xóa giờ bận: " + err.message);
+                        alert("Lỗi xóa giờ bận: " + (err.message || err));
                         if (window.dataCacheTime) window.dataCacheTime['pat'] = 0;
                         loadEntity('getBenhNhan', 'pat', renderPatientsTable, [], true);
                     })
@@ -3278,16 +3258,12 @@ window.showGlobalLoading = function (text) {
             if (busyInput) busyInput.value = '';
 
             const sheetIdx = p.sheetIndex !== undefined ? p.sheetIndex : idx;
-            if (window.showGlobalLoading) window.showGlobalLoading("Đang xóa toàn bộ giờ bận...");
             google.script.run
                 .withSuccessHandler(() => {
-                    if (window.hideGlobalLoading) window.hideGlobalLoading();
-                    if (window.dataCacheTime) window.dataCacheTime['pat'] = 0;
-                    loadEntity('getBenhNhan', 'pat', renderPatientsTable, [], true);
+                    if (window.dataCacheTime) window.dataCacheTime['pat'] = Date.now();
                 })
                 .withFailureHandler(err => {
-                    if (window.hideGlobalLoading) window.hideGlobalLoading();
-                    alert("Lỗi xóa giờ bận: " + err.message);
+                    alert("Lỗi xóa giờ bận: " + (err.message || err));
                     if (window.dataCacheTime) window.dataCacheTime['pat'] = 0;
                     loadEntity('getBenhNhan', 'pat', renderPatientsTable, [], true);
                 })
@@ -3368,16 +3344,12 @@ window.showGlobalLoading = function (text) {
             if (leaveInput) leaveInput.value = '';
 
             const sheetIdx = p.sheetIndex !== undefined ? p.sheetIndex : idx;
-            if (window.showGlobalLoading) window.showGlobalLoading("Đang cập nhật giờ ra viện...");
             google.script.run
                 .withSuccessHandler(() => {
-                    if (window.hideGlobalLoading) window.hideGlobalLoading();
-                    if (window.dataCacheTime) window.dataCacheTime['pat'] = 0;
-                    loadEntity('getBenhNhan', 'pat', renderPatientsTable, [], true);
+                    if (window.dataCacheTime) window.dataCacheTime['pat'] = Date.now();
                 })
                 .withFailureHandler(err => {
-                    if (window.hideGlobalLoading) window.hideGlobalLoading();
-                    alert("Lỗi cập nhật giờ ra viện: " + err.message);
+                    alert("Lỗi cập nhật giờ ra viện: " + (err.message || err));
                     if (window.dataCacheTime) window.dataCacheTime['pat'] = 0;
                     loadEntity('getBenhNhan', 'pat', renderPatientsTable, [], true);
                 })
@@ -3397,16 +3369,12 @@ window.showGlobalLoading = function (text) {
             if (leaveInput) leaveInput.value = '';
 
             const sheetIdx = p.sheetIndex !== undefined ? p.sheetIndex : idx;
-            if (window.showGlobalLoading) window.showGlobalLoading("Đang hủy giờ ra viện...");
             google.script.run
                 .withSuccessHandler(() => {
-                    if (window.hideGlobalLoading) window.hideGlobalLoading();
-                    if (window.dataCacheTime) window.dataCacheTime['pat'] = 0;
-                    loadEntity('getBenhNhan', 'pat', renderPatientsTable, [], true);
+                    if (window.dataCacheTime) window.dataCacheTime['pat'] = Date.now();
                 })
                 .withFailureHandler(err => {
-                    if (window.hideGlobalLoading) window.hideGlobalLoading();
-                    alert("Lỗi hủy giờ ra viện: " + err.message);
+                    alert("Lỗi hủy giờ ra viện: " + (err.message || err));
                     if (window.dataCacheTime) window.dataCacheTime['pat'] = 0;
                     loadEntity('getBenhNhan', 'pat', renderPatientsTable, [], true);
                 })

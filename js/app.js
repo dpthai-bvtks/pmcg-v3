@@ -8481,7 +8481,7 @@ window.showGlobalLoading = function (text) {
 
 window.exportFullDatabaseBackup = function() {
     if (window.showGlobalLoading) window.showGlobalLoading("Đang xuất bản sao lưu toàn bộ Cloudflare D1...");
-    callApi('exportDatabase', [], data => {
+    callApi('exportDatabase', [], async data => {
         if (window.hideGlobalLoading) window.hideGlobalLoading();
         if (!data || !data.tables) {
             return showCustomAlert("Lỗi", "Không thể lấy dữ liệu sao lưu từ máy chủ!");
@@ -8500,8 +8500,12 @@ window.exportFullDatabaseBackup = function() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
+        // Tự động ghi vào thư mục máy tính đã kết nối (nếu có)
+        const savedToLocalFolder = await window.autoSaveToLocalDir(data);
+
         localStorage.setItem('last_backup_timestamp', Date.now().toString());
-        showCustomAlert("Thành công", `Đã tải về bản sao lưu dữ liệu toàn diện (phiên bản ${data.version || 'v3.4'})!`);
+        const extraMsg = savedToLocalFolder ? " (Đã tự động lưu 1 bản vào thư mục máy tính của bác sĩ)" : "";
+        showCustomAlert("Thành công", `Đã tải về bản sao lưu dữ liệu toàn diện (phiên bản ${data.version || 'v3.6'})${extraMsg}!`);
     }, err => {
         if (window.hideGlobalLoading) window.hideGlobalLoading();
         showCustomAlert("Lỗi sao lưu", "Lỗi: " + (typeof err === 'string' ? err : JSON.stringify(err)));
@@ -8563,6 +8567,8 @@ window.checkBackupReminder = function() {
     const selectEl = document.getElementById('backup-reminder-period');
     if (selectEl) selectEl.value = period;
 
+    if (typeof window.loadGoogleDriveSettingsUI === 'function') window.loadGoogleDriveSettingsUI();
+
     if (period === 'none') return;
 
     const lastBackup = parseInt(localStorage.getItem('last_backup_timestamp') || '0', 10);
@@ -8587,4 +8593,126 @@ window.checkBackupReminder = function() {
             document.body.appendChild(toast);
         }, 3000);
     }
+};
+
+// ============================================================
+// 📁 LƯU TỰ ĐỘNG THƯ MỤC MÁY TÍNH & GOOGLE DRIVE
+// ============================================================
+
+const BK_IDB_NAME = 'pmcg_backup_idb';
+const BK_STORE_NAME = 'backup_handles';
+
+function getBackupIDB() {
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open(BK_IDB_NAME, 1);
+        req.onupgradeneeded = e => e.target.result.createObjectStore(BK_STORE_NAME);
+        req.onsuccess = e => resolve(e.target.result);
+        req.onerror = e => reject(e);
+    });
+}
+
+async function setSavedDirHandle(handle) {
+    const db = await getBackupIDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(BK_STORE_NAME, 'readwrite');
+        tx.objectStore(BK_STORE_NAME).put(handle, 'backup_dir_handle');
+        tx.oncomplete = () => resolve();
+        tx.onerror = e => reject(e);
+    });
+}
+
+async function getSavedDirHandle() {
+    try {
+        const db = await getBackupIDB();
+        return new Promise((resolve) => {
+            const tx = db.transaction(BK_STORE_NAME, 'readonly');
+            const req = tx.objectStore(BK_STORE_NAME).get('backup_dir_handle');
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = () => resolve(null);
+        });
+    } catch(e) { return null; }
+}
+
+window.selectLocalBackupDirectory = async function() {
+    if (!('showDirectoryPicker' in window)) {
+        return showCustomAlert("Trình duyệt không hỗ trợ", "Trình duyệt của bác sĩ chưa hỗ trợ chọn thư mục lưu tự động. Vui lòng dùng Chrome, Edge hoặc Brave mới nhất!");
+    }
+    try {
+        const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+        await setSavedDirHandle(handle);
+        const displayEl = document.getElementById('local-dir-path-display');
+        if (displayEl) displayEl.innerText = "📁 Đã chọn: " + handle.name;
+        showCustomAlert("Thành công", `Đã kết nối thư mục [${handle.name}]! Từ giờ khi bấm sao lưu, hệ thống sẽ tự ghi file thẳng vào thư mục này mà không cần hỏi 'Save As'.`);
+    } catch(err) {
+        if (err.name !== 'AbortError') showCustomAlert("Lỗi", "Không thể chọn thư mục: " + err.message);
+    }
+};
+
+window.autoSaveToLocalDir = async function(backupData) {
+    const handle = await getSavedDirHandle();
+    if (!handle) return false;
+
+    try {
+        let perm = await handle.queryPermission({ mode: 'readwrite' });
+        if (perm !== 'granted') {
+            perm = await handle.requestPermission({ mode: 'readwrite' });
+        }
+        if (perm !== 'granted') return false;
+
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10) + '_' + String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
+        const filename = `PMCG_D1_Backup_AUTO_${dateStr}.json`;
+
+        const fileHandle = await handle.getFileHandle(filename, { create: true });
+        const writable = await fileHandle.createWritable();
+        await writable.write(JSON.stringify(backupData, null, 2));
+        await writable.close();
+        return true;
+    } catch(e) {
+        console.warn("[AutoSaveLocal] Lỗi lưu file vào thư mục:", e);
+        return false;
+    }
+};
+
+window.saveGoogleDriveSettingsUI = function() {
+    const urlInput = document.getElementById('gdrive-webhook-url');
+    const url = urlInput ? urlInput.value.trim() : "";
+    if (url && !url.startsWith('http')) {
+        return showCustomAlert("Lỗi", "URL Google Drive Webhook phải bắt đầu bằng http:// hoặc https://");
+    }
+    callApi('saveGoogleDriveSettings', [url], res => {
+        showCustomAlert("Thành công", res.message || "Đã lưu cài đặt Google Drive Webhook!");
+    }, err => {
+        showCustomAlert("Lỗi", "Không thể lưu cài đặt: " + err);
+    });
+};
+
+window.testGoogleDriveUploadUI = function() {
+    const urlInput = document.getElementById('gdrive-webhook-url');
+    const url = urlInput ? urlInput.value.trim() : "";
+    if (!url || !url.startsWith('http')) {
+        return showCustomAlert("Lỗi", "Vui lòng nhập URL Google Drive Webhook trước khi thử nghiệm!");
+    }
+    if (window.showGlobalLoading) window.showGlobalLoading("Đang đẩy file sao lưu thử nghiệm lên Google Drive...");
+    callApi('testGoogleDriveUpload', [url], res => {
+        if (window.hideGlobalLoading) window.hideGlobalLoading();
+        showCustomAlert("Thành công", res.message || "Đã tải file sao lưu lên Google Drive thành công!");
+    }, err => {
+        if (window.hideGlobalLoading) window.hideGlobalLoading();
+        showCustomAlert("Lỗi Google Drive", "Không thể tải lên Google Drive: " + err);
+    });
+};
+
+window.loadGoogleDriveSettingsUI = function() {
+    callApi('getGoogleDriveSettings', [], url => {
+        const urlInput = document.getElementById('gdrive-webhook-url');
+        if (urlInput && url) urlInput.value = url;
+    }, null);
+
+    getSavedDirHandle().then(handle => {
+        if (handle) {
+            const displayEl = document.getElementById('local-dir-path-display');
+            if (displayEl) displayEl.innerText = "📁 Đã chọn: " + handle.name;
+        }
+    });
 };

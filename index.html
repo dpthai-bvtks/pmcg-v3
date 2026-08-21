@@ -59,9 +59,9 @@
     }
     </script>
     <meta name="theme-color" content="#1e3d2b">
-    <link rel="icon" type="image/png" sizes="128x128" href="favicon-128.png?v=3.5">
+    <link rel="icon" type="image/png" sizes="128x128" href="favicon-128.png?v=3.6">
     <!-- Thêm icon cho iOS -->
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=3.5">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=3.6">
 
 
 
@@ -72,9 +72,9 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
     <!-- CSS Custom -->
-    <link rel="stylesheet" href="css/style.css?v=3.5">
+    <link rel="stylesheet" href="css/style.css?v=3.6">
     <!-- JS Thư viện kéo thả nội bộ -->
-    <script src="js/sortable.min.js?v=3.5"></script></script>
+    <script src="js/sortable.min.js?v=3.6"></script></script>
     <!-- Chart.js for Thống Kê & ExcelJS -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
@@ -2283,20 +2283,73 @@
                                 style="display: none; flex-direction: column; padding: 20px; height: 100%; overflow-y: auto;">
                                 <div class="tab-header-title"
                                     style="background:#ebf5fb; color:#2980b9; margin-top:0; border:none; margin-bottom: 20px; padding: 12px; border-radius: 6px; font-size: 16px;">
-                                    📦 SAO LƯU & KHÔI PHỤC DỮ LIỆU CLOUDFLARE D1
+                                    📦 CẤU HÌNH TỰ ĐỘNG SAO LƯU (LOCAL & GOOGLE DRIVE)
                                 </div>
 
-                                <div style="display: flex; flex-direction: column; gap: 20px; max-width: 650px;">
-                                    <!-- Card Sao Lưu & Khôi Phục -->
+                                <div style="display: flex; flex-direction: column; gap: 20px; max-width: 700px;">
+                                    <!-- Card 1: Thư mục máy tính tự động -->
                                     <div style="background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
                                         <h4 style="margin: 0 0 10px 0; color: #1e293b; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-                                            <span>📦</span> Sao Lưu Dữ Liệu Toàn Diện (.json)
+                                            <span>📁</span> 1. Chọn Thư Mục Lưu Tự Động Trên Máy Tính
                                         </h4>
-                                        <p style="font-size: 13px; color: #64748b; margin-bottom: 18px; line-height: 1.6;">
-                                            Tải toàn bộ cơ sở dữ liệu Cloudflare D1 (gồm 14 bảng: Bệnh nhân, Lịch trình, Nhân sự, Chấm công, Thống kê, Tài khoản...) về máy tính để cất giữ an toàn.
+                                        <p style="font-size: 13px; color: #64748b; margin-bottom: 14px; line-height: 1.6;">
+                                            Chọn thư mục trên máy tính (VD: <code>D:\SaoLuu_PMCG</code>). Mỗi khi sao lưu, trình duyệt sẽ tự động lưu file thẳng vào thư mục này mà không cần hỏi cửa sổ "Save As".
+                                        </p>
+                                        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;">
+                                            <button type="button" onclick="selectLocalBackupDirectory()" style="padding: 10px 18px; background: #0284c7; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(2,132,199,0.2);">
+                                                <span>📁</span> Chọn Thư Mục Máy Tính...
+                                            </button>
+                                            <span id="local-dir-path-display" style="font-size: 13px; font-weight: 600; color: #1e293b; background: #f1f5f9; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1;">📁 Chưa chọn thư mục</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Card 2: Google Drive Auto-Upload -->
+                                    <div style="background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                                        <h4 style="margin: 0 0 10px 0; color: #1e293b; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                                            <span>☁️</span> 2. Cấu Hình Tự Động Upload Lên Google Drive
+                                        </h4>
+                                        <p style="font-size: 13px; color: #64748b; margin-bottom: 14px; line-height: 1.6;">
+                                            Nhập Webhook URL Google Apps Script của thư mục Google Drive. Cloudflare Worker sẽ tự động đẩy file sao lưu D1 lên Google Drive của bác sĩ hàng ngày (17:00).
                                         </p>
                                         
-                                        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;">
+                                        <div style="margin-bottom: 15px;">
+                                            <label style="font-size: 12.5px; font-weight: 700; color: #334155; display: block; margin-bottom: 6px;">URL Webhook Google Drive (Google Apps Script Web App):</label>
+                                            <input type="text" id="gdrive-webhook-url" placeholder="https://script.google.com/macros/s/.../exec" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; margin-bottom: 10px;">
+                                            
+                                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                                <button type="button" onclick="saveGoogleDriveSettingsUI()" style="padding: 9px 16px; background: #16a085; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                                                    <span>💾</span> Lưu URL Webhook
+                                                </button>
+                                                <button type="button" onclick="testGoogleDriveUploadUI()" style="padding: 9px 16px; background: #e67e22; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                                                    <span>⚡</span> Tải Thử Lên Google Drive Now
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Hướng dẫn 3 bước tạo Google Apps Script Webhook miễn phí -->
+                                        <details style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; font-size: 12.5px; color: #475569;">
+                                            <summary style="font-weight: 700; color: #2563eb; cursor: pointer;">📋 Xem hướng dẫn 3 bước tạo Webhook Google Drive (Miễn phí 100%)</summary>
+                                            <ol style="margin: 10px 0 0 18px; padding: 0; line-height: 1.6;">
+                                                <li>Mở Google Drive -> Tạo Thư mục mới tên <b>"SaoLuu_PMCG"</b> -> Mở thư mục -> Copy chuỗi ID trên thanh địa chỉ URL (Ví dụ ID: <code>1a2b3c4d5e...</code>).</li>
+                                                <li>Truy cập <a href="https://script.google.com" target="_blank" style="color:#2563eb; font-weight:bold;">script.google.com</a> -> New project -> Dán đoạn mã dưới đây:
+                                                    <pre style="background:#0f172a; color:#f8fafc; padding:10px; border-radius:6px; margin:6px 0; font-size:11px; overflow-x:auto;">function doPost(e) {
+  var data = JSON.parse(e.postData.contents);
+  var folder = DriveApp.getFolderById("DÁN_ID_THƯ_MỤC_VÀO_ĐÂY");
+  var file = folder.createFile(data.filename, data.content, MimeType.PLAIN_TEXT);
+  return ContentService.createTextOutput(JSON.stringify({status:"success", id: file.getId()}));
+}</pre>
+                                                </li>
+                                                <li>Bấm **Deploy -> New deployment -> Select type: Web app -> Execute as: Me -> Who has access: Anyone** -> Copy URL Web app dán vào ô bên trên.</li>
+                                            </ol>
+                                        </details>
+                                    </div>
+
+                                    <!-- Card 3: Thao tác Sao lưu & Khôi phục thủ công -->
+                                    <div style="background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                                        <h4 style="margin: 0 0 10px 0; color: #1e293b; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                                            <span>📦</span> 3. Thao Tác Sao Lưu & Khôi Phục Thủ Công
+                                        </h4>
+                                        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
                                             <button type="button" class="btn btn-primary" onclick="exportFullDatabaseBackup()" style="padding: 11px 20px; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
                                                 <span style="font-size: 16px;">📦</span> Tải Bản Sao Lưu Về Máy (.json)
                                             </button>
@@ -2306,26 +2359,15 @@
                                             <input type="file" id="import-backup-file" accept=".json" style="display: none;" onchange="importFullDatabaseBackup(event)">
                                         </div>
 
-                                        <!-- Thiết lập nhắc sao lưu -->
-                                        <div style="border-top: 1px solid #e2e8f0; padding-top: 15px; margin-top: 15px;">
-                                            <label style="font-size: 13px; font-weight: 700; color: #334155; display: block; margin-bottom: 8px;">
-                                                ⏰ Thiết lập lịch nhắc sao lưu định kỳ:
-                                            </label>
+                                        <div style="border-top: 1px solid #e2e8f0; padding-top: 15px;">
+                                            <label style="font-size: 13px; font-weight: 700; color: #334155; display: block; margin-bottom: 8px;">⏰ Chu kỳ tự động sao lưu & Nhắc nhở:</label>
                                             <select id="backup-reminder-period" onchange="saveBackupReminderSetting(this.value)" style="padding: 9px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; width: 100%; max-width: 300px; outline: none;">
                                                 <option value="none">Tắt nhắc nhở</option>
                                                 <option value="daily">Hàng ngày (Daily)</option>
                                                 <option value="weekly">Hàng tuần (Weekly)</option>
                                                 <option value="monthly">Hàng tháng (Monthly)</option>
                                             </select>
-                                            <small style="display: block; margin-top: 6px; color: #64748b; font-size: 12px; line-height: 1.4;">Hệ thống sẽ hiển thị thông báo góc dưới màn hình nhắc bác sĩ sao lưu khi đến hạn.</small>
                                         </div>
-                                    </div>
-
-                                    <!-- Card Hướng Dẫn Backup Bằng Lệnh (Wrangler CLI) -->
-                                    <div style="background: #f8fafc; padding: 18px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                                        <h5 style="margin: 0 0 8px 0; color: #334155; font-size: 14px; font-weight: 700;">💻 Sao Lưu Bằng Lệnh Command Line (D1 SQL Export)</h5>
-                                        <p style="font-size: 12px; color: #64748b; margin-bottom: 10px;">Chạy lệnh PowerShell trong thư mục <code>backend/</code> để xuất trực tiếp file SQL từ Cloudflare D1:</p>
-                                        <code style="display: block; background: #0f172a; color: #38bdf8; padding: 10px 14px; border-radius: 6px; font-size: 12px; font-family: monospace; word-break: break-all;">cmd /c "npx wrangler d1 export pmcg-db --remote --output=backup_d1.sql"</code>
                                     </div>
                                 </div>
                             </div>
@@ -2671,9 +2713,9 @@
 
                     <h4><span class="f-icon">⚙️</span> <span>THÔNG TIN HỆ THỐNG</span></h4>
 
-                    <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.5</span></p>
+                    <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.6</span></p>
 
-                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 14:08 21/08/2026</span></p>
+                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 14:13 21/08/2026</span></p>
 
                     <p><span class="f-icon">👨‍💻</span> <span>Thiết kế & Phát triển: <b>Bác sĩ Thái</b></span></p>
 

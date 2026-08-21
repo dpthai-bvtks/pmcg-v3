@@ -154,6 +154,79 @@ export default {
       console.error("[Worker Error]:", err);
       return error("Lỗi máy chủ Worker: " + err.message, 500);
     }
+  },
+
+  async scheduled(event, env, ctx) {
+    console.log("[Worker CRON]: Executing daily automated backup trigger...");
+    try {
+      const db = env.DB;
+      if (!db) return;
+      await ensureSchema(db);
+
+      const rec = await db.prepare("SELECT value FROM system_settings WHERE key = 'gdrive_webhook_url'").first();
+      const webhookUrl = rec ? String(rec.value).trim() : "";
+      if (!webhookUrl || !webhookUrl.startsWith("http")) {
+        console.log("[Worker CRON]: No valid Google Drive Webhook URL configured. Skipping remote backup.");
+        return;
+      }
+
+      const [
+        accounts, staff, machines, rooms, procedures,
+        patients, schedules, history_records, history_busy,
+        chamcong_records, thongke_records, tim_ranh, documents, system_settings
+      ] = await Promise.all([
+        db.prepare("SELECT * FROM accounts").all(),
+        db.prepare("SELECT * FROM staff").all(),
+        db.prepare("SELECT * FROM machines").all(),
+        db.prepare("SELECT * FROM rooms").all(),
+        db.prepare("SELECT * FROM procedures").all(),
+        db.prepare("SELECT * FROM patients").all(),
+        db.prepare("SELECT * FROM schedules").all(),
+        db.prepare("SELECT * FROM history_records").all(),
+        db.prepare("SELECT * FROM history_busy").all(),
+        db.prepare("SELECT * FROM chamcong_records").all(),
+        db.prepare("SELECT * FROM thongke_records").all(),
+        db.prepare("SELECT * FROM tim_ranh").all(),
+        db.prepare("SELECT * FROM documents").all(),
+        db.prepare("SELECT * FROM system_settings").all()
+      ]);
+
+      const backupData = {
+        version: "v3.6",
+        exportDate: new Date().toISOString(),
+        tables: {
+          accounts: accounts.results || [],
+          staff: staff.results || [],
+          machines: machines.results || [],
+          rooms: rooms.results || [],
+          procedures: procedures.results || [],
+          patients: patients.results || [],
+          schedules: schedules.results || [],
+          history_records: history_records.results || [],
+          history_busy: history_busy.results || [],
+          chamcong_records: chamcong_records.results || [],
+          thongke_records: thongke_records.results || [],
+          tim_ranh: tim_ranh.results || [],
+          documents: documents.results || [],
+          system_settings: system_settings.results || []
+        }
+      };
+
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const filename = `PMCG_D1_Backup_AUTO_${dateStr}.json`;
+
+      await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filename: filename,
+          content: JSON.stringify(backupData)
+        })
+      });
+      console.log(`[Worker CRON]: Automated backup uploaded to Google Drive successfully (${filename})!`);
+    } catch(err) {
+      console.error("[Worker CRON Error]:", err);
+    }
   }
 };
 
@@ -1494,6 +1567,85 @@ async function handleApiAction(action, args, env, request) {
       };
 
       return success(backup);
+    }
+
+    case "getGoogleDriveSettings": {
+      const rec = await db.prepare("SELECT value FROM system_settings WHERE key = 'gdrive_webhook_url'").first();
+      return success(rec ? rec.value : "");
+    }
+
+    case "saveGoogleDriveSettings": {
+      const url = String(args[0] || "").trim();
+      await db.prepare("INSERT INTO system_settings (key, value) VALUES ('gdrive_webhook_url', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(url).run();
+      return success({ message: "Đã lưu cài đặt Google Drive Webhook thành công!" });
+    }
+
+    case "testGoogleDriveUpload": {
+      const webhookUrl = String(args[0] || "").trim();
+      if (!webhookUrl || !webhookUrl.startsWith("http")) {
+        return error("URL Webhook Google Drive không hợp lệ!");
+      }
+
+      const [
+        accounts, staff, machines, rooms, procedures,
+        patients, schedules, history_records, history_busy,
+        chamcong_records, thongke_records, tim_ranh, documents, system_settings
+      ] = await Promise.all([
+        db.prepare("SELECT * FROM accounts").all(),
+        db.prepare("SELECT * FROM staff").all(),
+        db.prepare("SELECT * FROM machines").all(),
+        db.prepare("SELECT * FROM rooms").all(),
+        db.prepare("SELECT * FROM procedures").all(),
+        db.prepare("SELECT * FROM patients").all(),
+        db.prepare("SELECT * FROM schedules").all(),
+        db.prepare("SELECT * FROM history_records").all(),
+        db.prepare("SELECT * FROM history_busy").all(),
+        db.prepare("SELECT * FROM chamcong_records").all(),
+        db.prepare("SELECT * FROM thongke_records").all(),
+        db.prepare("SELECT * FROM tim_ranh").all(),
+        db.prepare("SELECT * FROM documents").all(),
+        db.prepare("SELECT * FROM system_settings").all()
+      ]);
+
+      const backup = {
+        version: "v3.6",
+        exportDate: new Date().toISOString(),
+        tables: {
+          accounts: accounts.results || [],
+          staff: staff.results || [],
+          machines: machines.results || [],
+          rooms: rooms.results || [],
+          procedures: procedures.results || [],
+          patients: patients.results || [],
+          schedules: schedules.results || [],
+          history_records: history_records.results || [],
+          history_busy: history_busy.results || [],
+          chamcong_records: chamcong_records.results || [],
+          thongke_records: thongke_records.results || [],
+          tim_ranh: tim_ranh.results || [],
+          documents: documents.results || [],
+          system_settings: system_settings.results || []
+        }
+      };
+
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const filename = `PMCG_D1_Backup_TEST_${dateStr}.json`;
+
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filename: filename,
+          content: JSON.stringify(backup)
+        })
+      });
+
+      if (response.ok) {
+        return success({ message: `Đã tự động tải file sao lưu [${filename}] lên Google Drive thành công!` });
+      } else {
+        const text = await response.text().catch(() => "");
+        return error("Lỗi từ Google Drive Webhook: " + (text || response.statusText));
+      }
     }
 
     case "importDatabase": {

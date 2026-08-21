@@ -380,3 +380,25 @@
 **Files đã sửa:** index.html, PM-xeplich-v3.md (Version 3.5).
 
 **Phiên bản:** 3.4 → 3.5
+
+### AM. Xây Dựng Tự Động Sao Lưu Thư Mục Máy Tính & Google Drive (v3.6 - 21/08/2026)
+
+**Yêu cầu người dùng:** Chuyển từ "Nhắc nhở sao lưu" thành "Tự động sao lưu":
+1. Cho phép chỉ định thư mục máy tính để tự động lưu trực tiếp file sao lưu vào đó.
+2. Kết nối link thư mục Google Drive để tự động đẩy file sao lưu lên Google Drive.
+
+**Các giải pháp kỹ thuật đã hoàn thành:**
+1. **Lưu Tự Động Vào Thư Mục Máy Tính (Local Directory Auto-Save)**:
+   - Sử dụng **File System Access API** (window.showDirectoryPicker()).
+   - Bác sĩ bấm nút chọn thư mục máy tính (VD: D:\SaoLuu_PMCG), hệ thống lưu quyền ghi vào IndexedDB.
+   - Khi tiến hành sao lưu, trình duyệt tự động ghi file PMCG_D1_Backup_AUTO_YYYY-MM-DD.json thẳng vào thư mục đã chọn mà không hỏi "Save As".
+
+2. **Tự Động Upload Lên Google Drive (Google Drive Auto-Upload)**:
+   - Thêm Cloudflare Worker CRON trigger (  10 * * *) chạy tự động lúc 17:00 hàng ngày.
+   - Thêm API saveGoogleDriveSettings, getGoogleDriveSettings, 	estGoogleDriveUpload.
+   - Cung cấp mã nguồn 5 dòng Google Apps Script Webhook để kết nối thư mục Google Drive hoàn toàn miễn phí.
+   - Nút **⚡ Tải Thử Lên Google Drive Now** cho phép thử nghiệm đẩy file lên Google Drive tức thì.
+
+**Files đã sửa:** ackend/src/index.js, ackend/wrangler.toml, index.html, js/app.js, PM-xeplich-v3.md (Version 3.6).
+
+**Phiên bản:** 3.5 → 3.6

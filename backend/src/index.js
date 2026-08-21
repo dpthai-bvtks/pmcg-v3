@@ -1213,7 +1213,8 @@ async function handleApiAction(action, args, env, request) {
         ).bind(username, role, permissions).run();
       }
       await bumpDataVersion(db);
-      return success(true);
+      const isNew = !acc.id;
+      return success(isNew ? "Đã tạo tài khoản mới thành công!" : "Đã cập nhật tài khoản thành công!");
     }
 
     case "deleteAccount": {

@@ -452,7 +452,8 @@ window.showGlobalLoading = function (text) {
         }
 
         function callApi(functionName, args, onSuccess, onError) {
-            const isSilentMutation = functionName === 'saveChamCong' || functionName === 'saveReorderedData' || functionName === 'saveReorder';
+            const isSilentMutation = functionName === 'saveChamCong' || functionName === 'saveReorderedData' || functionName === 'saveReorder'
+                || functionName === 'editBenhNhan' || functionName === 'editNhanSu' || functionName === 'editMayMoc' || functionName === 'editThuThuat' || functionName === 'editPhong';
             const isMutation = functionName.startsWith('add') || functionName.startsWith('edit') || functionName.startsWith('delete') || functionName.startsWith('bulkUpdate') || functionName.startsWith('save') || functionName.startsWith('chotSo') || functionName.startsWith('runScheduling') || functionName.startsWith('chuyenNgayMoi');
             
             // In-flight deduplication for non-mutation queries (getSchedule, getSystemSettings, getDataVersion...)
@@ -6409,7 +6410,7 @@ window.showGlobalLoading = function (text) {
 
         function loadAccounts() {
 
-            google.script.run.withSuccessHandler(data => {
+            callApi('getAccounts', [], data => {
 
                 adminAccCache = data;
 
@@ -6455,7 +6456,9 @@ window.showGlobalLoading = function (text) {
 
                 }).join('');
 
-            }).getAccounts();
+            }, err => {
+                console.error('[loadAccounts] Lỗi tải tài khoản:', err);
+            });
 
         }
 
@@ -6511,7 +6514,7 @@ window.showGlobalLoading = function (text) {
 
             if (!user) return showCustomAlert("Lưu ý", "Vui lòng nhập tên tài khoản!");
 
-            // 🔥 ĐÃ SỬA: Chỉ bắt buộc nhập mật khẩu nếu là tài khoản tạo mới (không có ID)
+            // Chỉ bắt buộc nhập mật khẩu nếu là tài khoản tạo mới (không có ID)
 
             if (!id && !pass) return showCustomAlert("Lưu ý", "Vui lòng nhập mật khẩu cho tài khoản mới!");
 
@@ -6527,21 +6530,17 @@ window.showGlobalLoading = function (text) {
 
             btn.innerText = "Đang lưu..."; btn.disabled = true;
 
-
-
-            google.script.run.withSuccessHandler(msg => {
-
-                showCustomAlert("Thành công", msg);
-
+            callApi('saveAccount', [id, user, pass, role, perms], msg => {
+                showCustomAlert("Thành công", typeof msg === 'string' ? msg : "Đã lưu tài khoản thành công!");
                 huySuaTaiKhoan();
-
                 loadAccounts();
-
                 btn.innerText = "Lưu Tài Khoản";
-
                 btn.disabled = false;
-
-            }).saveAccount(id, user, pass, role, perms);
+            }, err => {
+                showCustomAlert("Lỗi", "Không thể lưu tài khoản: " + (typeof err === 'string' ? err : JSON.stringify(err)));
+                btn.innerText = "Lưu Tài Khoản";
+                btn.disabled = false;
+            });
 
         }
 
@@ -6571,12 +6570,13 @@ window.showGlobalLoading = function (text) {
 
             if (user.toLowerCase() === 'admin') return showCustomAlert("Cảnh báo bảo mật", "Không được phép xóa tài khoản Admin gốc!");
 
-            showCustomConfirm("Xóa tài khoản", `Bác sĩ có chắc chắn muốn xóa vĩnh viễn tài khoản [
-
-                                ${user} ] không?`, function () {
-
-                google.script.run.withSuccessHandler(() => loadAccounts()).deleteAccount(id);
-
+            showCustomConfirm("Xóa tài khoản", `Bác sĩ có chắc chắn muốn xóa vĩnh viễn tài khoản [ ${user} ] không?`, function () {
+                callApi('deleteAccount', [id], () => {
+                    loadAccounts();
+                    showCustomAlert("Thành công", `Đã xóa tài khoản "${user}" thành công!`);
+                }, err => {
+                    showCustomAlert("Lỗi", "Không thể xóa tài khoản: " + (typeof err === 'string' ? err : JSON.stringify(err)));
+                });
             });
 
         }

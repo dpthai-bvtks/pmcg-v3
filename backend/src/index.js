@@ -251,16 +251,30 @@ async function handleApiAction(action, args, env, request) {
     // 1. BOOTSTRAP TOÀN DIỆN
     // ============================================================
     case "getBootstrapData": {
-      const today = args[0] || new Date().toISOString().slice(0, 10);
-      
+      // Lấy ngày từ client, hoặc tự tính theo múi giờ Việt Nam (UTC+7)
+      const todayArg = args[0] || "";
+      let todayVN = todayArg;
+      if (!todayVN) {
+        const nowVN = new Date(Date.now() + 7 * 60 * 60 * 1000);
+        const yy = nowVN.getUTCFullYear();
+        const mm = String(nowVN.getUTCMonth() + 1).padStart(2, "0");
+        const dd = String(nowVN.getUTCDate()).padStart(2, "0");
+        todayVN = `${yy}-${mm}-${dd}`;
+      }
+      // Chuyển sang định dạng dd/MM/yyyy để khớp với cột ngay_vao trong DB
+      const [ty, tm, td] = todayVN.split("-");
+      const todayVNSlash = `${td}/${tm}/${ty}`; // VD: 21/08/2026
+
       const [settingsRes, staffRes, machinesRes, roomsRes, proceduresRes, patientsRes, scheduleRes, accountsRes] = await db.batch([
         db.prepare("SELECT key, value FROM system_settings"),
         db.prepare("SELECT * FROM staff  ORDER BY priority ASC, id ASC"),
         db.prepare("SELECT * FROM machines ORDER BY order_idx ASC, id ASC"),
         db.prepare("SELECT * FROM rooms ORDER BY order_idx ASC, id ASC"),
         db.prepare("SELECT * FROM procedures ORDER BY order_idx ASC, id ASC"),
-        db.prepare("SELECT * FROM patients WHERE is_saturday = 0 ORDER BY order_idx ASC, id ASC"),
-        db.prepare("SELECT * FROM schedules ORDER BY order_idx ASC, start_time ASC"),
+        // Chỉ lấy bệnh nhân của ngày hôm nay (theo múi giờ VN)
+        db.prepare("SELECT * FROM patients WHERE is_saturday = 0 AND (ngay_vao = ? OR ngay_vao = ? OR ngay_vao = '') ORDER BY order_idx ASC, id ASC").bind(todayVNSlash, todayVN),
+        // Chỉ lấy lịch của ngày hôm nay
+        db.prepare("SELECT * FROM schedules WHERE date = ? ORDER BY order_idx ASC, start_time ASC").bind(todayVN),
         db.prepare("SELECT id, username, role, permissions FROM accounts")
       ]);
 

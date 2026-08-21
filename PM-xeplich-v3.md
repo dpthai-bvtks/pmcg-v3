@@ -519,3 +519,9 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
 - **Nguyên nhân:** loadDashboard() đọc ngày từ dataCache.schedule (được khôi phục từ localStorage offline cache cũ). So sánh ngày đó với ngày hôm nay, thấy khác nhau → popup mọi lúc.
 - **Giải pháp:** Chỉ hiển thị cảnh báo chốt sổ nếu ngày cũ là NGÀY HÔM QUA. Nếu cũ hơn 1 ngày thì đó là cache lỗi thời, tự động reset về hôm nay mà không popup.
 - **File:** js/app.js, index.html (v3.1.4)
+
+### Cập nhật 21/08/2026 (v3.1.5)
+- **Lỗi:** Giao diện luôn hiển thị ngày 08/07/2026 thay vì ngày hôm nay 21/08/2026.
+- **Nguyên nhân gốc:** API getBootstrapData trong Cloudflare Worker lấy TOÀN BỘ bệnh nhân và lịch xếp từ D1 không lọc theo ngày. Do đó bệnh nhân cũ của ngày 08/07 được trả về và hiển thị trên giao diện.
+- **Giải pháp:** Sửa query SQL trong backend để chỉ lấy bệnh nhân (ngay_vao = hôm nay) và lịch (date = hôm nay) theo múi giờ VN (UTC+7). Deploy lại Worker.
+- **File:** backend/src/index.js (deploy), index.html (v3.1.5)

@@ -539,3 +539,11 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   + meds_schedule_date: ngày của lịch đã xếp
 - **Giải pháp:** Bổ sung kiểm tra ngày (meds_schedule_date) tại cả 2 vị trí đọc meds_success trong loadScheduleList() và trong loadDashboard(). Nếu ngày khác hôm nay -> xóa cả 2 key.
 - **File:** js/app.js, index.html (v3.1.7)
+
+### Cập nhật 21/08/2026 (v3.1.8)
+- **Yêu cầu:** Đổi tên toàn bộ 16 bảng trong CSDL Cloudflare D1 sang tiếng Việt không dấu.
+- **Thực hiện:**
+  + Đã thực hiện SQL `ALTER TABLE ... RENAME TO ...` trên Cloudflare D1 thành công.
+  + Đổi tên 16 bảng: `accounts` ➔ `tai_khoan`, `patients` ➔ `benh_nhan`, `schedules` ➔ `lich_trinh`, `staff` ➔ `nhan_su`, `machines` ➔ `may_moc`, `rooms` ➔ `phong`, `procedures` ➔ `thu_thuat`, `system_settings` ➔ `cai_dat`, `history_records` ➔ `lich_su`, `history_busy` ➔ `gio_ban_cu`, `chamcong_records` ➔ `cham_cong`, `thongke_records` ➔ `thong_ke`, `documents` ➔ `tai_lieu`, `audit_logs` ➔ `nhat_ky`, `categories` ➔ `danh_muc`, `training_data` ➔ `du_lieu_huan_luyen`.
+  + Cập nhật đồng bộ 458 vị trí SQL trong `backend/src/index.js` và đã deploy lại Cloudflare Worker thành công.
+- **File:** `backend/src/index.js`, `index.html` (v3.1.8)

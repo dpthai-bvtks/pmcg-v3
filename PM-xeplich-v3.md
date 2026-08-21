@@ -531,3 +531,11 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
 - **Nguyên nhân:** Hàm restoreOfflineCache() phục hồi dữ liệu từ localStorage (times_bootstrap_cache) mà không kiểm tra ngày. Dữ liệu cũ từ 08/07 được nạp ngay lập tức trước khi API trả về dữ liệu mới.
 - **Giải pháp:** Bổ sung kiểm tra ngày vào restoreOfflineCache() trong app.js. Nếu cache chứa bệnh nhân/lịch của ngày khác hôm nay -> xóa patients và schedule khỏi cache, chỉ giữ cấu hình (máy, phòng, nhân sự). Cập nhật lại localStorage để lần sau không bị lỗi.
 - **File:** js/app.js, index.html (v3.1.6)
+
+### Cập nhật 21/08/2026 (v3.1.7)
+- **Lỗi:** Bảng lịch trình vẫn hiển thị dữ liệu 08/07 dù đã có fix v3.1.6.
+- **Nguyên nhân thực sự:** Phát hiện 3 tầng cache trong localStorage. v3.1.6 mới xử lý 	imes_bootstrap_cache. Còn 2 key khác chưa được validate ngày:
+  + meds_success: lưu kết quả xếp lịch sau khi bấm nút Xếp
+  + meds_schedule_date: ngày của lịch đã xếp
+- **Giải pháp:** Bổ sung kiểm tra ngày (meds_schedule_date) tại cả 2 vị trí đọc meds_success trong loadScheduleList() và trong loadDashboard(). Nếu ngày khác hôm nay -> xóa cả 2 key.
+- **File:** js/app.js, index.html (v3.1.7)

@@ -3650,9 +3650,21 @@ window.showGlobalLoading = function (text) {
                 try {
                     const localSched = JSON.parse(localStorage.getItem('meds_success') || '[]');
                     if (Array.isArray(localSched) && localSched.length) {
-                        data = localSched;
-                        if (typeof dataCache !== 'undefined') dataCache.schedule = localSched;
-                        if (window.dataCache) window.dataCache.schedule = localSched;
+                        // ✅ Kiểm tra ngày trước khi dùng lịch từ localStorage
+                        const savedDate = localStorage.getItem('meds_schedule_date') || '';
+                        const nowVN3 = new Date(Date.now() + 7 * 60 * 60 * 1000);
+                        const todayYMD3 = `${nowVN3.getUTCFullYear()}-${String(nowVN3.getUTCMonth() + 1).padStart(2, '0')}-${String(nowVN3.getUTCDate()).padStart(2, '0')}`;
+                        const toYMD3 = (s) => { if (!s) return ''; if (String(s).includes('/')) { const p = String(s).split('/'); return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`; } return String(s); };
+                        const schedDate3 = savedDate ? toYMD3(savedDate) : toYMD3(localSched[0]?.[0] || localSched[0]?.ngay || localSched[0]?.NGAY || '');
+                        if (!schedDate3 || schedDate3 === todayYMD3) {
+                            data = localSched;
+                            if (typeof dataCache !== 'undefined') dataCache.schedule = localSched;
+                            if (window.dataCache) window.dataCache.schedule = localSched;
+                        } else {
+                            console.warn(`⚠️ [loadScheduleList] Bỏ qua lịch cũ ngày ${schedDate3} (hôm nay: ${todayYMD3})`);
+                            localStorage.removeItem('meds_success');
+                            localStorage.removeItem('meds_schedule_date');
+                        }
                     }
                 } catch (e) { }
             }
@@ -7301,10 +7313,28 @@ window.showGlobalLoading = function (text) {
                     try {
                         const localSched = JSON.parse(localStorage.getItem('meds_success') || '[]');
                         if (Array.isArray(localSched) && localSched.length) {
-                            rawSched = localSched;
-                            if (typeof dataCache !== 'undefined') dataCache.schedule = localSched;
-                            if (window.dataCache) window.dataCache.schedule = localSched;
-                            window.currentScheduleData = markDischargedInSchedule(localSched);
+                            // ✅ Kiểm tra ngày của lịch cũ trước khi dùng
+                            const savedDate = localStorage.getItem('meds_schedule_date') || '';
+                            const nowVN2 = new Date(Date.now() + 7 * 60 * 60 * 1000);
+                            const todayYMD2 = `${nowVN2.getUTCFullYear()}-${String(nowVN2.getUTCMonth() + 1).padStart(2, '0')}-${String(nowVN2.getUTCDate()).padStart(2, '0')}`;
+                            const toYMD2 = (s) => {
+                                if (!s) return '';
+                                if (String(s).includes('/')) { const p = String(s).split('/'); return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`; }
+                                return String(s);
+                            };
+                            const schedDate = savedDate ? toYMD2(savedDate) : toYMD2(localSched[0]?.[0] || localSched[0]?.ngay || localSched[0]?.NGAY || '');
+                            if (!schedDate || schedDate === todayYMD2) {
+                                // Lịch đúng ngày hôm nay → dùng bình thường
+                                rawSched = localSched;
+                                if (typeof dataCache !== 'undefined') dataCache.schedule = localSched;
+                                if (window.dataCache) window.dataCache.schedule = localSched;
+                                window.currentScheduleData = markDischargedInSchedule(localSched);
+                            } else {
+                                // Lịch ngày cũ → bỏ qua, xóa để không ảnh hưởng lần sau
+                                console.warn(`⚠️ [meds_success] Lịch cũ ngày ${schedDate}, bỏ qua (hôm nay: ${todayYMD2})`);
+                                localStorage.removeItem('meds_success');
+                                localStorage.removeItem('meds_schedule_date');
+                            }
                         }
                     } catch(e) {}
                 }

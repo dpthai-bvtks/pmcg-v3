@@ -290,7 +290,12 @@ window.showGlobalLoading = function (text) {
         // ============================================================
         const DEFAULT_API_URL = 'https://pmcg-api.dpthai-ttytmk.workers.dev';
         function getApiUrl() {
-            return (localStorage.getItem('times_custom_api_url') || DEFAULT_API_URL).trim();
+            let customUrl = (localStorage.getItem('times_custom_api_url') || '').trim();
+            if (customUrl.includes('script.google.com') || customUrl.includes('google.com/macros')) {
+                localStorage.removeItem('times_custom_api_url');
+                customUrl = '';
+            }
+            return customUrl || DEFAULT_API_URL;
         }
         window.getApiUrl = getApiUrl;
         window.setCustomApiUrl = function(newUrl) {

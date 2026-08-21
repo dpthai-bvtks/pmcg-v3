@@ -56,26 +56,25 @@ window.loadTimRanhDataFromServer = function () {
         statusEl.style.color = '#f39c12';
     }
 
-    google.script.run
-        .withSuccessHandler(data => {
+    if (typeof callApi === 'function') {
+        callApi('getTimRanhData', [], data => {
             if (data && data.length > 0) {
                 window.externalUtilsData = data;
                 if (statusEl) {
-                    statusEl.innerText = `✅ Đã tải ${data.length} ca dùng chung từ máy chủ (Sheet TimRanh)!`;
+                    statusEl.innerText = `✅ Đã tải ${data.length} ca dùng chung từ máy chủ (D1 Database)!`;
                     statusEl.style.color = '#27ae60';
                 }
             } else if (statusEl) {
                 statusEl.innerText = '(Chưa có dữ liệu chung. Đang dùng: Lịch phần mềm xếp)';
                 statusEl.style.color = '#e67e22';
             }
-        })
-        .withFailureHandler(err => {
+        }, err => {
             if (statusEl) {
                 statusEl.innerText = 'Không tải được dữ liệu Tìm Rảnh: ' + err;
                 statusEl.style.color = '#c0392b';
             }
-        })
-        .getTimRanhData();
+        });
+    }
 };
 
 window.doLogin = function () {
@@ -97,8 +96,8 @@ window.doLogin = function () {
         btn.disabled = true;
     }
 
-    google.script.run
-        .withSuccessHandler(res => {
+    if (typeof callApi === 'function') {
+        callApi('verifyLogin', [user, pass], res => {
             if (res && (res.username || res.success)) {
                 localStorage.setItem('meds_session', JSON.stringify({
                     username: res.username,
@@ -133,16 +132,15 @@ window.doLogin = function () {
                     btn.disabled = false;
                 }
             }
-        })
-        .withFailureHandler(err => {
+        }, err => {
             if (errDiv) {
-                errDiv.innerText = 'Lỗi kết nối máy chủ: ' + err;
+                errDiv.innerText = 'Lỗi kết nối máy chủ Cloudflare: ' + err;
                 errDiv.style.display = 'block';
             }
             if (btn) {
                 btn.innerText = 'Đăng Nhập ➔';
                 btn.disabled = false;
             }
-        })
-        .verifyLogin(user, pass);
+        });
+    }
 };

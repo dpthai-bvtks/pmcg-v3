@@ -471,3 +471,15 @@
 **Files đã sửa:** index.html, PM-xeplich-v3.md (Version 3.0.9).
 
 **Phiên bản:** 3.0.8 → 3.0.9
+
+### AS. Khắc Phục Triệt Để Lỗi CORS & Tự Động Xóa URL Google Apps Script Cũ (v3.1.0 - 21/08/2026)
+
+**Khắc phục lỗi:** Sửa triệt để lỗi Access to fetch at ... script.google.com ... blocked by CORS policy khi người dùng truy cập từ domain chính thức https://xeplichthuthuat.io.vn/.
+
+**Nguyên nhân & Giải pháp:**
+1. **Lỗi localStorage cũ**: Trình duyệt còn lưu URL script.google.com từ phiên bản v2 trong localStorage['times_custom_api_url']. Đã cập nhật hàm getApiUrl() trong js/app.js tự động phát hiện và xóa sạch URL Google Apps Script cũ, buộc sử dụng endpoint chuẩn của Cloudflare Worker (https://pmcg-api.dpthai-ttytmk.workers.dev).
+2. **Lỗi google.script.run trong js/init.js**: Đã chuyển toàn bộ lệnh google.script.run.verifyLogin và google.script.run.getTimRanhData sang gọi API trực tiếp qua callApi.
+
+**Files đã sửa:** js/app.js, js/init.js, index.html, PM-xeplich-v3.md (Version 3.1.0).
+
+**Phiên bản:** 3.0.9 → 3.1.0

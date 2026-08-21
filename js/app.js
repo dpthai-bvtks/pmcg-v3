@@ -7195,9 +7195,22 @@ window.showGlobalLoading = function (text) {
                 const d = new Date();
                 const safeTodayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
+                // Tính ngày hôm qua
+                const yesterday = new Date(d);
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+
                 if (activeYMD && activeYMD !== safeTodayStr) {
-                    alert(`⚠️ HỆ THỐNG PHÁT HIỆN:\nDữ liệu của ngày ${activeDateStr} chưa được chốt sổ!\nMặc định sẽ hiển thị dữ liệu của ngày này để bạn tiếp tục xử lý.`);
-                    datePicker.value = activeYMD;
+                    // Chỉ cảnh báo nếu ngày cũ là ngày HÔM QUA (cần chốt sổ)
+                    // Nếu cũ hơn 1 ngày → đó là cache offline lỗi thời, im lặng reset về hôm nay
+                    if (activeYMD === yesterdayStr) {
+                        alert(`⚠️ HỆ THỐNG PHÁT HIỆN:\nDữ liệu của ngày ${activeDateStr} chưa được chốt sổ!\nMặc định sẽ hiển thị dữ liệu của ngày này để bạn tiếp tục xử lý.`);
+                        datePicker.value = activeYMD;
+                    } else {
+                        // Cache cũ (>1 ngày), bỏ qua và dùng ngày hôm nay
+                        datePicker.value = safeTodayStr;
+                        activeYMD = null;
+                    }
                 } else {
                     datePicker.value = safeTodayStr;
                 }

@@ -513,3 +513,9 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   + Đã sửa lỗi mất dữ liệu Chấm Công do fallback API trả về object thay vì array string. Bổ sung map object sang tên trong `js/thongke.js`.
   + Đã sửa lỗi F5 mất Liên kết nhanh bằng cách đổi `id="khu-vuc-lien-ket"` thành `class="khu-vuc-lien-ket"` do bị clone thành nhiều element giống nhau khi nạp template.
   + Đồng bộ phiên bản lên 3.1.3.
+
+### Cập nhật 21/08/2026 (v3.1.4)
+- **Lỗi:** Mỗi lần load trang đều bị popup cảnh báo dữ liệu ngày 08/07/2026 chưa chốt sổ.
+- **Nguyên nhân:** loadDashboard() đọc ngày từ dataCache.schedule (được khôi phục từ localStorage offline cache cũ). So sánh ngày đó với ngày hôm nay, thấy khác nhau → popup mọi lúc.
+- **Giải pháp:** Chỉ hiển thị cảnh báo chốt sổ nếu ngày cũ là NGÀY HÔM QUA. Nếu cũ hơn 1 ngày thì đó là cache lỗi thời, tự động reset về hôm nay mà không popup.
+- **File:** js/app.js, index.html (v3.1.4)

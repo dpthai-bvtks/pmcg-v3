@@ -399,12 +399,20 @@ async function handleApiAction(action, args, env, request) {
         settings: settingsObj,
         marquee: settingsObj.marquee_text || "PHẦN MỀM XẾP LỊCH THỦ THUẬT - KHOA YHCT - PHCN BVTKS CS2",
         links: links,
+        machines: may_moc,
         may_moc: may_moc,
+        rooms: phong,
         phong: phong,
+        procedures: thu_thuat,
         thu_thuat: thu_thuat,
+        staff: staffList,
         nhan_su: staffList,
+        patients: patientList,
         benh_nhan: patientList,
         schedule: scheduleRows,
+        schedules: scheduleRows,
+        lich_trinh: scheduleRows,
+        accounts: accountsRes.results || [],
         tai_khoan: accountsRes.results || [],
         version: "v3.0.0-cloudflare"
       });
@@ -1145,6 +1153,7 @@ async function handleApiAction(action, args, env, request) {
 
       return success({
         schedule: schedule,
+        patients: benh_nhan,
         benh_nhan: benh_nhan,
         staffBusy: staffBusy,
         patBusy: patBusy
@@ -1205,7 +1214,7 @@ async function handleApiAction(action, args, env, request) {
           loaiBn: "Thường"
         };
       });
-      return success({ nhan_su, benh_nhan });
+      return success({ staff: nhan_su, patients: benh_nhan, nhan_su, benh_nhan });
     }
 
     case "getTimRanhData": {

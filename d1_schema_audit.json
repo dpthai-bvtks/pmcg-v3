@@ -1,0 +1,184 @@
+{
+  "benh_nhan": [
+    "id",
+    "name",
+    "age",
+    "gender",
+    "room",
+    "bed",
+    "arrive_time",
+    "leave_time",
+    "thu_thuat",
+    "status",
+    "is_saturday",
+    "created_at",
+    "updated_at",
+    "ngay_vao",
+    "gio_ban",
+    "order_idx"
+  ],
+  "cai_dat": [
+    "key",
+    "value",
+    "updated_at"
+  ],
+  "cham_cong": [
+    "month_year",
+    "data_json",
+    "updated_at"
+  ],
+  "danh_muc": [
+    "id",
+    "type",
+    "name",
+    "code",
+    "system",
+    "metadata",
+    "order_idx",
+    "is_active",
+    "updated_at"
+  ],
+  "du_lieu_huan_luyen": [
+    "id",
+    "date",
+    "file_name",
+    "staff_name",
+    "procedure_name",
+    "start_min",
+    "end_min",
+    "duration",
+    "gap_from_7h",
+    "created_at"
+  ],
+  "gio_ban_cu": [
+    "id",
+    "date",
+    "staff_name",
+    "busy_ranges",
+    "created_at"
+  ],
+  "lich_su": [
+    "id",
+    "date",
+    "patient_name",
+    "room",
+    "procedure_name",
+    "staff_name",
+    "machine_name",
+    "start_time",
+    "end_time",
+    "created_at",
+    "dob",
+    "sub_staff_name",
+    "bed"
+  ],
+  "lich_trinh": [
+    "id",
+    "date",
+    "patient_name",
+    "room",
+    "procedure_name",
+    "staff_name",
+    "machine_name",
+    "start_time",
+    "end_time",
+    "is_saturday",
+    "order_idx",
+    "created_at",
+    "dob",
+    "sub_staff_name",
+    "bed"
+  ],
+  "may_moc": [
+    "id",
+    "ten_loai",
+    "ma_may",
+    "trang_thai",
+    "order_idx",
+    "is_active"
+  ],
+  "nhan_su": [
+    "id",
+    "name",
+    "role",
+    "system",
+    "skills",
+    "fixed_busy",
+    "temp_busy",
+    "his_name",
+    "priority",
+    "is_active",
+    "updated_at",
+    "trang_thai",
+    "thoi_gian_lam",
+    "nguoi_thay_the"
+  ],
+  "nhat_ky": [
+    "id",
+    "timestamp",
+    "username",
+    "action",
+    "details",
+    "created_at",
+    "data_json"
+  ],
+  "phong": [
+    "id",
+    "ten_phong",
+    "bac_si",
+    "ktv",
+    "danh_sach_may",
+    "so_giuong",
+    "danh_sach_giuong",
+    "order_idx",
+    "is_active"
+  ],
+  "tai_khoan": [
+    "id",
+    "username",
+    "password_hash",
+    "role",
+    "permissions",
+    "updated_at"
+  ],
+  "tai_lieu": [
+    "id",
+    "doc_number",
+    "title",
+    "agency",
+    "signed_date",
+    "view_link",
+    "download_link",
+    "created_at"
+  ],
+  "thong_ke": [
+    "month_year",
+    "data_json",
+    "updated_at"
+  ],
+  "thu_thuat": [
+    "id",
+    "ten_thu_thuat",
+    "viet_tat",
+    "he",
+    "phan_loai",
+    "may",
+    "tg_thuc_hien",
+    "tg_thu_thuat",
+    "khoang_cach",
+    "can_rut_may",
+    "can_nguoi_phu",
+    "ds_nguoi_phu",
+    "order_idx",
+    "is_active"
+  ],
+  "tim_ranh": [
+    "id",
+    "procedure_name",
+    "start_time",
+    "end_time",
+    "staff_name",
+    "machine_name",
+    "created_at"
+  ]
+}

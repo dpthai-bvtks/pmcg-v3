@@ -553,3 +553,9 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
 - **Nguyên nhân:** Do khi đổi tên các bảng từ tiếng Anh sang tiếng Việt ở v3.1.8, từ khóa `procedures` trong các câu SQL của bảng `benh_nhan` đã bị đổi thành `thu_thuat`. Nhưng tên cột thực tế trong bảng `benh_nhan` trên D1 lúc đó vẫn là `procedures`.
 - **Giải pháp:** Thực hiện lệnh SQL `ALTER TABLE benh_nhan RENAME COLUMN procedures TO thu_thuat` trên Cloudflare D1 để chuẩn hóa tên cột đồng bộ 100% với backend. Re-deploy Cloudflare Worker.
 - **File:** `backend/src/index.js` (deploy), `index.html` (v3.1.9)
+
+### Cập nhật 21/08/2026 (v3.2.0)
+- **Lỗi:** Giao diện bị đứng ở trạng thái "Đang tải...", không hiển thị dữ liệu phòng, máy, nhân sự, thủ thuật.
+- **Nguyên nhân:** Khi đổi tên các thuộc tính trong đối tượng trả về của API `getBootstrapData` trong `backend/src/index.js` ở v3.1.8, các key như `machines`, `rooms`, `procedures`, `staff`, `patients` bị đổi thành tiếng Việt (`may_moc`, `phong`, `thu_thuat`, `nhan_su`, `benh_nhan`). Do đó frontend JS không đọc được thuộc tính cũ dẫn đến treo ở trạng thái "Đang tải...". Thêm vào đó, câu lệnh return ở `getBootstrapData` bị tham chiếu nhầm tên biến local (`machines` thay vì `may_moc`).
+- **Giải pháp:** Sửa đổi `getBootstrapData` và các API endpoint trong Worker để luôn trả về cả 2 định dạng property key (English API contract và Vietnamese alias): `patients`/`benh_nhan`, `staff`/`nhan_su`, `machines`/`may_moc`, `rooms`/`phong`, `procedures`/`thu_thuat`, `accounts`/`tai_khoan`. Đã re-deploy Cloudflare Worker và test phản hồi thành công (17 nhân sự, 63 máy, 6 phòng, 16 thủ thuật).
+- **File:** `backend/src/index.js` (deploy), `index.html` (v3.2.0)

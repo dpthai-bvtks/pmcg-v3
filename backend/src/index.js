@@ -901,20 +901,29 @@ async function handleApiAction(action, args, env, request) {
 
     case "chuyenNgayMoi":
     case "chotSo": {
-      const date = args[0] || new Date().toISOString().slice(0, 10);
+      const date = args[0];
       
-      const statements = [
-        // 1. Lưu lịch sang history_records
-        db.prepare("INSERT INTO history_records (date, patient_name, dob, room, procedure_name, start_time, end_time, staff_name, sub_staff_name, machine_name, bed) SELECT date, patient_name, dob, room, procedure_name, start_time, end_time, staff_name, sub_staff_name, machine_name, bed FROM schedules WHERE date = ?").bind(date),
-        // 2. Xóa lịch ngày hiện tại trong schedules
-        db.prepare("DELETE FROM schedules WHERE date = ?").bind(date),
-        // 3. Xóa các bệnh nhân đã có giờ ra viện
+      const statements = [];
+      if (date && typeof date === "string" && date.trim()) {
+        statements.push(
+          db.prepare("INSERT INTO history_records (date, patient_name, dob, room, procedure_name, start_time, end_time, staff_name, sub_staff_name, machine_name, bed) SELECT date, patient_name, dob, room, procedure_name, start_time, end_time, staff_name, sub_staff_name, machine_name, bed FROM schedules WHERE date = ?").bind(date.trim()),
+          db.prepare("DELETE FROM schedules WHERE date = ?").bind(date.trim())
+        );
+      } else {
+        statements.push(
+          db.prepare("INSERT INTO history_records (date, patient_name, dob, room, procedure_name, start_time, end_time, staff_name, sub_staff_name, machine_name, bed) SELECT date, patient_name, dob, room, procedure_name, start_time, end_time, staff_name, sub_staff_name, machine_name, bed FROM schedules"),
+          db.prepare("DELETE FROM schedules")
+        );
+      }
+
+      // Xóa bệnh nhân đã có giờ ra viện
+      statements.push(
         db.prepare("DELETE FROM patients WHERE leave_time IS NOT NULL AND TRIM(leave_time) != '' AND LOWER(leave_time) != 'none'"),
-        // 4. Reset giờ vào về 07:30, xóa giờ bận, giờ ra cho các bệnh nhân còn lại
-        db.prepare("UPDATE patients SET arrive_time = '07:30', gio_ban = '', leave_time = '', updated_at = CURRENT_TIMESTAMP"),
-        // 5. Reset giờ bận tạm thời của nhân viên
+        // Reset giờ vào về 07:30, xóa giờ bận, giờ ra, và reset status về 'Chưa xếp'
+        db.prepare("UPDATE patients SET arrive_time = '07:30', gio_ban = '', leave_time = '', status = 'Chưa xếp', updated_at = CURRENT_TIMESTAMP"),
+        // Reset giờ bận tạm thời của nhân viên
         db.prepare("UPDATE staff SET temp_busy = '[]', updated_at = CURRENT_TIMESTAMP")
-      ];
+      );
 
       await db.batch(statements);
       await bumpDataVersion(db);

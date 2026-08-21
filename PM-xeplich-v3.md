@@ -360,3 +360,23 @@
 **Files đã sửa:** ackend/src/index.js, index.html, js/app.js, PM-xeplich-v3.md (Version 3.4).
 
 **Phiên bản:** 3.3 → 3.4
+
+### AL. Hiển Thị Phần Sao Lưu Trực Tiếp Trong Menu Quản Trị (v3.5 - 21/08/2026)
+
+**Khắc phục:** Thêm mục **📦 Sao Lưu & Khôi Phục** trực tiếp vào **Menu Quản Trị (Sidebar)** của Tab Quản Trị (index.html), kèm theo phần nội dung (dmin-sec-backup) riêng biệt và nổi bật.
+
+**Tóm tắt giao diện Quản Trị mới:**
+1. **Menu Quản Trị (Sidebar)** có 4 mục:
+   - ⚙️ Cài Đặt Hệ Thống
+   - 🔒 Quản Lý Tài Khoản
+   - 🧑‍⚕️ Nhân Sự Chấm Công
+   - 📦 **Sao Lưu & Khôi Phục** (MỚI)
+2. **Khu vực dmin-sec-backup**:
+   - Nút **📦 Tải Bản Sao Lưu Về Máy (.json)**
+   - Nút **📤 Khôi Phục Từ File (.json)**
+   - Thiết lập lịch nhắc sao lưu định kỳ
+   - Hướng dẫn lệnh PowerShell xuất file D1 SQL.
+
+**Files đã sửa:** index.html, PM-xeplich-v3.md (Version 3.5).
+
+**Phiên bản:** 3.4 → 3.5

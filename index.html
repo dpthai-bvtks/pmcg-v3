@@ -59,9 +59,9 @@
     }
     </script>
     <meta name="theme-color" content="#1e3d2b">
-    <link rel="icon" type="image/png" sizes="128x128" href="favicon-128.png?v=3.4">
+    <link rel="icon" type="image/png" sizes="128x128" href="favicon-128.png?v=3.5">
     <!-- Thêm icon cho iOS -->
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=3.4">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=3.5">
 
 
 
@@ -72,9 +72,9 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
     <!-- CSS Custom -->
-    <link rel="stylesheet" href="css/style.css?v=3.4">
+    <link rel="stylesheet" href="css/style.css?v=3.5">
     <!-- JS Thư viện kéo thả nội bộ -->
-    <script src="js/sortable.min.js?v=3.4"></script>
+    <script src="js/sortable.min.js?v=3.5"></script></script>
     <!-- Chart.js for Thống Kê & ExcelJS -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
@@ -1923,6 +1923,10 @@
                                 onclick="switchAdminSection('admin-sec-employees', this)"
                                 style="text-align: left; padding: 12px 15px; border: none; background: #f1f2f6; color: #333; font-weight: bold; border-radius: 6px; cursor: pointer; border-left: 4px solid transparent; transition: all 0.2s; font-size: 13px;">🧑‍⚕️
                                 Nhân Sự Chấm Công</button>
+                            <button id="nav-btn-backup" class="admin-nav-btn"
+                                onclick="switchAdminSection('admin-sec-backup', this)"
+                                style="text-align: left; padding: 12px 15px; border: none; background: #f1f2f6; color: #333; font-weight: bold; border-radius: 6px; cursor: pointer; border-left: 4px solid transparent; transition: all 0.2s; font-size: 13px;">📦
+                                Sao Lưu & Khôi Phục</button>
                         </div>
 
                         <!-- Cột Nội Dung Phải -->
@@ -2273,6 +2277,58 @@
                                 </div>
 
                             </div>
+
+                            <!-- SECTION 5: SAO LƯU & KHÔI PHỤC DỮ LIỆU CLOUDFLARE D1 -->
+                            <div id="admin-sec-backup" class="admin-section"
+                                style="display: none; flex-direction: column; padding: 20px; height: 100%; overflow-y: auto;">
+                                <div class="tab-header-title"
+                                    style="background:#ebf5fb; color:#2980b9; margin-top:0; border:none; margin-bottom: 20px; padding: 12px; border-radius: 6px; font-size: 16px;">
+                                    📦 SAO LƯU & KHÔI PHỤC DỮ LIỆU CLOUDFLARE D1
+                                </div>
+
+                                <div style="display: flex; flex-direction: column; gap: 20px; max-width: 650px;">
+                                    <!-- Card Sao Lưu & Khôi Phục -->
+                                    <div style="background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                                        <h4 style="margin: 0 0 10px 0; color: #1e293b; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                                            <span>📦</span> Sao Lưu Dữ Liệu Toàn Diện (.json)
+                                        </h4>
+                                        <p style="font-size: 13px; color: #64748b; margin-bottom: 18px; line-height: 1.6;">
+                                            Tải toàn bộ cơ sở dữ liệu Cloudflare D1 (gồm 14 bảng: Bệnh nhân, Lịch trình, Nhân sự, Chấm công, Thống kê, Tài khoản...) về máy tính để cất giữ an toàn.
+                                        </p>
+                                        
+                                        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;">
+                                            <button type="button" class="btn btn-primary" onclick="exportFullDatabaseBackup()" style="padding: 11px 20px; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
+                                                <span style="font-size: 16px;">📦</span> Tải Bản Sao Lưu Về Máy (.json)
+                                            </button>
+                                            <button type="button" class="btn btn-success" onclick="document.getElementById('import-backup-file').click()" style="padding: 11px 20px; background: #059669; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(5,150,105,0.2);">
+                                                <span style="font-size: 16px;">📤</span> Khôi Phục Từ File (.json)
+                                            </button>
+                                            <input type="file" id="import-backup-file" accept=".json" style="display: none;" onchange="importFullDatabaseBackup(event)">
+                                        </div>
+
+                                        <!-- Thiết lập nhắc sao lưu -->
+                                        <div style="border-top: 1px solid #e2e8f0; padding-top: 15px; margin-top: 15px;">
+                                            <label style="font-size: 13px; font-weight: 700; color: #334155; display: block; margin-bottom: 8px;">
+                                                ⏰ Thiết lập lịch nhắc sao lưu định kỳ:
+                                            </label>
+                                            <select id="backup-reminder-period" onchange="saveBackupReminderSetting(this.value)" style="padding: 9px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; width: 100%; max-width: 300px; outline: none;">
+                                                <option value="none">Tắt nhắc nhở</option>
+                                                <option value="daily">Hàng ngày (Daily)</option>
+                                                <option value="weekly">Hàng tuần (Weekly)</option>
+                                                <option value="monthly">Hàng tháng (Monthly)</option>
+                                            </select>
+                                            <small style="display: block; margin-top: 6px; color: #64748b; font-size: 12px; line-height: 1.4;">Hệ thống sẽ hiển thị thông báo góc dưới màn hình nhắc bác sĩ sao lưu khi đến hạn.</small>
+                                        </div>
+                                    </div>
+
+                                    <!-- Card Hướng Dẫn Backup Bằng Lệnh (Wrangler CLI) -->
+                                    <div style="background: #f8fafc; padding: 18px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                                        <h5 style="margin: 0 0 8px 0; color: #334155; font-size: 14px; font-weight: 700;">💻 Sao Lưu Bằng Lệnh Command Line (D1 SQL Export)</h5>
+                                        <p style="font-size: 12px; color: #64748b; margin-bottom: 10px;">Chạy lệnh PowerShell trong thư mục <code>backend/</code> để xuất trực tiếp file SQL từ Cloudflare D1:</p>
+                                        <code style="display: block; background: #0f172a; color: #38bdf8; padding: 10px 14px; border-radius: 6px; font-size: 12px; font-family: monospace; word-break: break-all;">cmd /c "npx wrangler d1 export pmcg-db --remote --output=backup_d1.sql"</code>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2615,9 +2671,9 @@
 
                     <h4><span class="f-icon">⚙️</span> <span>THÔNG TIN HỆ THỐNG</span></h4>
 
-                    <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.4</span></p>
+                    <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.5</span></p>
 
-                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 11:22 21/08/2026</span></p>
+                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 14:08 21/08/2026</span></p>
 
                     <p><span class="f-icon">👨‍💻</span> <span>Thiết kế & Phát triển: <b>Bác sĩ Thái</b></span></p>
 

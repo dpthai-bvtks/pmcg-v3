@@ -320,3 +320,24 @@
 **Files đã sửa:** js/app.js, js/init.js (vị trí load), index.html (thứ tự script, version 3.1→3.2), ackend/src/index.js (chuyenNgayMoi, saveAccount)
 
 **Phiên bản:** 3.1 → 3.2
+
+### AJ. Sửa Lỗi Chức Năng Xếp Lịch Bổ Sung (v3.3 - 21/08/2026)
+
+**Yêu cầu người dùng:** Sửa lỗi chức năng "⚡ Xếp bổ sung" (runExtraScheduling) không hoạt động.
+
+**Phân tích nguyên nhân:**
+- Chức năng xếp bổ sung ở v2 gọi hàm google.script.run.runSupplementalScheduling(dateVal) của Google Apps Script cũ.
+- Khi chuyển sang Cloudflare Workers v3, API này không còn tồn tại trên backend làm cho nút "Xếp bổ sung" bị báo lỗi kết nối / hệ thống.
+
+**Giải pháp thực hiện:**
+1. **Nâng cấp SchedulerEngine client-side (js/scheduler-engine.js)**:
+   - Nâng cấp uildDbFromCache(cacheInput, skipProcsStr, existingSched) hỗ trợ lọc tự động: chỉ giữ lại các thủ thuật CHƯA ĐƯỢC XẾP LỊCH của bệnh nhân.
+   - Thêm phương thức unExtraScheduling(dateVal, existingSched) truyền lịch trình hiện tại (existingSched) vào thuật toán optimization core (unBestIteration). Thuật toán tự động khóa các khung giờ, máy móc, giường bệnh đã bị chiếm bởi lịch hiện tại và tìm khung giờ trống tối ưu cho bệnh nhân mới/thủ thuật chưa xếp.
+2. **Nâng cấp unExtraScheduling() (js/app.js)**:
+   - Chuyển hoàn toàn sang chạy trực tiếp trên client bằng SchedulerEngine.runExtraScheduling(dateVal, currentSched).
+   - Tự động hợp nhất (merge) kết quả lịch bổ sung mới với lịch hiện tại, lưu vào localStorage và đồng bộ tức thì lên Cloudflare D1 qua API saveSchedule.
+   - Cập nhật lại giao diện, bảng bệnh nhân, dashboard và thông báo popup số lượng ca xếp bổ sung thành công.
+
+**Files đã sửa:** js/scheduler-engine.js, js/app.js, index.html (Version 3.3).
+
+**Phiên bản:** 3.2 → 3.3

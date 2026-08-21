@@ -4125,44 +4125,62 @@ window.showGlobalLoading = function (text) {
             btn.innerText = '⏳ ĐANG TÌM CHỖ TRỐNG...'; btn.disabled = true;
 
             if (window.showGlobalLoading) window.showGlobalLoading("Đang xếp lịch bổ sung bệnh nhân mới...");
-            google.script.run
-                .withSuccessHandler(out => {
-                    if (window.hideGlobalLoading) window.hideGlobalLoading();
-                    btn.innerText = '⚡ XẾP BỔ SUNG BN MỚI'; btn.disabled = false;
-                    if (out.error) {
-                        console.error("Backend error in runExtraScheduling:", out.error);
-                        const res = document.getElementById('schedule-result');
-                        if (res) res.innerHTML = '<div class="alert alert-warning" style="margin-top:10px">⚠️ ' + out.error + '</div>';
-                        return alert(out.error);
+
+            setTimeout(() => {
+                try {
+                    const currentSched = window.currentScheduleData || (typeof dataCache !== 'undefined' && dataCache.schedule) || [];
+                    let out = null;
+                    if (window.SchedulerEngine && typeof window.SchedulerEngine.runExtraScheduling === 'function') {
+                        out = window.SchedulerEngine.runExtraScheduling(dateVal, currentSched);
+                    } else if (window.SchedulerEngine && typeof window.SchedulerEngine.runScheduling === 'function') {
+                        out = window.SchedulerEngine.runScheduling(dateVal, 'opt_rare', '', -1, currentSched);
                     }
 
-                    const newUnscheduled = out.unscheduled || [];
-                    setUnscheduledData(newUnscheduled, dateVal);
-                    const addedCount = Number(out.addedCount || 0);
-                    const failCount = Number(out.unscheduledCount ?? newUnscheduled.length);
-                    const totalFail = window.lastUnscheduledData.length;
+                    if (window.hideGlobalLoading) window.hideGlobalLoading();
+                    btn.innerText = '⚡ XẾP BỔ SUNG BN MỚI'; btn.disabled = false;
 
+                    const newSched = (out && (out.schedule || out.sched)) ? (out.schedule || out.sched) : [];
+                    const newUnsch = (out && (out.unscheduled || out.rot)) ? (out.unscheduled || out.rot) : [];
+                    const addedCount = newSched.length;
+
+                    if (addedCount > 0) {
+                        const mergedSched = [...currentSched, ...newSched];
+                        window.currentScheduleData = markDischargedInSchedule(mergedSched);
+                        if (typeof dataCache !== 'undefined') dataCache.schedule = mergedSched;
+                        if (window.dataCache) window.dataCache.schedule = mergedSched;
+
+                        localStorage.setItem('meds_schedule_date', dateVal);
+                        localStorage.setItem('meds_success', JSON.stringify(mergedSched));
+
+                        const backendSched = mergedSched.map(x => [ x.ngay || dateVal, x.tenBN || '', x.namSinh || '', x.phong || '', x.thuThuat || '', x.gioDienRa || '', x.gioKetThuc || '', x.nvChinh || '', x.nvPhu || '', x.may || '', x.giuong || '' ]);
+                        callApi('saveSchedule', [dateVal, backendSched], null, null);
+                    }
+
+                    setUnscheduledData(newUnsch, dateVal);
+                    filterSchedule();
+                    if (typeof renderStats === 'function') renderStats(window.lastUnscheduledData);
+                    if (typeof renderPatientsTable === 'function') renderPatientsTable();
+                    if (typeof loadDashboard === 'function') loadDashboard();
+
+                    const totalFail = window.lastUnscheduledData ? window.lastUnscheduledData.length : 0;
                     const contentEl = document.getElementById('custom-popup-content');
                     if (contentEl) contentEl.innerHTML = `
                     <div>✅ Xếp bổ sung thành công: <b style="color:#27ae60; font-size:18px;">${addedCount}</b> ca</div>
-                    <div>❌ Không xếp được lần này: <b style="color:#c0392b; font-size:18px;">${failCount}</b> ca</div>
+                    <div>❌ Không xếp được lần này: <b style="color:#c0392b; font-size:18px;">${newUnsch.length}</b> ca</div>
                     <hr style="border:0; border-top:1px dashed #ccc; margin:10px 0;">
                     <div style="font-size:14px; color:#7f8c8d;">Tổng số ca rớt hiện tại: <b>${totalFail}</b> ca</div>`;
 
                     const popup = document.getElementById('custom-success-popup');
                     if (popup) popup.style.display = 'flex';
-                    else alert("Đã xếp thêm thành công " + addedCount + " ca!\nKhông xếp được lần này: " + failCount + " ca.\nTổng số ca rớt hiện tại: " + totalFail + " ca.");
-                    loadScheduleList();
-                })
-                .withFailureHandler(err => {
+                } catch(err) {
                     if (window.hideGlobalLoading) window.hideGlobalLoading();
                     btn.innerText = '⚡ XẾP BỔ SUNG BN MỚI'; btn.disabled = false;
-                    console.error("Connection/Backend error in runExtraScheduling:", err);
+                    console.error("Error in runExtraScheduling:", err);
                     const res = document.getElementById('schedule-result');
                     if (res) res.innerHTML = '<div class="alert alert-danger" style="margin-top:10px">❌ Lỗi hệ thống: ' + err.message + '</div>';
-                    alert("Lỗi kết nối: " + err.message);
-                })
-                .runSupplementalScheduling(dateVal);
+                    alert("Lỗi xếp bổ sung: " + err.message);
+                }
+            }, 30);
         }
 
 

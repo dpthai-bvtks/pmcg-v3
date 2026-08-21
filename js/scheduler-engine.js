@@ -840,7 +840,7 @@ async function buildBaseDbFromD1(db) {
     return cache || { staff: [], pat: [], proc: [], room: [], machine: [] };
   }
 
-  function buildDbFromCache(cacheInput, skipProcsStr) {
+  function buildDbFromCache(cacheInput, skipProcsStr, existingSched = []) {
     const cache = cacheInput || getSafeCache();
 
     const database = {
@@ -945,8 +945,24 @@ async function buildBaseDbFromD1(db) {
       seen.add(key);
 
       const ttStr = p.thuThuat || p.procedures || p[8] || "";
-      const procs = Array.isArray(ttStr) ? ttStr : String(ttStr).split(",").map(x => x.trim()).filter(Boolean);
+      let procs = Array.isArray(ttStr) ? ttStr : String(ttStr).split(",").map(x => x.trim()).filter(Boolean);
       if (!procs.length) return;
+
+      // Nếu đang xếp bổ sung (có existingSched), loại bỏ các thủ thuật CỦA BỆNH NHÂN NÀY đã được xếp lịch trước đó
+      if (existingSched && existingSched.length > 0) {
+        const scheduledProcsForPat = existingSched
+          .filter(r => {
+            if (!r) return false;
+            const rName = String(r.tenBN || r.HOTEN || r[1] || '').toUpperCase().trim();
+            const rNs = String(r.namSinh || r.NAMSINH || r[2] || '').trim();
+            const rGio = String(r.gioDienRa || r.GIODIENRA || r[5] || '');
+            return rName === pName && (!pNs || !rNs || pNs === rNs) && rGio !== '❌ Rớt' && rGio !== '--';
+          })
+          .map(r => String(r.thuThuat || r.DICHVU || r[4] || '').trim().toLowerCase());
+
+        procs = procs.filter(pr => !scheduledProcsForPat.includes(pr.toLowerCase()));
+      }
+      if (!procs.length) return; // Bệnh nhân đã được xếp đủ hết thủ thuật rồi, không cần xếp nữa
 
       const rawGioVao = p.gioVao || p[4] || "";
       const gioVao = isEmptyTime(rawGioVao) ? 420 : t2m(rawGioVao);
@@ -986,9 +1002,9 @@ async function buildBaseDbFromD1(db) {
     return { database, forcedDrops };
   }
 
-  function runClientScheduling(dateVal, strategyKey = 'opt_rare', skipProcsStr = '', crowdedOverride = -1) {
+  function runClientScheduling(dateVal, strategyKey = 'opt_rare', skipProcsStr = '', crowdedOverride = -1, existingSched = []) {
     const startTime = performance.now();
-    const { database: db, forcedDrops } = buildDbFromCache(null, skipProcsStr);
+    const { database: db, forcedDrops } = buildDbFromCache(null, skipProcsStr, existingSched);
 
     if (!db.rawPatients.length) {
       return {
@@ -1131,11 +1147,16 @@ async function buildBaseDbFromD1(db) {
     };
   }
 
+  function runExtraScheduling(dateVal, existingSched = []) {
+    return runClientScheduling(dateVal, 'opt_rare', '', -1, existingSched);
+  }
+
   return {
     t2m,
     m2t,
     buildDbFromCache,
     runScheduling: runClientScheduling,
+    runExtraScheduling: runExtraScheduling,
     runSaturdayScheduling: runSaturdayScheduling
   };
 })();

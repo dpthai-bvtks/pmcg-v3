@@ -525,3 +525,9 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
 - **Nguyên nhân gốc:** API getBootstrapData trong Cloudflare Worker lấy TOÀN BỘ bệnh nhân và lịch xếp từ D1 không lọc theo ngày. Do đó bệnh nhân cũ của ngày 08/07 được trả về và hiển thị trên giao diện.
 - **Giải pháp:** Sửa query SQL trong backend để chỉ lấy bệnh nhân (ngay_vao = hôm nay) và lịch (date = hôm nay) theo múi giờ VN (UTC+7). Deploy lại Worker.
 - **File:** backend/src/index.js (deploy), index.html (v3.1.5)
+
+### Cập nhật 21/08/2026 (v3.1.6)
+- **Lỗi:** Sau Ctrl+F5, giao diện vẫn hiển thị bảng lịch và bệnh nhân của ngày 08/07 thay vì 21/08.
+- **Nguyên nhân:** Hàm restoreOfflineCache() phục hồi dữ liệu từ localStorage (times_bootstrap_cache) mà không kiểm tra ngày. Dữ liệu cũ từ 08/07 được nạp ngay lập tức trước khi API trả về dữ liệu mới.
+- **Giải pháp:** Bổ sung kiểm tra ngày vào restoreOfflineCache() trong app.js. Nếu cache chứa bệnh nhân/lịch của ngày khác hôm nay -> xóa patients và schedule khỏi cache, chỉ giữ cấu hình (máy, phòng, nhân sự). Cập nhật lại localStorage để lần sau không bị lỗi.
+- **File:** js/app.js, index.html (v3.1.6)

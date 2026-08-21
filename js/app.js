@@ -1627,6 +1627,40 @@ window.showGlobalLoading = function (text) {
                 if (cachedStr) {
                     const b = JSON.parse(cachedStr);
                     if (b && typeof dataCache !== 'undefined') {
+
+                        // ✅ Tính ngày hôm nay theo múi giờ VN (UTC+7)
+                        const nowVN = new Date(Date.now() + 7 * 60 * 60 * 1000);
+                        const todayYMD = `${nowVN.getUTCFullYear()}-${String(nowVN.getUTCMonth() + 1).padStart(2, '0')}-${String(nowVN.getUTCDate()).padStart(2, '0')}`;
+                        const dd = String(nowVN.getUTCDate()).padStart(2, '0');
+                        const mm = String(nowVN.getUTCMonth() + 1).padStart(2, '0');
+                        const todaySlash = `${dd}/${mm}/${nowVN.getUTCFullYear()}`; // VD: 21/08/2026
+
+                        // Kiểm tra cache có phải của ngày hôm nay không
+                        // (dựa vào ngày của bệnh nhân đầu tiên, hoặc timestamp cache)
+                        let cacheIsStale = false;
+                        if (b.patients && Array.isArray(b.patients) && b.patients.length > 0) {
+                            const firstPatDate = b.patients[0].ngayVao || b.patients[0].ngay_vao || '';
+                            if (firstPatDate && firstPatDate !== todaySlash && firstPatDate !== todayYMD) {
+                                cacheIsStale = true;
+                            }
+                        }
+                        // Kiểm tra thêm theo schedule
+                        if (!cacheIsStale && b.schedule && Array.isArray(b.schedule) && b.schedule.length > 0) {
+                            const firstSchedDate = b.schedule[0][0] || b.schedule[0].date || '';
+                            if (firstSchedDate && firstSchedDate !== todayYMD && firstSchedDate !== todaySlash) {
+                                cacheIsStale = true;
+                            }
+                        }
+
+                        if (cacheIsStale) {
+                            // Cache lỗi thời: xóa patients và schedule cũ, chỉ giữ lại cấu hình (staff, máy, phòng...)
+                            console.warn(`⚠️ [Offline Cache] Cache cũ (không phải hôm nay ${todaySlash}), bỏ qua bệnh nhân & lịch cũ.`);
+                            b.patients = [];
+                            b.schedule = [];
+                            // Cập nhật lại localStorage để lần sau không bị lỗi nữa
+                            try { localStorage.setItem('times_bootstrap_cache', JSON.stringify(b)); } catch(e) {}
+                        }
+
                         if (b.machines && Array.isArray(b.machines)) {
                             b.machines.forEach((m, i) => { if (m) m.sheetIndex = i; });
                             dataCache.machine = b.machines.filter(m => m && (m.tenLoai || m[1]));

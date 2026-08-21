@@ -1,0 +1,17 @@
+{
+  "name": "pmcg-backend",
+  "version": "3.0.0",
+  "description": "Cloudflare Worker Backend for PM-XepLich v3",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "d1:init": "wrangler d1 execute pmcg-db --file=./schema.sql --remote"
+  },
+  "devDependencies": {
+    "wrangler": "^3.72.0"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  }
+}

@@ -341,3 +341,22 @@
 **Files đã sửa:** js/scheduler-engine.js, js/app.js, index.html (Version 3.3).
 
 **Phiên bản:** 3.2 → 3.3
+
+### AK. Xây Dựng Hệ Thống Sao Lưu & Khôi Phục Dữ Liệu D1 (v3.4 - 21/08/2026)
+
+**Yêu cầu người dùng:** Xây dựng tính năng sao lưu (Backup) và khôi phục (Restore) hệ thống định kỳ hàng ngày, hàng tuần hoặc hàng tháng về máy tính để lưu trữ hoặc khôi phục.
+
+**Các thành phần đã xây dựng:**
+1. **Backend Cloudflare Worker (ackend/src/index.js)**:
+   - exportDatabase: Đóng gói toàn bộ dữ liệu 14 bảng D1 database (ccounts, staff, machines, ooms, procedures, patients, schedules, history_records, history_busy, chamcong_records, 	hongke_records, 	im_ranh, documents, system_settings) thành file JSON chuẩn hóa kèm metadata.
+   - importDatabase: Tiếp nhận file JSON sao lưu, làm sạch các bảng và khôi phục dữ liệu nguyên trạng bằng các câu lệnh batch SQL an toàn.
+
+2. **Giao Diện Frontend (index.html & js/app.js)**:
+   - Thêm thẻ **"📦 SAO LƯU & KHÔI PHỤC DỮ LIỆU CLOUDFLARE D1"** trong tab Cài Đặt Hệ Thống.
+   - Nút **"📦 Tải Bản Sao Lưu (.json)"**: 1-click tải về file PMCG_D1_Backup_FULL_YYYY-MM-DD_HHmm.json.
+   - Nút **"📤 Khôi Phục Từ File (.json)"**: Upload file sao lưu, hiển thị tóm tắt ngày giờ sao lưu và số dòng dữ liệu trước khi xác nhận ghi đè khôi phục.
+   - **Tự động nhắc sao lưu định kỳ**: Thiết lập lịch nhắc (Hàng ngày / Hàng tuần / Hàng tháng). Nếu quá hạn, hiển thị thông báo góc dưới màn hình nhắc bác sĩ bấm sao lưu nhanh.
+
+**Files đã sửa:** ackend/src/index.js, index.html, js/app.js, PM-xeplich-v3.md (Version 3.4).
+
+**Phiên bản:** 3.3 → 3.4

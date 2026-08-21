@@ -8472,4 +8472,119 @@ window.showGlobalLoading = function (text) {
 
         document.addEventListener('DOMContentLoaded', () => {
             initErrorChecker();
+            setTimeout(() => { if (typeof window.checkBackupReminder === 'function') window.checkBackupReminder(); }, 2500);
         });
+
+// ============================================================
+// 📦 SAO LƯU & KHÔI PHỤC DỮ LIỆU CLOUDFLARE D1 (BACKUP & RESTORE)
+// ============================================================
+
+window.exportFullDatabaseBackup = function() {
+    if (window.showGlobalLoading) window.showGlobalLoading("Đang xuất bản sao lưu toàn bộ Cloudflare D1...");
+    callApi('exportDatabase', [], data => {
+        if (window.hideGlobalLoading) window.hideGlobalLoading();
+        if (!data || !data.tables) {
+            return showCustomAlert("Lỗi", "Không thể lấy dữ liệu sao lưu từ máy chủ!");
+        }
+
+        const jsonStr = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10) + '_' + String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
+        a.href = url;
+        a.download = `PMCG_D1_Backup_FULL_${dateStr}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        localStorage.setItem('last_backup_timestamp', Date.now().toString());
+        showCustomAlert("Thành công", `Đã tải về bản sao lưu dữ liệu toàn diện (phiên bản ${data.version || 'v3.4'})!`);
+    }, err => {
+        if (window.hideGlobalLoading) window.hideGlobalLoading();
+        showCustomAlert("Lỗi sao lưu", "Lỗi: " + (typeof err === 'string' ? err : JSON.stringify(err)));
+    });
+};
+
+window.importFullDatabaseBackup = function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const backupData = JSON.parse(e.target.result);
+            if (!backupData || !backupData.tables) {
+                return showCustomAlert("Lỗi khôi phục", "File chọn không đúng định dạng sao lưu PM-XepLich!");
+            }
+
+            const tableNames = Object.keys(backupData.tables);
+            let totalRows = 0;
+            tableNames.forEach(t => { totalRows += (backupData.tables[t] || []).length; });
+
+            const dateStr = backupData.exportDate ? new Date(backupData.exportDate).toLocaleString('vi-VN') : 'Không rõ';
+
+            showCustomConfirm(
+                "Xác Nhận Khôi Phục Dữ Liệu",
+                `⚠️ BẠN CÓ CHẮC CHẮN MỐN KHÔI PHỤC DỮ LIỆU D1?\n\n` +
+                `📅 Ngày sao lưu: ${dateStr}\n` +
+                `📊 Tổng số bảng: ${tableNames.length} bảng\n` +
+                `📋 Tổng số bản ghi: ${totalRows} dòng\n\n` +
+                `LƯU Ý: Thao tác này sẽ ghi đè toàn bộ dữ liệu hiện tại bằng dữ liệu trong file sao lưu!`,
+                function() {
+                    if (window.showGlobalLoading) window.showGlobalLoading("Đang khôi phục cơ sở dữ liệu Cloudflare D1...");
+                    callApi('importDatabase', [backupData], res => {
+                        if (window.hideGlobalLoading) window.hideGlobalLoading();
+                        showCustomAlert("Thành công", res.message || "Khôi phục dữ liệu thành công!");
+                        setTimeout(() => { location.reload(); }, 1500);
+                    }, err => {
+                        if (window.hideGlobalLoading) window.hideGlobalLoading();
+                        showCustomAlert("Lỗi khôi phục", "Không thể khôi phục dữ liệu: " + (typeof err === 'string' ? err : JSON.stringify(err)));
+                    });
+                }
+            );
+        } catch(err) {
+            showCustomAlert("Lỗi đọc file", "File sao lưu bị hỏng hoặc không đúng chuẩn JSON: " + err.message);
+        }
+        event.target.value = '';
+    };
+    reader.readAsText(file);
+};
+
+window.saveBackupReminderSetting = function(val) {
+    localStorage.setItem('backup_reminder_period', val);
+    showCustomAlert("Thông báo", "Đã lưu thiết lập lịch nhắc sao lưu định kỳ!");
+};
+
+window.checkBackupReminder = function() {
+    const period = localStorage.getItem('backup_reminder_period') || 'none';
+    const selectEl = document.getElementById('backup-reminder-period');
+    if (selectEl) selectEl.value = period;
+
+    if (period === 'none') return;
+
+    const lastBackup = parseInt(localStorage.getItem('last_backup_timestamp') || '0', 10);
+    const now = Date.now();
+    let thresholdMs = 0;
+    if (period === 'daily') thresholdMs = 24 * 3600 * 1000;
+    else if (period === 'weekly') thresholdMs = 7 * 24 * 3600 * 1000;
+    else if (period === 'monthly') thresholdMs = 30 * 24 * 3600 * 1000;
+
+    if (now - lastBackup > thresholdMs) {
+        setTimeout(() => {
+            const toast = document.createElement('div');
+            toast.style.cssText = 'position:fixed; bottom:20px; right:20px; background:#1e293b; color:#fff; padding:14px 18px; border-radius:8px; z-index:99999; box-shadow:0 10px 25px rgba(0,0,0,0.3); font-size:13px; display:flex; align-items:center; gap:12px; border-left:4px solid #3b82f6;';
+            toast.innerHTML = `
+                <div>
+                    <strong style="display:block; color:#60a5fa;">⏰ Nhắc sao lưu định kỳ</strong>
+                    <span>Đã đến hạn sao lưu dữ liệu (${period === 'daily' ? 'Hàng ngày' : period === 'weekly' ? 'Hàng tuần' : 'Hàng tháng'}).</span>
+                </div>
+                <button onclick="exportFullDatabaseBackup(); this.parentElement.remove();" style="padding:6px 12px; background:#2563eb; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">Bắt đầu sao lưu</button>
+                <span onclick="this.parentElement.remove();" style="cursor:pointer; color:#94a3b8; font-weight:bold; font-size:16px;">✕</span>
+            `;
+            document.body.appendChild(toast);
+        }, 3000);
+    }
+};

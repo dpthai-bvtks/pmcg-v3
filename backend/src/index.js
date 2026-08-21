@@ -1450,6 +1450,130 @@ async function handleApiAction(action, args, env, request) {
       return success(rec ? JSON.parse(rec.data_json) : null);
     }
 
+    case "exportDatabase": {
+      const [
+        accounts, staff, machines, rooms, procedures,
+        patients, schedules, history_records, history_busy,
+        chamcong_records, thongke_records, tim_ranh, documents, system_settings
+      ] = await Promise.all([
+        db.prepare("SELECT * FROM accounts").all(),
+        db.prepare("SELECT * FROM staff").all(),
+        db.prepare("SELECT * FROM machines").all(),
+        db.prepare("SELECT * FROM rooms").all(),
+        db.prepare("SELECT * FROM procedures").all(),
+        db.prepare("SELECT * FROM patients").all(),
+        db.prepare("SELECT * FROM schedules").all(),
+        db.prepare("SELECT * FROM history_records").all(),
+        db.prepare("SELECT * FROM history_busy").all(),
+        db.prepare("SELECT * FROM chamcong_records").all(),
+        db.prepare("SELECT * FROM thongke_records").all(),
+        db.prepare("SELECT * FROM tim_ranh").all(),
+        db.prepare("SELECT * FROM documents").all(),
+        db.prepare("SELECT * FROM system_settings").all()
+      ]);
+
+      const backup = {
+        version: "v3.4",
+        exportDate: new Date().toISOString(),
+        tables: {
+          accounts: accounts.results || [],
+          staff: staff.results || [],
+          machines: machines.results || [],
+          rooms: rooms.results || [],
+          procedures: procedures.results || [],
+          patients: patients.results || [],
+          schedules: schedules.results || [],
+          history_records: history_records.results || [],
+          history_busy: history_busy.results || [],
+          chamcong_records: chamcong_records.results || [],
+          thongke_records: thongke_records.results || [],
+          tim_ranh: tim_ranh.results || [],
+          documents: documents.results || [],
+          system_settings: system_settings.results || []
+        }
+      };
+
+      return success(backup);
+    }
+
+    case "importDatabase": {
+      const backupData = args[0];
+      if (!backupData || !backupData.tables) {
+        return error("File sao lưu không hợp lệ hoặc thiếu dữ liệu bảng.");
+      }
+
+      const tables = backupData.tables;
+      const clearStmts = [
+        db.prepare("DELETE FROM accounts"),
+        db.prepare("DELETE FROM staff"),
+        db.prepare("DELETE FROM machines"),
+        db.prepare("DELETE FROM rooms"),
+        db.prepare("DELETE FROM procedures"),
+        db.prepare("DELETE FROM patients"),
+        db.prepare("DELETE FROM schedules"),
+        db.prepare("DELETE FROM history_records"),
+        db.prepare("DELETE FROM history_busy"),
+        db.prepare("DELETE FROM chamcong_records"),
+        db.prepare("DELETE FROM thongke_records"),
+        db.prepare("DELETE FROM tim_ranh"),
+        db.prepare("DELETE FROM documents"),
+        db.prepare("DELETE FROM system_settings")
+      ];
+      await db.batch(clearStmts);
+
+      const stmts = [];
+
+      if (Array.isArray(tables.accounts)) {
+        tables.accounts.forEach(r => stmts.push(db.prepare("INSERT INTO accounts (id, username, password_hash, role, permissions, updated_at) VALUES (?, ?, ?, ?, ?, ?)").bind(r.id, r.username, r.password_hash, r.role || 'user', r.permissions || '', r.updated_at || new Date().toISOString())));
+      }
+      if (Array.isArray(tables.staff)) {
+        tables.staff.forEach(r => stmts.push(db.prepare("INSERT INTO staff (id, name, role, system, skills, fixed_busy, temp_busy, his_name, priority, is_active, trang_thai, thoi_gian_lam, nguoi_thay_the, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").bind(r.id, r.name, r.role || 'KTV', r.system || 'PHCN', r.skills || '', r.fixed_busy || '', r.temp_busy || '', r.his_name || '', r.priority || 0, r.is_active ?? 1, r.trang_thai || 'Đi làm', r.thoi_gian_lam || '07:30-11:30, 13:00-16:30', r.nguoi_thay_the || 'Không', r.updated_at || new Date().toISOString())));
+      }
+      if (Array.isArray(tables.machines)) {
+        tables.machines.forEach(r => stmts.push(db.prepare("INSERT INTO machines (id, ten_loai, ma_may, trang_thai, order_idx, is_active, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)").bind(r.id, r.ten_loai, r.ma_may, r.trang_thai || 'Sẵn sàng', r.order_idx || 0, r.is_active ?? 1, r.updated_at || new Date().toISOString())));
+      }
+      if (Array.isArray(tables.rooms)) {
+        tables.rooms.forEach(r => stmts.push(db.prepare("INSERT INTO rooms (id, ten_phong, bac_si, ktv, danh_sach_may, so_giuong, danh_sach_giuong, order_idx, is_active, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").bind(r.id, r.ten_phong, r.bac_si || '', r.ktv || '', r.danh_sach_may || '', r.so_giuong || 0, r.danh_sach_giuong || '', r.order_idx || 0, r.is_active ?? 1, r.updated_at || new Date().toISOString())));
+      }
+      if (Array.isArray(tables.procedures)) {
+        tables.procedures.forEach(r => stmts.push(db.prepare("INSERT INTO procedures (id, ten_thu_thuat, viet_tat, he, phan_loai, may, tg_thuc_hien, tg_thu_thuat, khoang_cach, can_rut_may, can_nguoi_phu, ds_nguoi_phu, order_idx, is_active, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").bind(r.id, r.ten_thu_thuat, r.viet_tat || '', r.he || 'PHCN', r.phan_loai || '', r.may || '', r.tg_thuc_hien || 30, r.tg_thu_thuat || 30, r.khoang_cach || 0, r.can_rut_may || 0, r.can_nguoi_phu || 0, r.ds_nguoi_phu || '', r.order_idx || 0, r.is_active ?? 1, r.updated_at || new Date().toISOString())));
+      }
+      if (Array.isArray(tables.patients)) {
+        tables.patients.forEach(r => stmts.push(db.prepare("INSERT INTO patients (id, name, age, gender, room, bed, arrive_time, leave_time, procedures, status, ngay_vao, gio_ban, is_saturday, order_idx, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").bind(r.id, r.name, r.age || 0, r.gender || 'Nam', r.room || '', r.bed || '', r.arrive_time || '07:30', r.leave_time || '', r.procedures || '[]', r.status || 'Chưa xếp', r.ngay_vao || '', r.gio_ban || '', r.is_saturday || 0, r.order_idx || 0, r.created_at || new Date().toISOString(), r.updated_at || new Date().toISOString())));
+      }
+      if (Array.isArray(tables.schedules)) {
+        tables.schedules.forEach(r => stmts.push(db.prepare("INSERT INTO schedules (id, date, patient_name, dob, room, procedure_name, staff_name, sub_staff_name, machine_name, bed, start_time, end_time, is_saturday, order_idx, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").bind(r.id, r.date, r.patient_name, r.dob || '', r.room || '', r.procedure_name, r.staff_name || '', r.sub_staff_name || '', r.machine_name || '', r.bed || '', r.start_time, r.end_time, r.is_saturday || 0, r.order_idx || 0, r.created_at || new Date().toISOString())));
+      }
+      if (Array.isArray(tables.history_records)) {
+        tables.history_records.forEach(r => stmts.push(db.prepare("INSERT INTO history_records (id, date, patient_name, dob, room, procedure_name, staff_name, sub_staff_name, machine_name, bed, start_time, end_time, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").bind(r.id, r.date, r.patient_name, r.dob || '', r.room || '', r.procedure_name, r.staff_name || '', r.sub_staff_name || '', r.machine_name || '', r.bed || '', r.start_time, r.end_time, r.created_at || new Date().toISOString())));
+      }
+      if (Array.isArray(tables.history_busy)) {
+        tables.history_busy.forEach(r => stmts.push(db.prepare("INSERT INTO history_busy (id, date, staff_name, busy_ranges, created_at) VALUES (?, ?, ?, ?, ?)").bind(r.id, r.date, r.staff_name, r.busy_ranges, r.created_at || new Date().toISOString())));
+      }
+      if (Array.isArray(tables.chamcong_records)) {
+        tables.chamcong_records.forEach(r => stmts.push(db.prepare("INSERT INTO chamcong_records (month_year, data_json, updated_at) VALUES (?, ?, ?)").bind(r.month_year, r.data_json, r.updated_at || new Date().toISOString())));
+      }
+      if (Array.isArray(tables.thongke_records)) {
+        tables.thongke_records.forEach(r => stmts.push(db.prepare("INSERT INTO thongke_records (month_year, data_json, updated_at) VALUES (?, ?, ?)").bind(r.month_year, r.data_json, r.updated_at || new Date().toISOString())));
+      }
+      if (Array.isArray(tables.tim_ranh)) {
+        tables.tim_ranh.forEach(r => stmts.push(db.prepare("INSERT INTO tim_ranh (id, procedure_name, start_time, end_time, staff_name, machine_name) VALUES (?, ?, ?, ?, ?, ?)").bind(r.id, r.procedure_name, r.start_time, r.end_time, r.staff_name, r.machine_name)));
+      }
+      if (Array.isArray(tables.documents)) {
+        tables.documents.forEach(r => stmts.push(db.prepare("INSERT INTO documents (id, doc_number, title, agency, signed_date, view_link, download_link) VALUES (?, ?, ?, ?, ?, ?, ?)").bind(r.id, r.doc_number, r.title, r.agency, r.signed_date, r.view_link, r.download_link)));
+      }
+      if (Array.isArray(tables.system_settings)) {
+        tables.system_settings.forEach(r => stmts.push(db.prepare("INSERT INTO system_settings (key, value, updated_at) VALUES (?, ?, ?)").bind(r.key, r.value, r.updated_at || new Date().toISOString())));
+      }
+
+      for (let i = 0; i < stmts.length; i += 50) {
+        await db.batch(stmts.slice(i, i + 50));
+      }
+
+      await bumpDataVersion(db);
+      return success({ message: "Đã khôi phục toàn bộ cơ sở dữ liệu thành công!", totalStatements: stmts.length });
+    }
+
     case "saveFileContent": {
       const fileName = args[0] || "";
       const content = args[1] || {};

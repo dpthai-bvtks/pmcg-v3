@@ -547,3 +547,9 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   + Đổi tên 16 bảng: `accounts` ➔ `tai_khoan`, `patients` ➔ `benh_nhan`, `schedules` ➔ `lich_trinh`, `staff` ➔ `nhan_su`, `machines` ➔ `may_moc`, `rooms` ➔ `phong`, `procedures` ➔ `thu_thuat`, `system_settings` ➔ `cai_dat`, `history_records` ➔ `lich_su`, `history_busy` ➔ `gio_ban_cu`, `chamcong_records` ➔ `cham_cong`, `thongke_records` ➔ `thong_ke`, `documents` ➔ `tai_lieu`, `audit_logs` ➔ `nhat_ky`, `categories` ➔ `danh_muc`, `training_data` ➔ `du_lieu_huan_luyen`.
   + Cập nhật đồng bộ 458 vị trí SQL trong `backend/src/index.js` và đã deploy lại Cloudflare Worker thành công.
 - **File:** `backend/src/index.js`, `index.html` (v3.1.8)
+
+### Cập nhật 21/08/2026 (v3.1.9)
+- **Lỗi:** `table benh_nhan has no column named thu_thuat` khi thực hiện lưu dữ liệu bệnh nhân.
+- **Nguyên nhân:** Do khi đổi tên các bảng từ tiếng Anh sang tiếng Việt ở v3.1.8, từ khóa `procedures` trong các câu SQL của bảng `benh_nhan` đã bị đổi thành `thu_thuat`. Nhưng tên cột thực tế trong bảng `benh_nhan` trên D1 lúc đó vẫn là `procedures`.
+- **Giải pháp:** Thực hiện lệnh SQL `ALTER TABLE benh_nhan RENAME COLUMN procedures TO thu_thuat` trên Cloudflare D1 để chuẩn hóa tên cột đồng bộ 100% với backend. Re-deploy Cloudflare Worker.
+- **File:** `backend/src/index.js` (deploy), `index.html` (v3.1.9)

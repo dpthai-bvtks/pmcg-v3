@@ -579,3 +579,9 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   2. `renderCharts()`: Thêm cơ chế fallback phân tích phân bổ thủ thuật YHCT & PHCN trực tiếp từ danh sách bệnh nhân (`dataCache.pat`) khi lịch chưa xếp.
   3. Cập nhật `renderPatientsTable()`: Tự động gọi `loadDashboard()` để kích hoạt vẽ lại số liệu Tổng quan và các biểu đồ Phân bổ thủ thuật ngay lập tức (0ms) khi có bất kỳ thao tác nào ở tab Bệnh nhân.
 - **File:** `js/app.js`, `index.html` (v3.2.2)
+
+### Cập nhật 21/08/2026 (v3.2.3)
+- **Lỗi:** Bảng bệnh nhân trên D1 có 40 bản ghi (gồm 34 bệnh nhân nhập từ các ngày 17/08 - 20/08 đang điều trị và 6 bệnh nhân ngày 21/08), nhưng giao diện phần mềm chỉ hiển thị 6 bệnh nhân.
+- **Nguyên nhân:** Lệnh SQL trong `getBootstrapData` ở backend bị cài điều kiện lọc cứng `WHERE ngay_vao = '21/08/2026'`, khiến các bệnh nhân đang nằm viện/điều trị nhập vào từ các ngày trước đó bị loại bỏ.
+- **Giải pháp:** Sửa truy vấn SQL backend thành `SELECT * FROM benh_nhan WHERE is_saturday = 0 ORDER BY order_idx ASC, id ASC` để tải toàn bộ 40 bệnh nhân đang điều trị. Re-deploy Cloudflare Worker.
+- **File:** `backend/src/index.js` (deploy), `index.html` (v3.2.3)

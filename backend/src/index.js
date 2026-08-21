@@ -271,8 +271,8 @@ async function handleApiAction(action, args, env, request) {
         db.prepare("SELECT * FROM may_moc ORDER BY order_idx ASC, id ASC"),
         db.prepare("SELECT * FROM phong ORDER BY order_idx ASC, id ASC"),
         db.prepare("SELECT * FROM thu_thuat ORDER BY order_idx ASC, id ASC"),
-        // Chỉ lấy bệnh nhân của ngày hôm nay (theo múi giờ VN)
-        db.prepare("SELECT * FROM benh_nhan WHERE is_saturday = 0 AND (ngay_vao = ? OR ngay_vao = ? OR ngay_vao = '') ORDER BY order_idx ASC, id ASC").bind(todayVNSlash, todayVN),
+        // Lấy tất cả bệnh nhân đang điều trị (is_saturday = 0)
+        db.prepare("SELECT * FROM benh_nhan WHERE is_saturday = 0 ORDER BY order_idx ASC, id ASC"),
         // Chỉ lấy lịch của ngày hôm nay
         db.prepare("SELECT * FROM lich_trinh WHERE date = ? ORDER BY order_idx ASC, start_time ASC").bind(todayVN),
         db.prepare("SELECT id, username, role, permissions FROM tai_khoan")

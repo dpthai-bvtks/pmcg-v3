@@ -8803,7 +8803,7 @@ window.loadGoogleDriveSettingsUI = function() {
 
 window.loadQuickLinks = function() {
     callApi('getQuickLinks', [], links => {
-        const uls = document.querySelectorAll('#khu-vuc-lien-ket');
+        const uls = document.querySelectorAll('.khu-vuc-lien-ket');
         if (uls.length) {
             if (links && Array.isArray(links) && links.length) {
                 const htmlContent = links.map(item => 

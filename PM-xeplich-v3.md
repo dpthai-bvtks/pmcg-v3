@@ -505,3 +505,11 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
 **Files đã sửa:** ackend/src/index.js, index.html, PM-xeplich-v3.md (Version 3.1.2).
 
 **Phiên bản:** 3.1.1 → 3.1.2
+
+### Cập nhật 21/08/2026
+- **Yêu cầu:** Đẩy data lên D1, sửa lỗi mất dữ liệu Nhân sự chấm công, sửa lỗi mất Liên kết nhanh khi F5.
+- **Thực hiện:**
+  + Đã tạo script `backend/generate_seed.js` và `backend/seed.sql` để import dữ liệu từ Data_v3 lên D1. (Do Cloudflare session của AI hết hạn nên người dùng cần tự chạy lệnh `npx wrangler d1 execute pmcg-db --file=seed.sql --remote`).
+  + Đã sửa lỗi mất dữ liệu Chấm Công do fallback API trả về object thay vì array string. Bổ sung map object sang tên trong `js/thongke.js`.
+  + Đã sửa lỗi F5 mất Liên kết nhanh bằng cách đổi `id="khu-vuc-lien-ket"` thành `class="khu-vuc-lien-ket"` do bị clone thành nhiều element giống nhau khi nạp template.
+  + Đồng bộ phiên bản lên 3.1.3.

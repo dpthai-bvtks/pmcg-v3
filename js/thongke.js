@@ -76,7 +76,8 @@
                 }
 
                 if (list.length > 0) {
-                    adminChamCongEmployees = list;
+                    // Extract names if list contains objects
+                    adminChamCongEmployees = list.map(item => typeof item === 'object' && item !== null ? (item.ten || item.name || item.his_name) : item).filter(Boolean);
                     try { localStorage.setItem('med_chamcong_employees', JSON.stringify(adminChamCongEmployees)); } catch(e){}
                     if (callback) callback(adminChamCongEmployees);
                 }
@@ -98,6 +99,11 @@
                     }
                 } else if (Array.isArray(res)) {
                     adminChamCongEmployees = res;
+                } else {
+                    adminChamCongEmployees = Object.keys(res);
+                }
+                if (Array.isArray(adminChamCongEmployees)) {
+                    adminChamCongEmployees = adminChamCongEmployees.map(item => typeof item === 'object' && item !== null ? (item.ten || item.name || item.his_name) : item).filter(Boolean);
                 }
                 if (adminChamCongEmployees.length > 0) {
                     try { localStorage.setItem('med_chamcong_employees', JSON.stringify(adminChamCongEmployees)); } catch(e){}

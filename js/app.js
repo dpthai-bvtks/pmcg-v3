@@ -4699,7 +4699,7 @@ window.showGlobalLoading = function (text) {
 
                                 ngay: idx.ngay >= 0 ? r[idx.ngay] : "",
 
-                                tenBN: idx.ten >= 0 ? r[idx.ten] : "",
+                                tenBN: idx.ten >= 0 ? String(r[idx.ten] || "").replace(/\s*\((?:✔ RV|❌ Rớt|RV|Rớt)\)/gi, "").trim() : "",
 
                                 namSinh: idx.ns >= 0 ? r[idx.ns] : "",
 

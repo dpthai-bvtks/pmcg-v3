@@ -621,3 +621,19 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   2. Đã xóa toàn bộ thư mục `scratch/` chứa các file script migration/test tạm thời.
   3. Cập nhật đồng bộ phiên bản v3.2.7 trên `index.html` và push code lên GitHub main repository.
 - **File:** `index.html` (v3.2.7)
+
+### Cập nhật 22/08/2026 (v3.2.8)
+- **Yêu cầu & Phát hiện lỗi:**
+  1. **Lỗi Xuất Lịch Trình:** File Excel tải về không chứa danh sách các ca bị rớt. Nguyên nhân do exportSchedule() trong js/app.js chỉ đọc window.currentScheduleData mà bỏ qua mảng ca rớt window.lastUnscheduledData.
+  2. **Lỗi Xếp Lịch Bổ Sung:** Nhân sự thừa nhiều giờ nhưng không xếp được ca bổ sung. Nguyên nhân chính do existingSched bị nạp sai làm đẩy patObj.free_at của bệnh nhân đến cuối ca chiều, khiến thuật toán bỏ qua mọi khoảng rảnh sáng/chiều của BN. Thêm vào đó, biến 	earStart bị NaN trong vòng lặp existingSched, uildDbFromCache dùng uniquePending ép xóa mất các ca thủ thuật trùng loại, và unBestIteration bị thiếu tham số existingSched.
+- **Giải pháp:**
+  1. **Xuất Excel hoàn chỉnh (Frontend):** Cập nhật exportSchedule() trong js/app.js để hợp nhất window.currentScheduleData và window.lastUnscheduledData. Tất cả ca rớt được xuất ra Excel với trạng thái ❌ Rớt, giờ kết thúc --, lý do rớt và tô màu nền đỏ nhạt (#FFE6E6) để dễ quan sát.
+  2. **Tối ưu Thuật Toán Xếp Bổ Sung (Engine):** 
+     - Loại bỏ lệnh đẩy patObj.free_at khi đọc existingSched, trả lại khả năng xếp ca vào mọi khung giờ trống trong ngày. Mảng patObj.busy đảm bảo không bao giờ trùng giờ ca cũ.
+     - Sửa lỗi 	earStart = gioEnd trong existingSched.
+     - Loại bỏ uniquePending để giữ đầy đủ số lượng ca yêu cầu.
+     - Cập nhật staffLoad cho cả NV chính & NV phụ khi nạp existingSched.
+     - Truyền existingSched đồng bộ vào unBestIteration & unClientScheduling.
+  3. **Kiểm thử nội bộ:** Đã chạy script test tự động, xác nhận 100% ca cũ giữ nguyên bảo toàn, xếp bổ sung thành công 4 ca mới vào các khe trống, 0% lỗi trùng giờ (tránh tuyệt đối nguy cơ xuất toán).
+- **File:** js/app.js, js/scheduler-engine.js, index.html (v3.2.8)
+

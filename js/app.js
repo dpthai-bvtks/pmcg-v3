@@ -4293,11 +4293,33 @@ window.showGlobalLoading = function (text) {
         // ============================================================
 
         function exportSchedule() {
+            const safeSched = (window.currentScheduleData || []).map(normalizeScheduleRow).filter(r => !isDroppedScheduleRow(r));
+            const cleanedUnscheduled = typeof reconcileUnscheduledData === 'function'
+                ? reconcileUnscheduledData(window.lastUnscheduledData || [])
+                : (window.lastUnscheduledData || []);
 
-            if (!window.currentScheduleData?.length) return alert("Chưa có lịch để xuất!");
+            const activeDateVal = (document.getElementById('schedule-date')?.value) || (safeSched[0]?.ngay) || '';
+            const droppedItems = cleanedUnscheduled.map(u => {
+                const item = typeof normalizeDroppedItem === 'function' ? normalizeDroppedItem(u, activeDateVal) : u;
+                return {
+                    ngay: item.ngay || activeDateVal,
+                    tenBN: item.bn || item.tenBN || '',
+                    namSinh: item.ns || item.namSinh || '',
+                    phong: item.room || item.phong || '',
+                    thuThuat: item.tt || item.thuThuat || '',
+                    gioDienRa: '❌ Rớt',
+                    gioKetThuc: '--',
+                    nvChinh: item.staff || item.nvChinh || '--',
+                    may: item.reason || item.may || 'Thiếu nhân sự/Máy hoặc hết giờ',
+                    __dropped: true
+                };
+            });
+
+            const allRows = [...safeSched.map(row => ({ ...row, __dropped: false })), ...droppedItems];
+            if (!allRows.length) return alert("Chưa có lịch để xuất!");
 
             // 1. Sắp xếp: Đã ra viện lên trên -> Phòng → Tên BN → Bắt Đầu (A-Z)
-            const sorted = [...window.currentScheduleData].sort((a, b) => {
+            const sorted = [...allRows].sort((a, b) => {
                 const dA = !!a.__isDischarged;
                 const dB = !!b.__isDischarged;
                 if (dA !== dB) return dA ? -1 : 1;
@@ -4311,19 +4333,20 @@ window.showGlobalLoading = function (text) {
             });
 
             // 2. Tiêu đề cột
-            // Cột: Ngày | Tên BN | Năm Sinh | Phòng | Thủ Thuật | Bắt Đầu | Kết Thúc | NV Chính | Máy
+            // Cột: Ngày | Tên Bệnh Nhân | Năm Sinh | Phòng | Thủ Thuật | Bắt Đầu | Kết Thúc | NV Chính | Máy
             const HEADER = ["Ngày", "Tên Bệnh Nhân", "Năm Sinh", "Phòng", "Thủ Thuật", "Bắt Đầu", "Kết Thúc", "NV Chính", "Máy"];
             const ws_data = [HEADER];
 
             // Chỉ số căn lề trái / căn giữa
-            const LEFT_COLS = new Set([0, 1, 3, 4, 7, 8]); // Ngày, TênBN, Phòng, ThuThuat, NVChinh, May
             const CENTER_COLS = new Set([2, 5, 6]);             // NamSinh, BatDau, KetThuc
 
             // 3. Điền dữ liệu
             sorted.forEach(row => {
                 const ngay = String(row.ngay || '').split('-').reverse().join('/');
                 const phong = String(row.phong || '').trim();
-                const tenBNText = String(row.tenBN || '').trim() + (row.__isDischarged ? ' (✔ RV)' : '');
+                let tenBNText = String(row.tenBN || '').trim();
+                if (row.__isDischarged) tenBNText += ' (✔ RV)';
+                if (row.__dropped) tenBNText += ' (❌ Rớt)';
 
                 ws_data.push([
                     ngay,
@@ -4358,7 +4381,7 @@ window.showGlobalLoading = function (text) {
                 ws['!rows'][r] = { hpt: 28.35 };
             }
 
-            // 7. Căn lề ô + định dạng font, viền, màu sắc dựa trên NV Chính
+            // 7. Căn lề ô + định dạng font, viền, màu sắc dựa trên NV Chính / Ca rớt
             try {
                 const range = XLSX.utils.decode_range(ws['!ref']);
                 for (let R = range.s.r; R <= range.e.r; R++) {

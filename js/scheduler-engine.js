@@ -281,7 +281,7 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
     if (may && may !== "Thủ công" && machineTimeline[may]) pushAndMerge(machineTimeline, may, [gioStart, gioEnd]);
     if (phong && giuong && bedTracker[phong]?.[giuong]) pushAndMerge(bedTracker[phong], giuong, [gioStart, gioEnd]);
 
-    // 🔒 PATIENT LOCK: Update patient busy timeline, free_at, and last_room for existing schedule
+    // 🔒 PATIENT LOCK: Update patient busy timeline and last_room for existing schedule
     if (patName) {
       const patObj = patients.find(p => {
         const pName = String(p.name || '').toUpperCase().trim();
@@ -291,15 +291,18 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
       if (patObj) {
         patObj.busy.push([gioStart, gioEnd + 1]);
         patObj.busy = mergeTimeline(patObj.busy);
-        patObj.free_at = Math.max(patObj.free_at || 0, gioEnd);
         if (phong) patObj.last_room = phong;
       }
     }
 
     // 🔒 STAFF WORKLOAD LOCK: Update staff load minutes and procedure count
     if (nvChinh && staffLoad[nvChinh]) {
-      staffLoad[nvChinh].used_mins += (staffEnd - gioStart);
+      staffLoad[nvChinh].used_mins += (staffEnd - gioStart) + (hasTeardown ? 1 : 0);
       staffLoad[nvChinh].procs_done[tenThuThuat] = (staffLoad[nvChinh].procs_done[tenThuThuat] || 0) + 1;
+    }
+    if (nvPhu && staffLoad[nvPhu]) {
+      staffLoad[nvPhu].used_mins += (staffEnd - gioStart) + (hasTeardown ? 1 : 0);
+      staffLoad[nvPhu].procs_done[tenThuThuat] = (staffLoad[nvPhu].procs_done[tenThuThuat] || 0) + 1;
     }
   });
   const tempDropList = [], results = [], localProcCount = {};
@@ -1011,10 +1014,9 @@ async function buildBaseDbFromD1(db) {
       const leaveRaw = p.gioRa || p.leave_time || p[6] || "";
       const isRaVien = (leaveRaw && String(leaveRaw).trim() !== "");
 
-      const uniquePending = [...new Set(procs.map(x => x.toLowerCase()))].map(lower => procs.find(x => x.toLowerCase() === lower));
-      const pendingFiltered = uniquePending.filter(tenThuThuat => {
+      const pendingFiltered = procs.filter(tenThuThuat => {
         if (!skipList.length || isRaVien) return true;
-        const tenLower = tenThuThuat.toLowerCase();
+        const tenLower = String(tenThuThuat || '').toLowerCase();
         const info = database.thuThuatInfo[tenLower];
         const tenGoc = info ? (info[8] || "").toLowerCase() : tenLower;
         const vietTat = info ? (info[9] || "").toLowerCase() : "";
@@ -1058,7 +1060,7 @@ async function buildBaseDbFromD1(db) {
     const scenarioMap = { opt_rare: 1, balanced: 2, contingency: 3 };
     const scenario = scenarioMap[strategyKey] || 1;
 
-    const best = runBestIteration(db, dateVal, [], scenario, crowdedOverride);
+    const best = runBestIteration(db, dateVal, existingSched, scenario, crowdedOverride);
     const finalDropList = (best ? best.rot : []).concat(forcedDrops).map(r => ({ ...r, ngay: r.ngay || dateVal }));
 
     const formattedSched = (best ? best.sched : []).map(x => ({

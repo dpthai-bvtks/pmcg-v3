@@ -8271,15 +8271,64 @@ window.showGlobalLoading = function (text) {
                         const worksheet = workbook.Sheets[firstSheetName];
                         
                         const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
-                        let headerRowIndex = 0;
+                        let headerRowIndex = -1;
+                        let isInternalSchedule = false;
+
                         for (let i = 0; i < Math.min(rawData.length, 50); i++) {
-                            const row = rawData[i];
-                            if (row.includes("STT") || row.includes("NAME") || row.includes("MABN")) {
+                            const rowStr = (rawData[i] || []).map(c => typeof xoaDau === 'function' ? xoaDau(String(c || '').toLowerCase()).trim() : String(c || '').toLowerCase().trim());
+                            if (rowStr.some(c => c.includes("ten benh nhan") || c.includes("ten bn") || c.includes("hoten"))) {
+                                headerRowIndex = i;
+                                isInternalSchedule = true;
+                                break;
+                            } else if (rowStr.some(c => c.includes("stt") || c.includes("name") || c.includes("mabn"))) {
                                 headerRowIndex = i;
                                 break;
                             }
                         }
-                        const dataRows = XLSX.utils.sheet_to_json(worksheet, { header: "A", range: headerRowIndex, defval: "" });
+
+                        if (headerRowIndex < 0) headerRowIndex = 0;
+
+                        let dataRows = [];
+                        if (isInternalSchedule) {
+                            const headerRow = (rawData[headerRowIndex] || []).map(h => typeof xoaDau === 'function' ? xoaDau(String(h || '').toLowerCase()).trim() : String(h || '').toLowerCase().trim());
+                            const colIdx = {
+                                ngay: headerRow.findIndex(h => h.includes('ngay')),
+                                ten: headerRow.findIndex(h => h.includes('ten benh nhan') || h.includes('ten bn') || h.includes('hoten')),
+                                tt: headerRow.findIndex(h => h.includes('thu thuat') || h.includes('dich vu') || h.includes('dichvu')),
+                                bd: headerRow.findIndex(h => h.includes('bat dau') || h.includes('gio dien ra') || h.includes('giodienra')),
+                                kt: headerRow.findIndex(h => h.includes('ket thuc') || h.includes('gioketthuc')),
+                                nv: headerRow.findIndex(h => h.includes('nv chinh') || h.includes('nhan vien chinh'))
+                            };
+
+                            dataRows = rawData.slice(headerRowIndex + 1).filter(r => r && r.some(c => String(c).trim())).map(r => {
+                                const ngayStr = colIdx.ngay >= 0 ? String(r[colIdx.ngay] || '').trim() : '';
+                                const bdStr = colIdx.bd >= 0 ? String(r[colIdx.bd] || '').trim() : '';
+                                const ktStr = colIdx.kt >= 0 ? String(r[colIdx.kt] || '').trim() : '';
+
+                                if (bdStr.includes('Rớt') || bdStr === '--' || !bdStr) return null;
+
+                                const datePart = ngayStr.includes('-') ? ngayStr.split('-').reverse().join('/') : ngayStr;
+                                const startFull = datePart ? `${bdStr} ${datePart}` : bdStr;
+                                const endFull = datePart ? `${ktStr} ${datePart}` : ktStr;
+
+                                const cleanBN = (colIdx.ten >= 0 ? String(r[colIdx.ten] || '') : '').replace(/\s*\((?:✔ RV|❌ Rớt|RV|Rớt)\)/gi, '').trim();
+
+                                return {
+                                    'AT': colIdx.nv >= 0 ? r[colIdx.nv] : '',
+                                    'C': cleanBN,
+                                    'AE': colIdx.tt >= 0 ? r[colIdx.tt] : '',
+                                    'AG': colIdx.tt >= 0 ? r[colIdx.tt] : '',
+                                    'AF': 'Chủ động',
+                                    'AS': 'Khác',
+                                    'AN': 'Loại 2',
+                                    'AH': startFull,
+                                    'L': endFull
+                                };
+                            }).filter(Boolean);
+                        } else {
+                            dataRows = XLSX.utils.sheet_to_json(worksheet, { header: "A", range: headerRowIndex, defval: "" });
+                        }
+
                         processErrorChecking(dataRows);
                         if (window.hideGlobalLoading) window.hideGlobalLoading();
                     } catch (err) {

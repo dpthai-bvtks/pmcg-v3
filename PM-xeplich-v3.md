@@ -613,3 +613,11 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   2. **Cập nhật Tải Công Việc Nhân Sự (`staffLoad`):** Cộng dồn số phút làm việc (`used_mins`) và đếm số ca hoàn thành (`procs_done`) của các ca trong `existingSched` vào tải của KTV, giữ nguyên tắc cân bằng tải khi xếp bổ sung.
   3. **Chuẩn hóa Trừ Thủ Thuật Đã Xếp (Count-by-count Deduction):** Thay thế logic `.includes()` bằng cơ chế trừ tần suất từng ca một trong `buildDbFromCache`. Bệnh nhân đăng ký nhiều ca cùng loại (như 2 ca Điện châm) khi mới xếp 1 ca sẽ chỉ bị trừ đúng 1 ca, giữ lại ca còn lại để xếp bổ sung.
 - **File:** `js/scheduler-engine.js`, `index.html` (v3.2.6)
+
+### Cập nhật 22/08/2026 (v3.2.7)
+- **Yêu cầu:** Dọn dẹp toàn bộ thư mục `Data_v3` và các file tạm thừa trong dự án.
+- **Thực hiện:**
+  1. Đã xóa hoàn toàn thư mục legacy `Data_v3` (gồm 23 file dữ liệu/Excel/JSON cũ không còn sử dụng).
+  2. Đã xóa toàn bộ thư mục `scratch/` chứa các file script migration/test tạm thời.
+  3. Cập nhật đồng bộ phiên bản v3.2.7 trên `index.html` và push code lên GitHub main repository.
+- **File:** `index.html` (v3.2.7)

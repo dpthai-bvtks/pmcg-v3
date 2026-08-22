@@ -59,9 +59,9 @@
     }
     </script>
     <meta name="theme-color" content="#1e3d2b">
-    <link rel="icon" type="image/png" sizes="128x128" href="favicon-128.png?v=3.2.8">
+    <link rel="icon" type="image/png" sizes="128x128" href="favicon-128.png?v=3.2.9">
     <!-- Thêm icon cho iOS -->
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=3.2.8">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=3.2.9">
 
 
 
@@ -72,9 +72,9 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
     <!-- CSS Custom -->
-    <link rel="stylesheet" href="css/style.css?v=3.2.8">
+    <link rel="stylesheet" href="css/style.css?v=3.2.9">
     <!-- JS Thư viện kéo thả nội bộ -->
-    <script src="js/sortable.min.js?v=3.2.8"></script>
+    <script src="js/sortable.min.js?v=3.2.9"></script>
     <!-- Chart.js for Thống Kê & ExcelJS -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
@@ -188,14 +188,10 @@
                             onclick="document.querySelector('.nav-tab[data-tab=\'tab-home\']')?.click()"
                             title="Về trang chủ">
 
-                        <div class="banner-text">
-
-                            <h1>BỆNH VIỆN THAN - KHOÁNG SẢN CS2</h1>
-
-                            <h2>KHOA Y HỌC CỔ TRUYỀN - PHỤC HỒI CHỨC NĂNG</h2>
-
-                            <p>Y HỌC TỐT, PHỤC HỒI NHANH</p>
-
+                        <div class="banner-text" style="display: flex; align-items: center; padding-left: 15px;">
+                            <h1
+                                style="margin: 0; font-size: 21px; font-weight: bold; color: #1e3d2b; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; letter-spacing: 0.5px;">
+                                PHẦN MỀM CHIA GIỜ THỦ THUẬT YHCT-PHCN</h1>
                         </div>
 
                     </div>
@@ -1019,6 +1015,24 @@
 
                                 </div>
 
+                                
+                                <div class="form-group">
+                                    <label>Loại bệnh nhân:</label>
+                                    <select id="pat-loai-bn" onchange="togglePatSessionSelect()" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; outline: none;">
+                                        <option value="NoiTru">Nội trú</option>
+                                        <option value="NgoaiTru">Ngoại trú</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group" id="pat-session-group" style="display: none;">
+                                    <label>Buổi điều trị ngoại trú:</label>
+                                    <select id="pat-buoi-dieu-tri" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; outline: none;">
+                                        <option value="TuDong">🔄 Tự động (hệ thống chọn)</option>
+                                        <option value="Sang">☀️ Buổi Sáng (7:00 - 11:30)</option>
+                                        <option value="Chieu">🌙 Buổi Chiều (13:00 - 16:54)</option>
+                                    </select>
+                                </div>
+
                                 <div class="form-group"><label>Giờ ra viện:</label><input type="text" id="pat-leave"
                                         class="time-input" placeholder="VD: 14:00">
 
@@ -1096,8 +1110,13 @@
 
                                 <input type="text" id="pat-search-input"
                                     placeholder="Gõ tên, năm sinh, ngày vào hoặc phòng để tìm nhanh..."
-                                    style="padding: 8px 12px; width: 450px; border: 1px solid #bdc3c7; border-radius: 4px; outline: none;"
+                                    style="padding: 8px 12px; width: 320px; border: 1px solid #bdc3c7; border-radius: 4px; outline: none;"
                                     onkeyup="filterPatientTable()">
+                                <div class="patient-type-filters" style="display: flex; gap: 6px; margin-left: auto; align-items: center;">
+                                    <button type="button" id="btn-filter-all" class="btn-filter-pat-type active" onclick="setPatientTypeFilter('all')" style="padding: 8px 16px; border-radius: 4px; border: 1px solid #1e3d2b; background: #1e3d2b; color: white; font-weight: bold; cursor: pointer; transition: all 0.2s; font-size: 12px;">Tất cả</button>
+                                    <button type="button" id="btn-filter-noitru" class="btn-filter-pat-type" onclick="setPatientTypeFilter('NoiTru')" style="padding: 8px 16px; border-radius: 4px; border: 1px solid #cbd5e1; background: white; color: #475569; font-weight: bold; cursor: pointer; transition: all 0.2s; font-size: 12px;">Nội trú</button>
+                                    <button type="button" id="btn-filter-ngoaitru" class="btn-filter-pat-type" onclick="setPatientTypeFilter('NgoaiTru')" style="padding: 8px 16px; border-radius: 4px; border: 1px solid #cbd5e1; background: white; color: #475569; font-weight: bold; cursor: pointer; transition: all 0.2s; font-size: 12px;">Ngoại trú</button>
+                                </div>
 
                             </div>
 
@@ -1113,7 +1132,9 @@
 
                                         <th>Năm Sinh</th>
 
-                                        <th id="th-pat-ngayvao" onclick="toggleSortPatientsByNgayVao()" style="cursor:pointer; color:#1d4ed8; text-decoration:underline;" title="Bấm để sắp xếp theo Ngày Vào (Mới nhất / Cũ nhất)">Ngày Vào ▲</th>
+                                        <th id="th-pat-ngayvao" onclick="toggleSortPatientsByNgayVao()"
+                                            style="cursor:pointer; color:#1d4ed8; text-decoration:underline;"
+                                            title="Bấm để sắp xếp theo Ngày Vào (Mới nhất / Cũ nhất)">Ngày Vào ▲</th>
 
                                         <th style="text-align:center;">Giờ Y lệnh</th>
 
@@ -1946,6 +1967,9 @@
                                     ⚙️ CÀI ĐẶT HỆ THỐNG
                                 </div>
 
+
+
+
                                 <div style="display: flex; flex-direction: column; gap: 20px; max-width: 600px;">
                                     <!-- Dòng chữ chạy -->
                                     <div
@@ -1967,7 +1991,7 @@
                                         <label
                                             style="font-size:13px; font-weight:bold; color:#2c3e50; display:block; margin-bottom:10px;">⏰
                                             Giờ chốt sổ tự động (Hàng ngày):</label>
-                                        <input type="time" id="admin-chotso-time"
+                                        <input type="text" id="admin-chotso-time" placeholder="VD: 16:00" class="time-input"
                                             style="width:100%; padding:10px; border-radius:4px; border:1px solid #ccc; outline:none; font-size:14px; margin-bottom: 10px;">
 
                                         <label
@@ -2293,85 +2317,129 @@
 
                                 <div style="display: flex; flex-direction: column; gap: 20px; max-width: 700px;">
                                     <!-- Card 1: Thư mục máy tính tự động -->
-                                    <div style="background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-                                        <h4 style="margin: 0 0 10px 0; color: #1e293b; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                                    <div
+                                        style="background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                                        <h4
+                                            style="margin: 0 0 10px 0; color: #1e293b; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
                                             <span>📁</span> 1. Chọn Thư Mục Lưu Tự Động Trên Máy Tính
                                         </h4>
-                                        <p style="font-size: 13px; color: #64748b; margin-bottom: 14px; line-height: 1.6;">
-                                            Chọn thư mục trên máy tính (VD: <code>D:\SaoLuu_PMCG</code>). Mỗi khi sao lưu, trình duyệt sẽ tự động lưu file thẳng vào thư mục này mà không cần hỏi cửa sổ "Save As".
+                                        <p
+                                            style="font-size: 13px; color: #64748b; margin-bottom: 14px; line-height: 1.6;">
+                                            Chọn thư mục trên máy tính (VD: <code>D:\SaoLuu_PMCG</code>). Mỗi khi sao
+                                            lưu, trình duyệt sẽ tự động lưu file thẳng vào thư mục này mà không cần hỏi
+                                            cửa sổ "Save As".
                                         </p>
-                                        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;">
-                                            <button type="button" onclick="selectLocalBackupDirectory()" style="padding: 10px 18px; background: #0284c7; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(2,132,199,0.2);">
+                                        <div
+                                            style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;">
+                                            <button type="button" onclick="selectLocalBackupDirectory()"
+                                                style="padding: 10px 18px; background: #0284c7; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(2,132,199,0.2);">
                                                 <span>📁</span> Chọn Thư Mục Máy Tính...
                                             </button>
-                                            <span id="local-dir-path-display" style="font-size: 13px; font-weight: 600; color: #1e293b; background: #f1f5f9; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1;">📁 Chưa chọn thư mục</span>
+                                            <span id="local-dir-path-display"
+                                                style="font-size: 13px; font-weight: 600; color: #1e293b; background: #f1f5f9; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1;">📁
+                                                Chưa chọn thư mục</span>
                                         </div>
                                     </div>
 
                                     <!-- Card 2: Google Drive Auto-Upload -->
-                                    <div style="background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-                                        <h4 style="margin: 0 0 10px 0; color: #1e293b; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                                    <div
+                                        style="background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                                        <h4
+                                            style="margin: 0 0 10px 0; color: #1e293b; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
                                             <span>☁️</span> 2. Cấu Hình Tự Động Upload Lên Google Drive
                                         </h4>
-                                        <p style="font-size: 13px; color: #64748b; margin-bottom: 14px; line-height: 1.6;">
-                                            Nhập Webhook URL Google Apps Script của thư mục Google Drive. Cloudflare Worker sẽ tự động đẩy file sao lưu D1 lên Google Drive của bác sĩ hàng ngày (17:00).
+                                        <p
+                                            style="font-size: 13px; color: #64748b; margin-bottom: 14px; line-height: 1.6;">
+                                            Nhập Webhook URL Google Apps Script của thư mục Google Drive. Cloudflare
+                                            Worker sẽ tự động đẩy file sao lưu D1 lên Google Drive của bác sĩ hàng ngày
+                                            (17:00).
                                         </p>
-                                        
+
                                         <div style="margin-bottom: 15px;">
-                                            <label style="font-size: 12.5px; font-weight: 700; color: #334155; display: block; margin-bottom: 6px;">URL Webhook Google Drive (Google Apps Script Web App):</label>
-                                            <input type="text" id="gdrive-webhook-url" placeholder="https://script.google.com/macros/s/.../exec" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; margin-bottom: 10px;">
-                                            
+                                            <label
+                                                style="font-size: 12.5px; font-weight: 700; color: #334155; display: block; margin-bottom: 6px;">URL
+                                                Webhook Google Drive (Google Apps Script Web App):</label>
+                                            <input type="text" id="gdrive-webhook-url"
+                                                placeholder="https://script.google.com/macros/s/.../exec"
+                                                style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; margin-bottom: 10px;">
+
                                             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                                                <button type="button" onclick="saveGoogleDriveSettingsUI()" style="padding: 9px 16px; background: #16a085; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                                                <button type="button" onclick="saveGoogleDriveSettingsUI()"
+                                                    style="padding: 9px 16px; background: #16a085; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
                                                     <span>💾</span> Lưu URL Webhook
                                                 </button>
-                                                <button type="button" onclick="testGoogleDriveUploadUI()" style="padding: 9px 16px; background: #e67e22; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                                                <button type="button" onclick="testGoogleDriveUploadUI()"
+                                                    style="padding: 9px 16px; background: #e67e22; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
                                                     <span>⚡</span> Tải Thử Lên Google Drive Now
                                                 </button>
                                             </div>
                                         </div>
 
                                         <!-- Hướng dẫn 3 bước tạo Google Apps Script Webhook miễn phí -->
-                                        <details style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; font-size: 12.5px; color: #475569;">
-                                            <summary style="font-weight: 700; color: #2563eb; cursor: pointer;">📋 Xem hướng dẫn 3 bước tạo Webhook Google Drive (Miễn phí 100%)</summary>
+                                        <details
+                                            style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; font-size: 12.5px; color: #475569;">
+                                            <summary style="font-weight: 700; color: #2563eb; cursor: pointer;">📋 Xem
+                                                hướng dẫn 3 bước tạo Webhook Google Drive (Miễn phí 100%)</summary>
                                             <ol style="margin: 10px 0 0 18px; padding: 0; line-height: 1.6;">
-                                                <li>Mở Google Drive -> Tạo Thư mục mới tên <b>"SaoLuu_PMCG"</b> -> Mở thư mục -> Copy chuỗi ID trên thanh địa chỉ URL (Ví dụ ID: <code>1a2b3c4d5e...</code>).</li>
-                                                <li>Truy cập <a href="https://script.google.com" target="_blank" style="color:#2563eb; font-weight:bold;">script.google.com</a> -> New project -> Dán đoạn mã dưới đây:
-                                                    <pre style="background:#0f172a; color:#f8fafc; padding:10px; border-radius:6px; margin:6px 0; font-size:11px; overflow-x:auto;">function doPost(e) {
+                                                <li>Mở Google Drive -> Tạo Thư mục mới tên <b>"SaoLuu_PMCG"</b> -> Mở
+                                                    thư mục -> Copy chuỗi ID trên thanh địa chỉ URL (Ví dụ ID:
+                                                    <code>1a2b3c4d5e...</code>).</li>
+                                                <li>Truy cập <a href="https://script.google.com" target="_blank"
+                                                        style="color:#2563eb; font-weight:bold;">script.google.com</a>
+                                                    -> New project -> Dán đoạn mã dưới đây:
+                                                    <pre
+                                                        style="background:#0f172a; color:#f8fafc; padding:10px; border-radius:6px; margin:6px 0; font-size:11px; overflow-x:auto;">function doPost(e) {
   var data = JSON.parse(e.postData.contents);
   var folder = DriveApp.getFolderById("DÁN_ID_THƯ_MỤC_VÀO_ĐÂY");
   var file = folder.createFile(data.filename, data.content, MimeType.PLAIN_TEXT);
   return ContentService.createTextOutput(JSON.stringify({status:"success", id: file.getId()}));
 }</pre>
                                                 </li>
-                                                <li>Bấm **Deploy -> New deployment -> Select type: Web app -> Execute as: Me -> Who has access: Anyone** -> Copy URL Web app dán vào ô bên trên.</li>
+                                                <li>Bấm **Deploy -> New deployment -> Select type: Web app -> Execute
+                                                    as: Me -> Who has access: Anyone** -> Copy URL Web app dán vào ô bên
+                                                    trên.</li>
                                             </ol>
                                         </details>
                                     </div>
 
                                     <!-- Card 3: Thao tác Sao lưu & Khôi phục thủ công -->
-                                    <div style="background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-                                        <h4 style="margin: 0 0 10px 0; color: #1e293b; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                                    <div
+                                        style="background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                                        <h4
+                                            style="margin: 0 0 10px 0; color: #1e293b; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
                                             <span>📦</span> 3. Thao Tác Sao Lưu & Khôi Phục Thủ Công
                                         </h4>
                                         <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
-                                            <button type="button" class="btn btn-primary" onclick="exportFullDatabaseBackup()" style="padding: 11px 20px; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
+                                            <button type="button" class="btn btn-primary"
+                                                onclick="exportFullDatabaseBackup()"
+                                                style="padding: 11px 20px; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
                                                 <span style="font-size: 16px;">📦</span> Tải Bản Sao Lưu Về Máy (.json)
                                             </button>
-                                            <button type="button" class="btn btn-success" onclick="document.getElementById('import-backup-file').click()" style="padding: 11px 20px; background: #059669; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(5,150,105,0.2);">
+                                            <button type="button" class="btn btn-success"
+                                                onclick="document.getElementById('import-backup-file').click()"
+                                                style="padding: 11px 20px; background: #059669; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(5,150,105,0.2);">
                                                 <span style="font-size: 16px;">📤</span> Khôi Phục Từ File (.json)
                                             </button>
-                                            <input type="file" id="import-backup-file" accept=".json" style="display: none;" onchange="importFullDatabaseBackup(event)">
+                                            <input type="file" id="import-backup-file" accept=".json"
+                                                style="display: none;" onchange="importFullDatabaseBackup(event)">
                                         </div>
 
                                         <div style="border-top: 1px solid #e2e8f0; padding-top: 15px;">
-                                            <label style="font-size: 13.5px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 10px;">⏰ Cấu Hình Lịch Nhắc Nhở & Tự Động Sao Lưu Chi Tiết:</label>
-                                            
-                                            <div style="display: flex; flex-direction: column; gap: 12px; max-width: 500px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #cbd5e1;">
+                                            <label
+                                                style="font-size: 13.5px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 10px;">⏰
+                                                Cấu Hình Lịch Nhắc Nhở & Tự Động Sao Lưu Chi Tiết:</label>
+
+                                            <div
+                                                style="display: flex; flex-direction: column; gap: 12px; max-width: 500px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #cbd5e1;">
                                                 <!-- Chu kỳ -->
-                                                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-                                                    <label style="font-size: 13px; font-weight: 600; color: #334155;">Chu kỳ sao lưu:</label>
-                                                    <select id="backup-reminder-period" onchange="onBackupScheduleUIChange()" style="padding: 7px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; width: 200px;">
+                                                <div
+                                                    style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                                                    <label
+                                                        style="font-size: 13px; font-weight: 600; color: #334155;">Chu
+                                                        kỳ sao lưu:</label>
+                                                    <select id="backup-reminder-period"
+                                                        onchange="onBackupScheduleUIChange()"
+                                                        style="padding: 7px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; width: 200px;">
                                                         <option value="none">Tắt tự động</option>
                                                         <option value="daily">Hàng ngày (Daily)</option>
                                                         <option value="weekly">Hàng tuần (Weekly)</option>
@@ -2380,9 +2448,14 @@
                                                 </div>
 
                                                 <!-- Chọn Thứ trong tuần (Dành cho Hàng tuần) -->
-                                                <div id="backup-dow-container" style="display: none; align-items: center; justify-content: space-between; gap: 10px;">
-                                                    <label style="font-size: 13px; font-weight: 600; color: #334155;">Thứ trong tuần:</label>
-                                                    <select id="backup-reminder-dow" onchange="onBackupScheduleUIChange()" style="padding: 7px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; width: 200px;">
+                                                <div id="backup-dow-container"
+                                                    style="display: none; align-items: center; justify-content: space-between; gap: 10px;">
+                                                    <label
+                                                        style="font-size: 13px; font-weight: 600; color: #334155;">Thứ
+                                                        trong tuần:</label>
+                                                    <select id="backup-reminder-dow"
+                                                        onchange="onBackupScheduleUIChange()"
+                                                        style="padding: 7px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; width: 200px;">
                                                         <option value="1">Thứ Hai</option>
                                                         <option value="2">Thứ Ba</option>
                                                         <option value="3">Thứ Tư</option>
@@ -2394,9 +2467,14 @@
                                                 </div>
 
                                                 <!-- Chọn Ngày trong tháng (Dành cho Hàng tháng) -->
-                                                <div id="backup-dom-container" style="display: none; align-items: center; justify-content: space-between; gap: 10px;">
-                                                    <label style="font-size: 13px; font-weight: 600; color: #334155;">Ngày trong tháng:</label>
-                                                    <select id="backup-reminder-dom" onchange="onBackupScheduleUIChange()" style="padding: 7px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; width: 200px;">
+                                                <div id="backup-dom-container"
+                                                    style="display: none; align-items: center; justify-content: space-between; gap: 10px;">
+                                                    <label
+                                                        style="font-size: 13px; font-weight: 600; color: #334155;">Ngày
+                                                        trong tháng:</label>
+                                                    <select id="backup-reminder-dom"
+                                                        onchange="onBackupScheduleUIChange()"
+                                                        style="padding: 7px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; width: 200px;">
                                                         <option value="1">Ngày 1</option>
                                                         <option value="5">Ngày 5</option>
                                                         <option value="10">Ngày 10</option>
@@ -2409,12 +2487,18 @@
                                                 </div>
 
                                                 <!-- Chọn Giờ sao lưu trong ngày -->
-                                                <div id="backup-time-container" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-                                                    <label style="font-size: 13px; font-weight: 600; color: #334155;">Giờ tự động sao lưu:</label>
-                                                    <input type="time" id="backup-reminder-time" value="17:00" onchange="onBackupScheduleUIChange()" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; width: 200px; text-align: center;">
+                                                <div id="backup-time-container"
+                                                    style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                                                    <label
+                                                        style="font-size: 13px; font-weight: 600; color: #334155;">Giờ
+                                                        tự động sao lưu:</label>
+                                                    <input type="text" id="backup-reminder-time" value="17:00" placeholder="VD: 17:00" class="time-input"
+                                                        onchange="onBackupScheduleUIChange()"
+                                                        style="padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; width: 200px; text-align: center;">
                                                 </div>
 
-                                                <button type="button" onclick="saveBackupScheduleSettings()" style="width: 100%; margin-top: 5px; padding: 10px; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
+                                                <button type="button" onclick="saveBackupScheduleSettings()"
+                                                    style="width: 100%; margin-top: 5px; padding: 10px; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
                                                     💾 Lưu Cấu Hình Lịch Sao Lưu
                                                 </button>
                                             </div>
@@ -2432,23 +2516,30 @@
                                 </div>
 
                                 <div style="display: flex; flex-direction: column; gap: 20px; max-width: 650px;">
-                                    <div style="background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-                                        <h4 style="margin: 0 0 10px 0; color: #1e293b; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                                    <div
+                                        style="background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                                        <h4
+                                            style="margin: 0 0 10px 0; color: #1e293b; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
                                             <span>🔗</span> Danh Sách Liên Kết Hiển Thị Ở Footer
                                         </h4>
-                                        <p style="font-size: 13px; color: #64748b; margin-bottom: 16px; line-height: 1.6;">
-                                            Thêm, chỉnh sửa Icon, Tên hiển thị và Đường dẫn URL cho các liên kết nhanh ở chân trang (Footer).
+                                        <p
+                                            style="font-size: 13px; color: #64748b; margin-bottom: 16px; line-height: 1.6;">
+                                            Thêm, chỉnh sửa Icon, Tên hiển thị và Đường dẫn URL cho các liên kết nhanh ở
+                                            chân trang (Footer).
                                         </p>
-                                        
-                                        <div id="admin-quicklinks-list" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px;">
+
+                                        <div id="admin-quicklinks-list"
+                                            style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px;">
                                             <!-- Dynamic Items -->
                                         </div>
 
                                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                                            <button type="button" onclick="addAdminQuickLinkRow()" style="padding: 10px 18px; background: #4f46e5; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                                            <button type="button" onclick="addAdminQuickLinkRow()"
+                                                style="padding: 10px 18px; background: #4f46e5; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
                                                 <span>➕</span> Thêm Liên Kết Mới
                                             </button>
-                                            <button type="button" onclick="saveAdminQuickLinks(this)" style="padding: 10px 18px; background: #059669; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                                            <button type="button" onclick="saveAdminQuickLinks(this)"
+                                                style="padding: 10px 18px; background: #059669; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
                                                 <span>💾</span> Lưu Danh Sách Liên Kết
                                             </button>
                                         </div>
@@ -2765,9 +2856,9 @@
 
                 <div class="footer-col">
 
-                    <h4><span class="f-icon">🌿</span> KHOA Y HỌC CỔ TRUYỀN - PHỤC HỒI CHỨC NĂNG</h4>
+                    <h4><span class="f-icon">🌿</span> THÔNG TIN TÁC GIẢ PHẦN MỀM</h4>
 
-                    <p><span class="f-icon">🏥</span> <span><b>Bệnh viện Than - Khoáng sản CS2</b></span></p>
+                    <p><span class="f-icon">🏥</span> <span><b>Họ và tên: Đặng Phong Thái</b></span></p>
 
                     <p><span class="f-icon">📍</span> <span>Địa chỉ: Khu Vĩnh Lập, phường Mạo Khê, tỉnh Quảng
 
@@ -2797,9 +2888,9 @@
 
                     <h4><span class="f-icon">⚙️</span> <span>THÔNG TIN HỆ THỐNG</span></h4>
 
-                    <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.2.8</span></p>
+                    <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.2.9</span></p>
 
-                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 10:00 22/08/2026</span></p>
+                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 19:55 22/08/2026</span></p>
 
                     <p><span class="f-icon">👨‍💻</span> <span>Thiết kế & Phát triển: <b>Bác sĩ Thái</b></span></p>
 
@@ -3071,11 +3162,12 @@
     <div id="sidebar-tooltip"></div>
 
     <!-- JavaScript Modules -->
-    <script src="js/scheduler-engine.js?v=3.2.8"></script>
-    <script src="js/app.js?v=3.2.8"></script>
-    <script src="js/init.js?v=3.2.8"></script>
-    <script src="js/sync.js?v=3.2.8"></script>
-    <script src="js/thongke.js?v=3.2.8"></script>
+    <script src="js/scheduler-engine.js?v=3.2.9"></script>
+    <script src="js/app.js?v=3.2.9"></script>
+    <script src="js/config.js?v=3.2.9"></script>
+    <script src="js/init.js?v=3.2.9"></script>
+    <script src="js/sync.js?v=3.2.9"></script>
+    <script src="js/thongke.js?v=3.2.9"></script>
 </body>
 
 </html>

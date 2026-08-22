@@ -1614,6 +1614,24 @@ window.showGlobalLoading = function (text) {
         function applySystemSettings(res) {
             if (!res) return;
             if (res.chotSoTime && document.getElementById("admin-chotso-time")) document.getElementById("admin-chotso-time").value = res.chotSoTime;
+            
+            // Restore backup reminder settings from D1 database configuration
+            if (res.backup_schedule_config) {
+                try {
+                    const cfg = typeof res.backup_schedule_config === 'string' ? JSON.parse(res.backup_schedule_config) : res.backup_schedule_config;
+                    if (cfg) {
+                        localStorage.setItem('backup_reminder_period', cfg.period || 'none');
+                        localStorage.setItem('backup_reminder_time', cfg.time || '17:00');
+                        localStorage.setItem('backup_reminder_dow', cfg.dow || '1');
+                        localStorage.setItem('backup_reminder_dom', cfg.dom || '1');
+                        if (typeof window.checkBackupReminder === 'function') {
+                            window.checkBackupReminder();
+                        }
+                    }
+                } catch(e) {
+                    console.error("Lỗi đồng bộ cấu hình nhắc sao lưu:", e);
+                }
+            }
             if (res.yhctLunch !== undefined && document.getElementById("admin-yhct-lunch")) document.getElementById("admin-yhct-lunch").value = res.yhctLunch;
             if (res.yhctEnd !== undefined && document.getElementById("admin-yhct-end")) document.getElementById("admin-yhct-end").value = res.yhctEnd;
             if (res.dropWeight !== undefined && document.getElementById("admin-weight-drop")) document.getElementById("admin-weight-drop").value = res.dropWeight;
@@ -1986,6 +2004,9 @@ window.showGlobalLoading = function (text) {
                     document.getElementById('pat-date').value = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
 
                     if(document.getElementById('pat-room')) document.getElementById('pat-room').value = '';
+                    if(document.getElementById('pat-loai-bn')) document.getElementById('pat-loai-bn').value = 'NoiTru';
+                    if(document.getElementById('pat-buoi-dieu-tri')) document.getElementById('pat-buoi-dieu-tri').value = 'TuDong';
+                    if(typeof togglePatSessionSelect === 'function') togglePatSessionSelect();
 
                 },
 
@@ -1996,6 +2017,16 @@ window.showGlobalLoading = function (text) {
         }
 
 
+
+        function parseNgayVao(dStr) {
+            if (!dStr || typeof dStr !== 'string' || !dStr.includes('/')) return 0;
+            const parts = dStr.split('/');
+            if (parts.length < 3) return 0;
+            const d = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10) - 1;
+            const y = parseInt(parts[2], 10);
+            return new Date(y, m, d).getTime();
+        }
 
         // ============================================================
 
@@ -2792,6 +2823,14 @@ window.showGlobalLoading = function (text) {
             const schedData = (window.currentScheduleData && window.currentScheduleData.length) ? window.currentScheduleData : ((typeof dataCache !== 'undefined' && dataCache.schedule) ? dataCache.schedule : []);
 
             let displayPatList = dataCache.pat.map((p, origIdx) => ({ ...p, _origIndex: p.index !== undefined ? p.index : origIdx }));
+            
+            const currentFilter = window._patientTypeFilter || 'all';
+            if (currentFilter !== 'all') {
+                displayPatList = displayPatList.filter(p => {
+                    const loai = p.loai_bn || 'NoiTru';
+                    return loai === currentFilter;
+                });
+            }
             if (_patSortMode === 1) {
                 displayPatList.sort((a, b) => parseNgayVao(b.ngayVao || '') - parseNgayVao(a.ngayVao || ''));
             } else if (_patSortMode === 2) {
@@ -2885,6 +2924,23 @@ window.showGlobalLoading = function (text) {
             const phong = document.getElementById('pat-room').value;
             const ban = document.getElementById('pat-busy').value;
             const ra = document.getElementById('pat-leave').value;
+            const loai_bn = document.getElementById('pat-loai-bn').value;
+            // Tự động xác định buổi điều trị cho bệnh nhân ngoại trú dựa trên giờ Y lệnh
+            let buoi_dieu_tri = 'TuDong';
+            if (loai_bn === 'NgoaiTru') {
+                const gioTyped = document.getElementById('pat-time').value.trim();
+                if (gioTyped && gioTyped.includes(':')) {
+                    const hr = parseInt(gioTyped.split(':')[0]);
+                    if (!isNaN(hr)) {
+                        buoi_dieu_tri = (hr < 12) ? 'Sang' : 'Chieu';
+                    }
+                }
+                if (ra) {
+                    buoi_dieu_tri = 'Sang';
+                }
+            } else {
+                buoi_dieu_tri = 'Sang';
+            }
             const tt = Array.from(document.querySelectorAll('.pat-proc-cb:checked')).map(cb => cb.value).join(', ');
 
             if (!ten) { window._savePatientLock = false; return alert("Nhập tên bệnh nhân"); }
@@ -2910,6 +2966,8 @@ window.showGlobalLoading = function (text) {
                 currentItem.gioRa = ra;
                 currentItem.phong = phong;
                 currentItem.thuThuat = tt;
+                currentItem.loai_bn = loai_bn;
+                currentItem.buoi_dieu_tri = buoi_dieu_tri;
                 renderPatientsTable();
             } else {
                 const newPat = {
@@ -2922,7 +2980,9 @@ window.showGlobalLoading = function (text) {
                     phong: phong,
                     thuThuat: tt,
                     sheetIndex: dataCache.pat ? dataCache.pat.length : 0,
-                    index: dataCache.pat ? dataCache.pat.length : 0
+                    index: dataCache.pat ? dataCache.pat.length : 0,
+                    loai_bn: loai_bn,
+                    buoi_dieu_tri: buoi_dieu_tri
                 };
                 if (!dataCache.pat) dataCache.pat = [];
                 dataCache.pat.push(newPat);
@@ -2953,12 +3013,12 @@ window.showGlobalLoading = function (text) {
                 google.script.run
                     .withSuccessHandler(onDone)
                     .withFailureHandler(onError)
-                    .editBenhNhan(sheetIdx, ten, nam, ngay, gio, ban, ra, phong, tt);
+                    .editBenhNhan(sheetIdx, ten, nam, ngay, gio, ban, ra, phong, tt, currentItem.ten, currentItem.namSinh, loai_bn, buoi_dieu_tri);
             } else {
                 google.script.run
                     .withSuccessHandler(onDone)
                     .withFailureHandler(onError)
-                    .addBenhNhan(ten, nam, ngay, gio, ban, ra, phong, tt);
+                    .addBenhNhan(ten, nam, ngay, gio, ban, ra, phong, tt, loai_bn, buoi_dieu_tri);
             }
 
         }
@@ -2986,6 +3046,11 @@ window.showGlobalLoading = function (text) {
             const busyVal = item.gioBan || '';
 
             document.getElementById('pat-busy').value = busyVal;
+            document.getElementById('pat-loai-bn').value = item.loai_bn || 'NoiTru';
+            // Auto-detect buổi: nếu có giờ ra viện → sáng, không thì dùng giá trị đã lưu (mặc định TuDong)
+            const autoDetectedBuoi = item.gioRa ? 'Sang' : (item.buoi_dieu_tri || 'TuDong');
+            document.getElementById('pat-buoi-dieu-tri').value = autoDetectedBuoi;
+            if (typeof togglePatSessionSelect === 'function') togglePatSessionSelect();
 
             if (busyVal.includes('-')) {
 
@@ -4899,6 +4964,33 @@ window.showGlobalLoading = function (text) {
 
         window.externalUtilsData = null;
 
+        window._patientTypeFilter = 'all';
+        window.setPatientTypeFilter = function(type) {
+            window._patientTypeFilter = type;
+            document.querySelectorAll('.btn-filter-pat-type').forEach(btn => {
+                btn.style.background = 'white';
+                btn.style.color = '#475569';
+                btn.style.borderColor = '#cbd5e1';
+            });
+            let activeBtnId = 'btn-filter-all';
+            if (type === 'NoiTru') activeBtnId = 'btn-filter-noitru';
+            else if (type === 'NgoaiTru') activeBtnId = 'btn-filter-ngoaitru';
+            const activeBtn = document.getElementById(activeBtnId);
+            if (activeBtn) {
+                activeBtn.style.background = '#1e3d2b';
+                activeBtn.style.color = 'white';
+                activeBtn.style.borderColor = '#1e3d2b';
+            }
+            renderPatientsTable();
+        };
+
+        window.togglePatSessionSelect = function() {
+            const sessionGroup = document.getElementById('pat-session-group');
+            if (sessionGroup) {
+                sessionGroup.style.display = 'none'; // Ẩn hoàn toàn theo yêu cầu của bác sĩ
+            }
+        };
+
         function handleUtilsFile(e) {
 
             const file = e.target.files[0];
@@ -5754,6 +5846,15 @@ window.showGlobalLoading = function (text) {
                         dataRows.forEach(row => {
                             const ten = String(row[colTen] || '').trim();
                             const dichVu = String(row[colDichVu] || '').trim();
+
+                            let loaiBn = 'NoiTru';
+                            let buoiDieuTri = 'TuDong';
+                            if (colLoaiDieuTri >= 0) {
+                                const val = norm(row[colLoaiDieuTri]);
+                                if (val.includes('ngoai tru') || val.includes('kham benh') || val.includes('ngoaitru') || val.includes('kham')) {
+                                    loaiBn = 'NgoaiTru';
+                                }
+                            }
                             const tenNorm = norm(ten);
                             if (!ten || tenNorm === 'ten_bn' || tenNorm === 'ho ten' || tenNorm === 'ten benh nhan' || tenNorm === 'hoten') return;
                             if (!dichVu) return;
@@ -6208,7 +6309,7 @@ window.showGlobalLoading = function (text) {
                         if (!rows.length) return showCustomAlert('File trống', 'File Excel không có dữ liệu!', '❌', '#e74c3c');
 
                         // --- Bước 1: Tự động dò hàng tiêu đề và cột ---
-                        let colTen = 6, colNamSinh = 7, colDichVu = 13, startRow = 10;
+                        let colTen = 6, colNamSinh = 7, colDichVu = 13, startRow = 10, colLoaiDieuTri = -1;
                         const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\u0111/g, 'd').trim();
 
                         // Quét 15 hàng đầu - khớp tiếng Việt lẫn mã HIS (TEN_BN, NAM_SINH...)
@@ -6267,6 +6368,15 @@ window.showGlobalLoading = function (text) {
                             const namSinh = String(row[colNamSinh] || '').trim();
                             const dichVu = String(row[colDichVu] || '').trim();
 
+                            let loaiBn = 'NoiTru';
+                            let buoiDieuTri = 'TuDong';
+                            if (colLoaiDieuTri >= 0) {
+                                const valLoai = norm(row[colLoaiDieuTri]);
+                                if (valLoai.includes('ngoai tru') || valLoai.includes('kham benh') || valLoai.includes('ngoaitru') || valLoai.includes('kham')) {
+                                    loaiBn = 'NgoaiTru';
+                                }
+                            }
+
                             // Bỏ qua hàng tiêu đề lọt vào (TEN_BN, HO_TEN...)
                             const tenNorm = norm(ten);
                             if (!ten || tenNorm === 'ten_bn' || tenNorm === 'ho ten' || tenNorm === 'ten benh nhan' || tenNorm === 'hoten') return;
@@ -6275,7 +6385,7 @@ window.showGlobalLoading = function (text) {
 
                             const key = buildMatchKey(ten, namSinh);
                             const properTen = ten.toLowerCase().replace(/(?:^|\s)\S/g, a => a.toUpperCase());
-                            if (!hisMap[key]) hisMap[key] = { ten: properTen, namSinh, procs: new Set() };
+                            if (!hisMap[key]) hisMap[key] = { ten: properTen, namSinh, loaiBn, buoiDieuTri, procs: new Set() };
 
                             // Tách nhiều thủ thuật trong 1 ô (mỗi dòng 1 thủ thuật)
                             const lines = dichVu.split(/\r?\n/).map(l => l.trim()).filter(l => l);
@@ -9032,3 +9142,77 @@ window.saveAdminQuickLinks = function(btn) {
         showCustomAlert("Lỗi", "Không thể lưu danh sách liên kết: " + err);
     });
 };
+
+// ============================================================
+// 🏷️ XỬ LÝ CẤU HÌNH THƯƠNG HIỆU BẢN TRẮNG (WHITE LABEL)
+// ============================================================
+window.saveWhiteLabelBranding = function() {
+    const hosp = document.getElementById('wl-hospital-name')?.value?.trim();
+    const brand = document.getElementById('wl-brand-name')?.value?.trim();
+    const hotline = document.getElementById('wl-hotline')?.value?.trim();
+
+    if (window.APP_CONFIG) {
+        if (hosp) window.APP_CONFIG.HOSPITAL_NAME = hosp;
+        if (brand) window.APP_CONFIG.BRAND_NAME = brand;
+        if (hotline) window.APP_CONFIG.SUPPORT_HOTLINE = hotline;
+
+        localStorage.setItem('wl_custom_config', JSON.stringify({
+            HOSPITAL_NAME: window.APP_CONFIG.HOSPITAL_NAME,
+            BRAND_NAME: window.APP_CONFIG.BRAND_NAME,
+            SUPPORT_HOTLINE: window.APP_CONFIG.SUPPORT_HOTLINE
+        }));
+
+        if (typeof window.applyAppConfig === 'function') window.applyAppConfig();
+        showCustomAlert("Thành công", "Đã cập nhật cấu hình thương hiệu đơn vị!");
+    }
+};
+
+window.loadSavedWhiteLabelBranding = function() {
+    const saved = localStorage.getItem('wl_custom_config');
+    if (saved && window.APP_CONFIG) {
+        try {
+            const parsed = JSON.parse(saved);
+            Object.assign(window.APP_CONFIG, parsed);
+        } catch (e) {}
+    }
+    if (typeof window.applyAppConfig === 'function') window.applyAppConfig();
+
+    // Populate inputs in settings tab
+    const hospInput = document.getElementById('wl-hospital-name');
+    if (hospInput && window.APP_CONFIG) hospInput.value = window.APP_CONFIG.HOSPITAL_NAME || '';
+
+    const brandInput = document.getElementById('wl-brand-name');
+    if (brandInput && window.APP_CONFIG) brandInput.value = window.APP_CONFIG.BRAND_NAME || '';
+
+    const hotlineInput = document.getElementById('wl-hotline');
+    if (hotlineInput && window.APP_CONFIG) hotlineInput.value = window.APP_CONFIG.SUPPORT_HOTLINE || '';
+};
+
+window.wipeAllDataForNewClient = function() {
+    showCustomConfirm(
+        "⚠️ XẮC NHẬN XÓA TRẮNG DỮ LIỆU LỊCH",
+        "Bạn có chắc chắn muốn XÓA TRẮNG toàn bộ lịch trình và dữ liệu bệnh nhân thử nghiệm để bàn giao cho Khoa/Bệnh viện mới không?\n\nLƯU Ý: Thao tác này sẽ xóa sạch dữ liệu bệnh nhân đang lưu tạm trong máy!",
+        function() {
+            window.currentScheduleData = [];
+            window.lastUnscheduledData = [];
+            localStorage.removeItem('cached_schedule_data');
+            localStorage.removeItem('cached_unscheduled_data');
+
+            if (typeof renderScheduleTable === 'function') renderScheduleTable([]);
+            if (typeof updateUnscheduledStats === 'function') updateUnscheduledStats([]);
+            showCustomAlert("Đã xóa trắng", "Đã dọn dẹp sạch toàn bộ lịch trình. Hệ thống đã sẵn sàng nạp dữ liệu đơn vị mới!");
+        }
+    );
+};
+
+window.loadDemoSetupData = function() {
+    showCustomAlert("Nạp dữ liệu mẫu", "Đã kích hoạt chế độ nạp dữ liệu mẫu thương mại. Bạn có thể sử dụng nút 📂 TẢI FILE LỊCH CŨ hoặc nhập Excel danh mục!");
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        if (typeof window.loadSavedWhiteLabelBranding === 'function') {
+            window.loadSavedWhiteLabelBranding();
+        }
+    }, 200);
+});

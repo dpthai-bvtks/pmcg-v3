@@ -80,14 +80,18 @@ async function ensureSchema(db) {
       db.prepare("CREATE TABLE IF NOT EXISTS may_moc (id INTEGER PRIMARY KEY AUTOINCREMENT, ten_loai TEXT NOT NULL, ma_may TEXT UNIQUE NOT NULL, trang_thai TEXT DEFAULT 'Sẵn sàng', order_idx INTEGER DEFAULT 0, is_active INTEGER DEFAULT 1, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
       db.prepare("CREATE TABLE IF NOT EXISTS phong (id INTEGER PRIMARY KEY AUTOINCREMENT, ten_phong TEXT UNIQUE NOT NULL, bac_si TEXT DEFAULT '', ktv TEXT DEFAULT '', danh_sach_may TEXT DEFAULT '', so_giuong INTEGER DEFAULT 0, danh_sach_giuong TEXT DEFAULT '', order_idx INTEGER DEFAULT 0, is_active INTEGER DEFAULT 1, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
       db.prepare("CREATE TABLE IF NOT EXISTS thu_thuat (id INTEGER PRIMARY KEY AUTOINCREMENT, ten_thu_thuat TEXT UNIQUE NOT NULL, viet_tat TEXT DEFAULT '', he TEXT DEFAULT 'PHCN', phan_loai TEXT DEFAULT '', may TEXT DEFAULT '', tg_thuc_hien INTEGER DEFAULT 30, tg_thu_thuat INTEGER DEFAULT 30, khoang_cach INTEGER DEFAULT 0, can_rut_may INTEGER DEFAULT 0, can_nguoi_phu INTEGER DEFAULT 0, ds_nguoi_phu TEXT DEFAULT '', order_idx INTEGER DEFAULT 0, is_active INTEGER DEFAULT 1, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
-      db.prepare("CREATE TABLE IF NOT EXISTS benh_nhan (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, age INTEGER DEFAULT 0, gender TEXT DEFAULT 'Nam', room TEXT DEFAULT '', bed TEXT DEFAULT '', arrive_time TEXT DEFAULT '07:30', leave_time TEXT DEFAULT '', thu_thuat TEXT NOT NULL DEFAULT '[]', status TEXT DEFAULT 'Chưa xếp', ngay_vao TEXT DEFAULT '', gio_ban TEXT DEFAULT '', is_saturday INTEGER DEFAULT 0, order_idx INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
+      db.prepare("CREATE TABLE IF NOT EXISTS benh_nhan (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, age INTEGER DEFAULT 0, gender TEXT DEFAULT 'Nam', room TEXT DEFAULT '', bed TEXT DEFAULT '', arrive_time TEXT DEFAULT '07:30', leave_time TEXT DEFAULT '', thu_thuat TEXT NOT NULL DEFAULT '[]', status TEXT DEFAULT 'Chưa xếp', ngay_vao TEXT DEFAULT '', gio_ban TEXT DEFAULT '', is_saturday INTEGER DEFAULT 0, order_idx INTEGER DEFAULT 0, loai_bn TEXT DEFAULT 'NoiTru', buoi_dieu_tri TEXT DEFAULT 'Sang', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
       db.prepare("CREATE TABLE IF NOT EXISTS lich_trinh (id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, patient_name TEXT NOT NULL, dob TEXT DEFAULT '', room TEXT DEFAULT '', procedure_name TEXT NOT NULL, staff_name TEXT DEFAULT '', sub_staff_name TEXT DEFAULT '', machine_name TEXT DEFAULT '', bed TEXT DEFAULT '', start_time TEXT NOT NULL, end_time TEXT NOT NULL, is_saturday INTEGER DEFAULT 0, order_idx INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
       db.prepare("CREATE TABLE IF NOT EXISTS lich_su (id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, patient_name TEXT NOT NULL, dob TEXT DEFAULT '', room TEXT DEFAULT '', procedure_name TEXT NOT NULL, staff_name TEXT DEFAULT '', sub_staff_name TEXT DEFAULT '', machine_name TEXT DEFAULT '', bed TEXT DEFAULT '', start_time TEXT NOT NULL, end_time TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
       db.prepare("CREATE TABLE IF NOT EXISTS gio_ban_cu (id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, staff_name TEXT NOT NULL, busy_ranges TEXT DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
       db.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_patients_name ON benh_nhan(name)"),
       db.prepare("CREATE INDEX IF NOT EXISTS idx_lich_su_date ON lich_su(date)"),
       db.prepare("CREATE INDEX IF NOT EXISTS idx_lich_trinh_date ON lich_trinh(date)"),
-      db.prepare("CREATE INDEX IF NOT EXISTS idx_gio_ban_cu_date ON gio_ban_cu(date)")
+      db.prepare("CREATE INDEX IF NOT EXISTS idx_gio_ban_cu_date ON gio_ban_cu(date)"),
+      db.prepare("CREATE TABLE IF NOT EXISTS cham_cong (month_year TEXT PRIMARY KEY, data_json TEXT NOT NULL DEFAULT '{}', updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
+      db.prepare("CREATE TABLE IF NOT EXISTS thong_ke (month_year TEXT PRIMARY KEY, data_json TEXT NOT NULL DEFAULT '{}', updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
+      db.prepare("CREATE TABLE IF NOT EXISTS tim_ranh (id INTEGER PRIMARY KEY AUTOINCREMENT, procedure_name TEXT DEFAULT '', start_time TEXT DEFAULT '', end_time TEXT DEFAULT '', staff_name TEXT DEFAULT '', machine_name TEXT DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
+      db.prepare("CREATE TABLE IF NOT EXISTS tai_lieu (id INTEGER PRIMARY KEY AUTOINCREMENT, doc_number TEXT DEFAULT '', title TEXT DEFAULT '', agency TEXT DEFAULT '', signed_date TEXT DEFAULT '', view_link TEXT DEFAULT '', download_link TEXT DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)")
     ];
     await db.batch(stmts);
 
@@ -249,6 +253,7 @@ async function handleApiAction(action, args, env, request) {
   }
 
   await ensureSchema(db);
+  await checkAutoChotSo(db);
 
   switch (action) {
     // ============================================================
@@ -380,7 +385,9 @@ async function handleApiAction(action, args, env, request) {
           gioRa: p.leave_time || "",
           phong: p.room || "",
           thuThuat: thuThuatStr,
-          status: p.status
+          status: p.status,
+          loai_bn: p.loai_bn || "NoiTru",
+          buoi_dieu_tri: p.buoi_dieu_tri || "TuDong"
         };
       }).filter(p => p.ten && p.ten.trim() !== "");
 
@@ -721,7 +728,9 @@ async function handleApiAction(action, args, env, request) {
           thuThuat: procNames.join(", "),
           thu_thuat: procs,
           trangThai: r.status,
-          status: r.status
+          status: r.status,
+          loai_bn: r.loai_bn || "NoiTru",
+          buoi_dieu_tri: r.buoi_dieu_tri || "TuDong"
         };
       });
       return success(list);
@@ -737,7 +746,9 @@ async function handleApiAction(action, args, env, request) {
         gioBan: args[4],
         gioRa: args[5],
         phong: args[6],
-        thuThuat: args[7]
+        thuThuat: args[7],
+        loai_bn: args[8],
+        buoi_dieu_tri: args[9]
       };
 
       const procs = typeof p.thuThuat === "string" ? p.thuThuat.split(",").map(x => ({ name: x.trim(), status: "Chưa xếp" })) : (p.thu_thuat || []);
@@ -745,7 +756,7 @@ async function handleApiAction(action, args, env, request) {
       
       const res = await db.batch([
         db.prepare(
-          "INSERT INTO benh_nhan (name, age, gender, room, bed, arrive_time, leave_time, thu_thuat, status, ngay_vao, gio_ban) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(name) DO UPDATE SET age = excluded.age, room = excluded.room, arrive_time = excluded.arrive_time, leave_time = excluded.leave_time, thu_thuat = excluded.thu_thuat, ngay_vao = excluded.ngay_vao, gio_ban = excluded.gio_ban, updated_at = CURRENT_TIMESTAMP"
+          "INSERT INTO benh_nhan (name, age, gender, room, bed, arrive_time, leave_time, thu_thuat, status, ngay_vao, gio_ban, loai_bn, buoi_dieu_tri) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(name) DO UPDATE SET age = excluded.age, room = excluded.room, arrive_time = excluded.arrive_time, leave_time = excluded.leave_time, thu_thuat = excluded.thu_thuat, ngay_vao = excluded.ngay_vao, gio_ban = excluded.gio_ban, loai_bn = excluded.loai_bn, buoi_dieu_tri = excluded.buoi_dieu_tri, updated_at = CURRENT_TIMESTAMP"
         ).bind(
           String(p.ten || p.name || ""),
           parseInt(p.namSinh || p.age) || 0,
@@ -757,7 +768,9 @@ async function handleApiAction(action, args, env, request) {
           JSON.stringify(procs),
           String(p.status || "Chưa xếp"),
           String(p.ngayVao || ""),
-          String(p.gioBan || "")
+          String(p.gioBan || ""),
+          String(p.loai_bn || "NoiTru"),
+          String(p.buoi_dieu_tri || "Sang")
         ),
         db.prepare("INSERT INTO cai_dat (key, value) VALUES ('data_version', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(versionVal)
       ]);
@@ -776,7 +789,9 @@ async function handleApiAction(action, args, env, request) {
         gioRa: args[offset + 5],
         phong: args[offset + 6],
         thuThuat: args[offset + 7],
-        oldTen: args[offset + 8] || args[offset]
+        oldTen: args[offset + 8] || args[offset],
+        loai_bn: args[offset + 10],
+        buoi_dieu_tri: args[offset + 11]
       };
 
       const procs = typeof p.thuThuat === "string" ? p.thuThuat.split(",").map(x => ({ name: x.trim(), status: "Chưa xếp" })).filter(x => x.name) : (p.thu_thuat || []);
@@ -785,7 +800,7 @@ async function handleApiAction(action, args, env, request) {
       const versionVal = String(Date.now());
 
       const updateStmt = db.prepare(
-        "UPDATE benh_nhan SET name = ?, age = ?, gender = ?, room = ?, bed = ?, arrive_time = ?, leave_time = ?, thu_thuat = ?, status = ?, ngay_vao = ?, gio_ban = ?, updated_at = CURRENT_TIMESTAMP WHERE name = ?"
+        "UPDATE benh_nhan SET name = ?, age = ?, gender = ?, room = ?, bed = ?, arrive_time = ?, leave_time = ?, thu_thuat = ?, status = ?, ngay_vao = ?, gio_ban = ?, loai_bn = ?, buoi_dieu_tri = ?, updated_at = CURRENT_TIMESTAMP WHERE name = ?"
       ).bind(
         patName,
         parseInt(p.namSinh || p.age) || 0,
@@ -798,6 +813,8 @@ async function handleApiAction(action, args, env, request) {
         String(p.status || "Chưa xếp"),
         String(p.ngayVao || ""),
         String(p.gioBan || ""),
+        String(p.loai_bn || "NoiTru"),
+        String(p.buoi_dieu_tri || "TuDong"),
         targetName
       );
 
@@ -808,7 +825,7 @@ async function handleApiAction(action, args, env, request) {
 
       if (updateRes.meta && updateRes.meta.changes === 0) {
         await db.prepare(
-          "INSERT INTO benh_nhan (name, age, gender, room, bed, arrive_time, leave_time, thu_thuat, status, ngay_vao, gio_ban) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(name) DO UPDATE SET age = excluded.age, gender = excluded.gender, room = excluded.room, bed = excluded.bed, arrive_time = excluded.arrive_time, leave_time = excluded.leave_time, thu_thuat = excluded.thu_thuat, status = excluded.status, ngay_vao = excluded.ngay_vao, gio_ban = excluded.gio_ban, updated_at = CURRENT_TIMESTAMP"
+          "INSERT INTO benh_nhan (name, age, gender, room, bed, arrive_time, leave_time, thu_thuat, status, ngay_vao, gio_ban, loai_bn, buoi_dieu_tri) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(name) DO UPDATE SET age = excluded.age, gender = excluded.gender, room = excluded.room, bed = excluded.bed, arrive_time = excluded.arrive_time, leave_time = excluded.leave_time, thu_thuat = excluded.thu_thuat, status = excluded.status, ngay_vao = excluded.ngay_vao, gio_ban = excluded.gio_ban, loai_bn = excluded.loai_bn, buoi_dieu_tri = excluded.buoi_dieu_tri, updated_at = CURRENT_TIMESTAMP"
         ).bind(
           patName,
           parseInt(p.namSinh || p.age) || 0,
@@ -820,7 +837,9 @@ async function handleApiAction(action, args, env, request) {
           JSON.stringify(procs),
           String(p.status || "Chưa xếp"),
           String(p.ngayVao || ""),
-          String(p.gioBan || "")
+          String(p.gioBan || ""),
+          String(p.loai_bn || "NoiTru"),
+          String(p.buoi_dieu_tri || "TuDong")
         ).run();
       }
 
@@ -925,6 +944,8 @@ async function handleApiAction(action, args, env, request) {
         const gender = String(p.gioiTinh || p.gender || "Nam");
         const bed = String(p.giuong || p.bed || "");
         const status = String(p.trangThai || p.status || "Chưa xếp");
+        const loaiBn = String(p.loai_bn || p.loaiBN || "NoiTru");
+        const buoiDieuTri = String(p.buoi_dieu_tri || p.buoiDieuTri || "Sang");
 
         const rawProcs = p.thuThuat !== undefined ? p.thuThuat : (p.thu_thuat !== undefined ? p.thu_thuat : "");
         let procs = [];
@@ -940,8 +961,8 @@ async function handleApiAction(action, args, env, request) {
         const procsJson = JSON.stringify(procs);
 
         const sql = replaceAll
-          ? "INSERT INTO benh_nhan (name, age, gender, room, bed, arrive_time, leave_time, thu_thuat, status, ngay_vao, gio_ban, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-          : "INSERT INTO benh_nhan (name, age, gender, room, bed, arrive_time, leave_time, thu_thuat, status, ngay_vao, gio_ban, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(name) DO UPDATE SET age = excluded.age, gender = excluded.gender, room = excluded.room, bed = excluded.bed, arrive_time = excluded.arrive_time, leave_time = excluded.leave_time, thu_thuat = excluded.thu_thuat, status = excluded.status, ngay_vao = excluded.ngay_vao, gio_ban = excluded.gio_ban, order_idx = excluded.order_idx, updated_at = CURRENT_TIMESTAMP";
+          ? "INSERT INTO benh_nhan (name, age, gender, room, bed, arrive_time, leave_time, thu_thuat, status, ngay_vao, gio_ban, loai_bn, buoi_dieu_tri, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+          : "INSERT INTO benh_nhan (name, age, gender, room, bed, arrive_time, leave_time, thu_thuat, status, ngay_vao, gio_ban, loai_bn, buoi_dieu_tri, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(name) DO UPDATE SET age = excluded.age, gender = excluded.gender, room = excluded.room, bed = excluded.bed, arrive_time = excluded.arrive_time, leave_time = excluded.leave_time, thu_thuat = excluded.thu_thuat, status = excluded.status, ngay_vao = excluded.ngay_vao, gio_ban = excluded.gio_ban, loai_bn = excluded.loai_bn, buoi_dieu_tri = excluded.buoi_dieu_tri, order_idx = excluded.order_idx, updated_at = CURRENT_TIMESTAMP";
 
         insertStatements.push(
           db.prepare(sql).bind(
@@ -956,7 +977,9 @@ async function handleApiAction(action, args, env, request) {
             status,     // 9: status (TEXT)
             ngayVao,    // 10: ngay_vao (TEXT)
             gioBan,     // 11: gio_ban (TEXT)
-            idx         // 12: order_idx (INTEGER)
+            loaiBn,     // 12: loai_bn (TEXT)
+            buoiDieuTri,// 13: buoi_dieu_tri (TEXT)
+            idx         // 14: order_idx (INTEGER)
           )
         );
       });
@@ -1401,6 +1424,17 @@ async function handleApiAction(action, args, env, request) {
       const username = args[0] || "";
       const password = args[1] || "";
       if (!username || !password) return error("Thiếu tên đăng nhập hoặc mật khẩu");
+
+      // Auto-seed default admin account if tai_khoan is empty
+      try {
+        const countRes = await db.prepare("SELECT COUNT(*) as cnt FROM tai_khoan").first();
+        if (countRes && countRes.cnt === 0) {
+          const defaultHash = "5a629d34f1d19b97e0928fc4e08358899367c19bbfe880f6b75d71c48754ee1c"; // hash of 'admin'
+          await db.prepare("INSERT INTO tai_khoan (username, password_hash, role, permissions) VALUES ('admin', ?, 'Admin', 'all')").bind(defaultHash).run();
+        }
+      } catch (e) {
+        console.warn("Auto-seed error:", e);
+      }
 
       const user = await db.prepare("SELECT * FROM tai_khoan WHERE username = ?").bind(username).first();
       if (!user) return error("Tài khoản không tồn tại");
@@ -2814,5 +2848,75 @@ async function buildBaseDbFromD1(db) {
 
     default:
       return error("Action không được hỗ trợ: " + action, 400);
+  }
+}
+
+
+async function checkAutoChotSo(db) {
+  try {
+    const nowVN = new Date(Date.now() + 7 * 60 * 60 * 1000);
+    const hh = String(nowVN.getUTCHours()).padStart(2, '0');
+    const mm = String(nowVN.getUTCMinutes()).padStart(2, '0');
+    const currentHourMin = `${hh}:${mm}`;
+
+    const dd = String(nowVN.getUTCDate()).padStart(2, '0');
+    const month = String(nowVN.getUTCMonth() + 1).padStart(2, '0');
+    const yyyy = nowVN.getUTCFullYear();
+    const todayDateStr = `${dd}/${month}/${yyyy}`;
+
+    const keysRes = await db.prepare("SELECT key, value FROM cai_dat WHERE key IN ('chotSoTime', 'lastChotSoDate')").all();
+    const settings = {};
+    (keysRes.results || []).forEach(r => { settings[r.key] = r.value; });
+
+    const chotSoTime = settings.chotSoTime ? String(settings.chotSoTime).trim() : "";
+    const lastChotSoDate = settings.lastChotSoDate ? String(settings.lastChotSoDate).trim() : "";
+
+    if (!chotSoTime || !chotSoTime.includes(':')) {
+      return;
+    }
+
+    function parseDateDMY(dStr) {
+      if (!dStr || typeof dStr !== 'string') return null;
+      const p = dStr.split('/');
+      if (p.length < 3) return null;
+      return new Date(parseInt(p[2], 10), parseInt(p[1], 10) - 1, parseInt(p[0], 10));
+    }
+
+    const todayDate = parseDateDMY(todayDateStr);
+    const lastClosedDate = parseDateDMY(lastChotSoDate);
+
+    let shouldClose = false;
+    if (lastClosedDate && todayDate) {
+      const diffDays = (todayDate.getTime() - lastClosedDate.getTime()) / (1000 * 60 * 60 * 24);
+      if (diffDays > 0) {
+        shouldClose = true;
+      } else if (diffDays === 0) {
+        if (currentHourMin >= chotSoTime) {
+          shouldClose = true;
+        }
+      }
+    } else if (todayDate) {
+      await db.prepare("INSERT INTO cai_dat (key, value) VALUES ('lastChotSoDate', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(todayDateStr).run();
+      console.log("[Worker Auto-ChotSo]: Initialized lastChotSoDate to " + todayDateStr);
+    }
+
+    if (shouldClose) {
+      console.log(`[Worker Auto-ChotSo]: Triggering auto closure. today=${todayDateStr}, lastClosed=${lastChotSoDate}, time=${currentHourMin}, chotSoTime=${chotSoTime}`);
+      
+      const statements = [
+        db.prepare("INSERT INTO lich_su (date, patient_name, dob, room, procedure_name, start_time, end_time, staff_name, sub_staff_name, machine_name, bed) SELECT date, patient_name, dob, room, procedure_name, start_time, end_time, staff_name, sub_staff_name, machine_name, bed FROM lich_trinh"),
+        db.prepare("DELETE FROM lich_trinh"),
+        db.prepare("DELETE FROM benh_nhan WHERE leave_time IS NOT NULL AND TRIM(leave_time) != '' AND LOWER(leave_time) != 'none'"),
+        db.prepare("UPDATE benh_nhan SET arrive_time = '07:30', gio_ban = '', leave_time = '', status = 'Chưa xếp', updated_at = CURRENT_TIMESTAMP"),
+        db.prepare("UPDATE nhan_su SET temp_busy = '[]', updated_at = CURRENT_TIMESTAMP"),
+        db.prepare("INSERT INTO cai_dat (key, value) VALUES ('lastChotSoDate', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(todayDateStr)
+      ];
+
+      await db.batch(statements);
+      await bumpDataVersion(db);
+      console.log("[Worker Auto-ChotSo]: Automated day closure executed successfully!");
+    }
+  } catch (err) {
+    console.error("[Worker Auto-ChotSo Error]:", err);
   }
 }

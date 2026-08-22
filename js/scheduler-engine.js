@@ -245,7 +245,7 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
     (db.roomBeds[phong] || []).forEach(giuong => { bedTracker[phong][giuong] = []; });
   }
 
-  let patients = db.rawPatients.map(p => ({ ...p, pending: [...p.pending], failed: false, busy: p.busy ? p.busy.map(b => [...b]) : [] }));
+  let patients = db.rawPatients.map(p => ({ ...p, pending: [...p.pending], failed: false, busy: p.busy ? p.busy.map(b => [...b]) : [], loaiBN: p.loaiBN, buoiDieuTri: p.buoiDieuTri }));
 
   existingSched.forEach(row => {
     const gioDienRaStr = String(row[5] || row.GIODIENRA || row.gioDienRa || '');
@@ -352,6 +352,11 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
     p._isNew = (p._ngayVaoNum >= todayNum);
   });
   patients.sort((a, b) => {
+    const aType = a.loaiBN || 'NoiTru';
+    const bType = b.loaiBN || 'NoiTru';
+    if (aType !== bType) {
+      return aType === 'NgoaiTru' ? -1 : 1;
+    }
     if (a._isNew !== b._isNew) return a._isNew ? 1 : -1;
     if (!a._isNew && a._ngayVaoNum !== b._ngayVaoNum) return a._ngayVaoNum - b._ngayVaoNum;
     return a.arrive - b.arrive;
@@ -359,6 +364,44 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
   patients.forEach(p => { p.randSeed = p._isNew ? (0.5 + rand() * 0.5) : (rand() * 0.5); });
 
   function tryScheduleOne(patient, tenThuThuat, tNow) {
+    const loaiBN = patient.loaiBN || 'NoiTru';
+    const buoiDieuTri = patient.buoiDieuTri || 'Sang';
+
+    if (loaiBN === 'NgoaiTru') {
+      const info = thuThuatInfo[tenThuThuat.toLowerCase()] || ["Thủ công", 15, 5, "PHCN", 1, 0, [], 5];
+      const tgMay = Math.max(info[1], info[2]);
+      const gioKetThuc = tNow + tgMay;
+
+      // TuDong: hệ thống tự chọn buổi - không giới hạn, chỉ cần trong giờ làm
+      if (buoiDieuTri === 'Sang') {
+        if (tNow < 420 || gioKetThuc > 695) {
+          return false;
+        }
+      } else if (buoiDieuTri === 'Chieu') {
+        if (tNow < 780 || gioKetThuc > 1019) {
+          return false;
+        }
+      }
+      // TuDong: không ràng buộc buổi - scheduler tự quyết
+
+      const patResults = results.filter(r => {
+        const rName = String(r.HOTEN || '').toUpperCase().trim();
+        const rNs = String(r.NAMSINH || '').trim();
+        return rName === patient.name && rNs === patient.ns;
+      });
+      if (patResults.length > 0) {
+        let lastEnd = 0;
+        patResults.forEach(r => {
+          const endMins = t2m(r.GIOKETTHUC);
+          if (endMins > lastEnd) lastEnd = endMins;
+        });
+        const gap = tNow - lastEnd;
+        if (gap < 0 || gap > 3) {
+          return false;
+        }
+      }
+    }
+
     const info = thuThuatInfo[tenThuThuat.toLowerCase()] || ["Thủ công", 15, 5, "PHCN", 1, 0, [], 5];
     const tenGoc = info[8] || tenThuThuat, targetRoom = patient.room, loaiMay = info[0];
     const baseTgMay = Math.max(info[1], info[2]), tgNhanVien = info[2], canPhu = info[5];
@@ -533,6 +576,11 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
   }
 
   function sortPatientPriority(a, b) {
+    const aType = a.loaiBN || 'NoiTru';
+    const bType = b.loaiBN || 'NoiTru';
+    if (aType !== bType) {
+      return aType === 'NgoaiTru' ? -1 : 1;
+    }
     if (a.leave_pri !== b.leave_pri) return a.leave_pri - b.leave_pri;
     if (a.leave !== b.leave) return a.leave - b.leave;
     const groupA = (!a._isNew || a.arrive <= 660) ? 0 : 1;
@@ -1027,6 +1075,9 @@ async function buildBaseDbFromD1(db) {
         return true;
       });
 
+      const loaiBN = p.loai_bn || p.loaiBN || p[9] || "NoiTru";
+      const buoiDieuTri = p.buoi_dieu_tri || p.buoiDieuTri || p[10] || "Sang";
+
       database.rawPatients.push({
         name: pName,
         ns: pNs,
@@ -1036,7 +1087,9 @@ async function buildBaseDbFromD1(db) {
         leave: t2m(leaveRaw) || 9999,
         busy: busySlots,
         pending: pendingFiltered,
-        free_at: gioVao + 1
+        free_at: gioVao + 1,
+        loaiBN: loaiBN,
+        buoiDieuTri: buoiDieuTri
       });
     });
 

@@ -259,40 +259,40 @@
 
 
 
-### AC. Fix L?i Tr?ng D? Li?u Khi Ctrl+F5 Và Không Luu Lên Cloudflare (v3.60)
-- **Nguyên nhân**: M?c dù frontend dã g?i l?ch trình chu?n theo d?ng object cho API Cloudflare, nhung phiên b?n Worker API dang ch?y trên production (Cloudflare) là b?n cu, ch? nh?n di?n m?ng 2 chi?u (array of arrays). Khi nh?n object, nó luu toàn b? d? li?u tr?ng vào database. Do d? li?u trên DB tr?ng, khi F5 trang t?i l?i toàn l?ch trình r?ng.
-- **X? lı**:
-  + Ği?u ch?nh hàm executeScheduling và xepLichSat trên frontend map l?i m?ng d? li?u tr? v? thành m?ng 2 chi?u chính xác nhu Worker production phiên b?n cu mong d?i d? tuong thích ngu?c 100%.
-  + Nâng c?p phiên b?n tài nguyên lên 3.60 và c?p nh?t ngày gi? t? d?ng cho footer.
+### AC. Fix L?i Tr?ng D? Li?u Khi Ctrl+F5 Vï¿½ Khï¿½ng Luu Lï¿½n Cloudflare (v3.60)
+- **Nguyï¿½n nhï¿½n**: M?c dï¿½ frontend dï¿½ g?i l?ch trï¿½nh chu?n theo d?ng object cho API Cloudflare, nhung phiï¿½n b?n Worker API dang ch?y trï¿½n production (Cloudflare) lï¿½ b?n cu, ch? nh?n di?n m?ng 2 chi?u (array of arrays). Khi nh?n object, nï¿½ luu toï¿½n b? d? li?u tr?ng vï¿½o database. Do d? li?u trï¿½n DB tr?ng, khi F5 trang t?i l?i toï¿½n l?ch trï¿½nh r?ng.
+- **X? lï¿½**:
+  + ï¿½i?u ch?nh hï¿½m executeScheduling vï¿½ xepLichSat trï¿½n frontend map l?i m?ng d? li?u tr? v? thï¿½nh m?ng 2 chi?u chï¿½nh xï¿½c nhu Worker production phiï¿½n b?n cu mong d?i d? tuong thï¿½ch ngu?c 100%.
+  + Nï¿½ng c?p phiï¿½n b?n tï¿½i nguyï¿½n lï¿½n 3.60 vï¿½ c?p nh?t ngï¿½y gi? t? d?ng cho footer.
 
-### AD. Khôi Ph?c Ch?c Nang Ğang Nh?p (v3.61)
-- **Yêu c?u**: Ğua ch?c nang dang nh?p quay l?i sau m?t th?i gian t?m ?n d? dev/ki?m th?.
-- **X? lı**:
-  + Xoá b? do?n mã \AUTO-SESSION\ ép t?o session gi? d?nh ? d?u file \pp.js\.
-  + Nâng c?p phiên b?n tài nguyên lên \3.61\ và c?p nh?t ngày gi? t? d?ng cho footer.
+### AD. Khï¿½i Ph?c Ch?c Nang ï¿½ang Nh?p (v3.61)
+- **Yï¿½u c?u**: ï¿½ua ch?c nang dang nh?p quay l?i sau m?t th?i gian t?m ?n d? dev/ki?m th?.
+- **X? lï¿½**:
+  + Xoï¿½ b? do?n mï¿½ \AUTO-SESSION\ ï¿½p t?o session gi? d?nh ? d?u file \pp.js\.
+  + Nï¿½ng c?p phiï¿½n b?n tï¿½i nguyï¿½n lï¿½n \3.61\ vï¿½ c?p nh?t ngï¿½y gi? t? d?ng cho footer.
 
-### AE. Fix L?i Ğang Nh?p Báo Undefined (v3.62)
-- **Nguyên nhân**: Trong module \js/app.js\, b? x? lı k?t qu? dang nh?p (success handler) c?a \doLogin\ s? d?ng di?u ki?n \if (res.success)\. Tuy nhiên, khi backend Cloudflare tr? v? d? li?u chu?n hoá qua API wrapper (ch? tr? v? ph?n \data\ c?a object JSON thay vì toàn b? object có kèm \status: success\), bi?n \es\ không còn ch?a tru?ng \success\ n?a (nó là \undefined\), khi?n nhánh thành công b? b? qua và nh?y vào nhánh báo l?i. Ngoài ra, logic b?t l?i l?i c? l?y \es.message\ (v?n không t?n t?i trên object do Cloudflare API tr? v?), d?n d?n l?i báo \undefined\ ra UI.
-- **X? lı**:
-  + S?a di?u ki?n xác nh?n dang nh?p thành \if (res && (res.username || res.success))\ gi?ng nhu dã x? lı bên \init.js\ d? tuong thích m?i d?nh d?ng tr? v?.
-  + Thêm co ch? fallback string l?i \errDiv.innerText = res.message || res.error || 'Tài kho?n ho?c m?t kh?u không dúng!'\ ch?ng l?i undefined giao di?n.
-  + Nâng c?p phiên b?n tài nguyên lên \3.62\ và c?p nh?t ngày gi? t? d?ng cho footer.
+### AE. Fix L?i ï¿½ang Nh?p Bï¿½o Undefined (v3.62)
+- **Nguyï¿½n nhï¿½n**: Trong module \js/app.js\, b? x? lï¿½ k?t qu? dang nh?p (success handler) c?a \doLogin\ s? d?ng di?u ki?n \if (res.success)\. Tuy nhiï¿½n, khi backend Cloudflare tr? v? d? li?u chu?n hoï¿½ qua API wrapper (ch? tr? v? ph?n \data\ c?a object JSON thay vï¿½ toï¿½n b? object cï¿½ kï¿½m \status: success\), bi?n \es\ khï¿½ng cï¿½n ch?a tru?ng \success\ n?a (nï¿½ lï¿½ \undefined\), khi?n nhï¿½nh thï¿½nh cï¿½ng b? b? qua vï¿½ nh?y vï¿½o nhï¿½nh bï¿½o l?i. Ngoï¿½i ra, logic b?t l?i l?i c? l?y \es.message\ (v?n khï¿½ng t?n t?i trï¿½n object do Cloudflare API tr? v?), d?n d?n l?i bï¿½o \undefined\ ra UI.
+- **X? lï¿½**:
+  + S?a di?u ki?n xï¿½c nh?n dang nh?p thï¿½nh \if (res && (res.username || res.success))\ gi?ng nhu dï¿½ x? lï¿½ bï¿½n \init.js\ d? tuong thï¿½ch m?i d?nh d?ng tr? v?.
+  + Thï¿½m co ch? fallback string l?i \errDiv.innerText = res.message || res.error || 'Tï¿½i kho?n ho?c m?t kh?u khï¿½ng dï¿½ng!'\ ch?ng l?i undefined giao di?n.
+  + Nï¿½ng c?p phiï¿½n b?n tï¿½i nguyï¿½n lï¿½n \3.62\ vï¿½ c?p nh?t ngï¿½y gi? t? d?ng cho footer.
 
-### AF. Fix L?i Không Xóa Ğu?c Tài Kho?n (v3.63)
-- **Nguyên nhân**: Trong backend Cloudflare (\ackend/src/index.js\), API \deleteAccount\ ki?m tra \if (typeof id === 'number')\ d? quy?t d?nh xóa theo c?t \id\ hay c?t \username\. Tuy nhiên, bi?n \id\ du?c g?i t? frontend luôn mang ki?u \string\ (ví d? \'2'\), khi?n di?u ki?n luôn tr? v? \alse\ và nh?y vào nhánh \DELETE FROM accounts WHERE username = '2'\. Vì không có username nào tên là '2' nên l?nh SQL không xóa b?t c? gì, nhung v?n tr? v? \success(true)\, làm ngu?i dùng tu?ng l?i không xóa du?c.
-- **X? lı**:
-  + Ép ki?u bi?n \id\ thành s? (\Number(id)\) trong backend và ki?m tra \!isNaN(numId)\. Nh? v?y, n?u g?i ID là '2', nó s? t? d?ng nh?n di?n dó là chu?i s?, t? d?ng chuy?n v? \2\ và g?i l?nh xóa b?ng \id = 2\ chu?n xác.
-  + Nâng c?p phiên b?n tài nguyên lên \3.63\ và c?p nh?t ngày gi? t? d?ng cho footer.
+### AF. Fix L?i Khï¿½ng Xï¿½a ï¿½u?c Tï¿½i Kho?n (v3.63)
+- **Nguyï¿½n nhï¿½n**: Trong backend Cloudflare (\ackend/src/index.js\), API \deleteAccount\ ki?m tra \if (typeof id === 'number')\ d? quy?t d?nh xï¿½a theo c?t \id\ hay c?t \username\. Tuy nhiï¿½n, bi?n \id\ du?c g?i t? frontend luï¿½n mang ki?u \string\ (vï¿½ d? \'2'\), khi?n di?u ki?n luï¿½n tr? v? \alse\ vï¿½ nh?y vï¿½o nhï¿½nh \DELETE FROM accounts WHERE username = '2'\. Vï¿½ khï¿½ng cï¿½ username nï¿½o tï¿½n lï¿½ '2' nï¿½n l?nh SQL khï¿½ng xï¿½a b?t c? gï¿½, nhung v?n tr? v? \success(true)\, lï¿½m ngu?i dï¿½ng tu?ng l?i khï¿½ng xï¿½a du?c.
+- **X? lï¿½**:
+  + ï¿½p ki?u bi?n \id\ thï¿½nh s? (\Number(id)\) trong backend vï¿½ ki?m tra \!isNaN(numId)\. Nh? v?y, n?u g?i ID lï¿½ '2', nï¿½ s? t? d?ng nh?n di?n dï¿½ lï¿½ chu?i s?, t? d?ng chuy?n v? \2\ vï¿½ g?i l?nh xï¿½a b?ng \id = 2\ chu?n xï¿½c.
+  + Nï¿½ng c?p phiï¿½n b?n tï¿½i nguyï¿½n lï¿½n \3.63\ vï¿½ c?p nh?t ngï¿½y gi? t? d?ng cho footer.
 
-### AG. T?i Uu B?ng Tài Kho?n & G? B? Kho AI (v3.65)
-- **Kh?c ph?c l?i m?t tài kho?n khi F5**: Thêm logic g?i l?i hàm \loadAccounts()\ m?i khi h? th?ng t? d?ng t?i l?i phiên làm vi?c (auto-login qua \localStorage\) d?i v?i ngu?i dùng là Admin, giúp b?ng tài kho?n luôn d?y d? mà không c?n thao tác nào khác.
-- **D?n d?p h? th?ng**: Xóa b? hoàn toàn tính nang **Kho D? Li?u Hu?n Luy?n AI** t? giao di?n (\index.html\) và t?t toàn b? API phía backend (xoá b? \saveAITrainingData\, \getAITrainingData\, \clearAITrainingData\ trong \index.js\) d? t?i uu hi?u su?t co s? d? li?u D1.
-- **Nâng c?p version**: C?p nh?t mã ngu?n thành \3.65\.
+### AG. T?i Uu B?ng Tï¿½i Kho?n & G? B? Kho AI (v3.65)
+- **Kh?c ph?c l?i m?t tï¿½i kho?n khi F5**: Thï¿½m logic g?i l?i hï¿½m \loadAccounts()\ m?i khi h? th?ng t? d?ng t?i l?i phiï¿½n lï¿½m vi?c (auto-login qua \localStorage\) d?i v?i ngu?i dï¿½ng lï¿½ Admin, giï¿½p b?ng tï¿½i kho?n luï¿½n d?y d? mï¿½ khï¿½ng c?n thao tï¿½c nï¿½o khï¿½c.
+- **D?n d?p h? th?ng**: Xï¿½a b? hoï¿½n toï¿½n tï¿½nh nang **Kho D? Li?u Hu?n Luy?n AI** t? giao di?n (\index.html\) vï¿½ t?t toï¿½n b? API phï¿½a backend (xoï¿½ b? \saveAITrainingData\, \getAITrainingData\, \clearAITrainingData\ trong \index.js\) d? t?i uu hi?u su?t co s? d? li?u D1.
+- **Nï¿½ng c?p version**: C?p nh?t mï¿½ ngu?n thï¿½nh \3.65\.
 
 ### AH. C?p Nh?t Version 3.1 & Reset D? Li?u (v3.1)
-- **Reset Git History**: Xoá toàn b? l?ch s? commit cu (hon 70 b?n) và t?o l?i commit d?u tiên d? làm s?ch Cloudflare Pages.
-- **Reset D1 Database**: D?n d?p toàn b? d? li?u hi?n có trong Database Cloudflare D1 d? chu?n b? n?p d? li?u m?i t? Excel.
-- **Nâng c?p version**: C?p nh?t mã ngu?n thành b?n hoàn ch?nh \3.1\.
+- **Reset Git History**: Xoï¿½ toï¿½n b? l?ch s? commit cu (hon 70 b?n) vï¿½ t?o l?i commit d?u tiï¿½n d? lï¿½m s?ch Cloudflare Pages.
+- **Reset D1 Database**: D?n d?p toï¿½n b? d? li?u hi?n cï¿½ trong Database Cloudflare D1 d? chu?n b? n?p d? li?u m?i t? Excel.
+- **Nï¿½ng c?p version**: C?p nh?t mï¿½ ngu?n thï¿½nh b?n hoï¿½n ch?nh \3.1\.
 
 ### AI. Sá»­a HÃ ng Loáº¡t Lá»—i Backend & Frontend - PhiÃªn báº£n 3.2 (21/08/2026)
 
@@ -637,3 +637,9 @@ ormalizeMonthKeys chuáº©n vÃ o Worker backend, kháº¯c phá»¥c lá»—i chuá»—i thÃ¡n
   3. **Kiá»ƒm thá»­ ná»™i bá»™:** ÄÃ£ cháº¡y script test tá»± Ä‘á»™ng, xÃ¡c nháº­n 100% ca cÅ© giá»¯ nguyÃªn báº£o toÃ n, xáº¿p bá»• sung thÃ nh cÃ´ng 4 ca má»›i vÃ o cÃ¡c khe trá»‘ng, 0% lá»—i trÃ¹ng giá» (trÃ¡nh tuyá»‡t Ä‘á»‘i nguy cÆ¡ xuáº¥t toÃ¡n).
 - **File:** js/app.js, js/scheduler-engine.js, index.html (v3.2.8)
 
+### Cáº­p nháº­t 22/08/2026 (v3.2.9)
+- **YÃªu cáº§u & TÃ­nh nÄƒng má»›i:**
+  1. **Ãp dá»¥ng phÃ¢n loáº¡i Ná»™i trÃº / Ngoáº¡i trÃº vÃ o báº£n v3-Cloudflare:** Äá»“ng bá»™ toÃ n bá»™ giao diá»‡n, thuáº­t toÃ¡n xáº¿p lá»‹ch (gap tá»‘i Ä‘a 3 phÃºt cho Ngoáº¡i trÃº, Æ°u tiÃªn Ngoáº¡i trÃº trÆ°á»›c), vÃ  import/export Excel tá»« báº£n thÆ°Æ¡ng máº¡i vÃ o nhÃ¡nh v3-Cloudflare.
+  2. **Äá»“ng bá»™ hÃ³a cáº¥u hÃ¬nh nháº¯c nhá»Ÿ sao lÆ°u (D1 Database Sync):** Kháº¯c phá»¥c lá»—i khi Ä‘Äƒng nháº­p á»Ÿ mÃ¡y tÃ­nh khÃ¡c bá»‹ máº¥t cÃ i Ä‘áº·t nháº¯c sao lÆ°u (do lÆ°u cá»¥c bá»™ trong localStorage). Chuyá»ƒn sang lÆ°u trá»¯ trÃªn báº£ng cáº¥u hÃ¬nh `cai_dat` cá»§a database D1 (`backup_schedule_config`) vÃ  tá»± Ä‘á»™ng táº£i/Ã¡p dá»¥ng lÃªn localStorage + UI khi khá»Ÿi Ä‘á»™ng á»©ng dá»¥ng (bootstrap).
+  3. **Chá»‘t sá»• tá»± Ä‘á»™ng & Äá»‹nh dáº¡ng 24h:** Kháº¯c phá»¥c lá»—i chá»‘t sá»• tá»± Ä‘á»™ng khÃ´ng hoáº¡t Ä‘á»™ng. Chuyá»ƒn Ä‘á»•i hai Ã´ nháº­p thá»i gian (Giá» chá»‘t sá»• tá»± Ä‘á»™ng & Giá» nháº¯c sao lÆ°u) tá»« kiá»ƒu `<input type="time">` (phá»¥ thuá»™c locale, hiá»ƒn thá»‹ kiá»ƒu AM/PM hoáº·c CH/SA) sang `<input type="text">` káº¿t há»£p class `time-input` Ä‘á»ƒ hiá»ƒn thá»‹ Ä‘á»“ng bá»™ 24h dáº¡ng `HH:mm` (VÃ­ dá»¥: `16:00`). Äá»“ng thá»i thiáº¿t láº­p hÃ m tá»± Ä‘á»™ng chá»‘t sá»• ngÃ y cÅ© (`checkAutoChotSo`) ngay táº¡i Worker backend má»—i khi cÃ³ request Ä‘á»“ng bá»™, Ä‘áº£m báº£o chá»‘t sá»• chÃ­nh xÃ¡c mÃ  khÃ´ng cáº§n cron-job client.
+- **File sá»­a Ä‘á»•i:** `index.html`, `js/app.js`, `js/scheduler-engine.js`, `backend/src/index.js` (v3.2.9)

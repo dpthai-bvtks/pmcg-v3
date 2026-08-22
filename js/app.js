@@ -7426,7 +7426,12 @@ window.showGlobalLoading = function (text) {
                     }).withFailureHandler(err => {
                         if (window.hideGlobalLoading) window.hideGlobalLoading();
                         console.error("Lỗi tải lịch sử Dashboard: " + err);
-                        if (window.showToast) window.showToast("Lỗi tải dữ liệu: " + err, "error");
+                        if (statScheduledEl) statScheduledEl.textContent = "0";
+                        if (statDroppedEl) statDroppedEl.textContent = "0";
+                        if (statBN) statBN.textContent = "0";
+                        if (statStaff) statStaff.textContent = "0";
+                        if (statTotalProcsEl) statTotalProcsEl.textContent = "0";
+                        if (window.showToast) window.showToast("Lỗi tải dữ liệu lịch sử: " + err, "error");
                     }).getHistoryFullData(selectedDate);
                 }
             }

@@ -585,3 +585,15 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
 - **Nguyên nhân:** Lệnh SQL trong `getBootstrapData` ở backend bị cài điều kiện lọc cứng `WHERE ngay_vao = '21/08/2026'`, khiến các bệnh nhân đang nằm viện/điều trị nhập vào từ các ngày trước đó bị loại bỏ.
 - **Giải pháp:** Sửa truy vấn SQL backend thành `SELECT * FROM benh_nhan WHERE is_saturday = 0 ORDER BY order_idx ASC, id ASC` để tải toàn bộ 40 bệnh nhân đang điều trị. Re-deploy Cloudflare Worker.
 - **File:** `backend/src/index.js` (deploy), `index.html` (v3.2.3)
+
+### Cập nhật 22/08/2026 (v3.2.4)
+- **Lỗi/Yêu cầu:** Tốc độ xem lại lịch trình quá chậm và phát sinh lỗi khi người dùng chọn ngày xem lịch sử.
+- **Nguyên nhân:** 
+  1. Backend: Bảng `gio_ban_cu` chưa được khởi tạo trong hàm `ensureSchema(db)`, khiến truy vấn SQL batch trong `getHistoryFullData` văng lỗi `no such table: gio_ban_cu` và làm ngưng tiến trình.
+  2. Database: Các bảng `lich_su`, `lich_trinh`, và `gio_ban_cu` thiếu Index ở cột `date`, dẫn đến hiện tượng Full Table Scan (quét từng hàng) gây lag nghiêm trọng khi số lượng bản ghi lịch sử gia tăng.
+  3. Logic fallback: `getHistoryFullData` chỉ tìm trong bảng `lich_su`, nếu chọn ngày chưa chốt sổ (nằm ở bảng `lich_trinh`) sẽ trả về kết quả rỗng.
+- **Giải pháp:**
+  1. Backend (`backend/src/index.js`): Bổ sung `gio_ban_cu` vào `ensureSchema`, tạo 3 Database Indexes (`idx_lich_su_date`, `idx_lich_trinh_date`, `idx_gio_ban_cu_date`) trên cột `date`. Thêm cơ chế fallback tự động sang bảng `lich_trinh` khi `lich_su` chưa có dữ liệu. Chuẩn hóa padding ngày tháng (`YYYY-MM-DD` / `DD/MM/YYYY`) và tổng hợp giờ bận `patBusy`.
+  2. Frontend (`js/app.js`): Đã nâng cấp `loadDashboard()` để luôn ẩn chỉ báo loading và đưa số liệu thống kê về `0` khi gặp sự cố mạng thay vì treo trạng thái `"..."`.
+  3. Re-deploy Cloudflare Worker backend và đồng bộ số phiên bản v3.2.4.
+- **File:** `backend/src/index.js` (deploy), `js/app.js`, `index.html` (v3.2.4)

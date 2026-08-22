@@ -83,7 +83,11 @@ async function ensureSchema(db) {
       db.prepare("CREATE TABLE IF NOT EXISTS benh_nhan (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, age INTEGER DEFAULT 0, gender TEXT DEFAULT 'Nam', room TEXT DEFAULT '', bed TEXT DEFAULT '', arrive_time TEXT DEFAULT '07:30', leave_time TEXT DEFAULT '', thu_thuat TEXT NOT NULL DEFAULT '[]', status TEXT DEFAULT 'Chưa xếp', ngay_vao TEXT DEFAULT '', gio_ban TEXT DEFAULT '', is_saturday INTEGER DEFAULT 0, order_idx INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
       db.prepare("CREATE TABLE IF NOT EXISTS lich_trinh (id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, patient_name TEXT NOT NULL, dob TEXT DEFAULT '', room TEXT DEFAULT '', procedure_name TEXT NOT NULL, staff_name TEXT DEFAULT '', sub_staff_name TEXT DEFAULT '', machine_name TEXT DEFAULT '', bed TEXT DEFAULT '', start_time TEXT NOT NULL, end_time TEXT NOT NULL, is_saturday INTEGER DEFAULT 0, order_idx INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
       db.prepare("CREATE TABLE IF NOT EXISTS lich_su (id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, patient_name TEXT NOT NULL, dob TEXT DEFAULT '', room TEXT DEFAULT '', procedure_name TEXT NOT NULL, staff_name TEXT DEFAULT '', sub_staff_name TEXT DEFAULT '', machine_name TEXT DEFAULT '', bed TEXT DEFAULT '', start_time TEXT NOT NULL, end_time TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
-      db.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_patients_name ON benh_nhan(name)")
+      db.prepare("CREATE TABLE IF NOT EXISTS gio_ban_cu (id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, staff_name TEXT NOT NULL, busy_ranges TEXT DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
+      db.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_patients_name ON benh_nhan(name)"),
+      db.prepare("CREATE INDEX IF NOT EXISTS idx_lich_su_date ON lich_su(date)"),
+      db.prepare("CREATE INDEX IF NOT EXISTS idx_lich_trinh_date ON lich_trinh(date)"),
+      db.prepare("CREATE INDEX IF NOT EXISTS idx_gio_ban_cu_date ON gio_ban_cu(date)")
     ];
     await db.batch(stmts);
 
@@ -1093,18 +1097,52 @@ async function handleApiAction(action, args, env, request) {
       let dmy = rawDate;
       if (rawDate.includes('/')) {
         const p = rawDate.split('/');
-        ymd = `${p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
+        if (p.length === 3) {
+          const d = p[0].padStart(2, '0');
+          const m = p[1].padStart(2, '0');
+          const y = p[2];
+          ymd = `${y}-${m}-${d}`;
+          dmy = `${d}/${m}/${y}`;
+        }
       } else if (rawDate.includes('-')) {
         const p = rawDate.split('-');
-        dmy = `${p[2]}/${p[1]}/${p[0]}`;
+        if (p.length === 3) {
+          const y = p[0];
+          const m = p[1].padStart(2, '0');
+          const d = p[2].padStart(2, '0');
+          ymd = `${y}-${m}-${d}`;
+          dmy = `${d}/${m}/${y}`;
+        }
       }
 
-      const [histRes, busyRes] = await db.batch([
-        db.prepare("SELECT date, patient_name, dob, room, procedure_name, start_time, end_time, staff_name, sub_staff_name, machine_name, bed FROM lich_su WHERE date = ? OR date = ? ORDER BY start_time ASC").bind(ymd, dmy),
-        db.prepare("SELECT date, staff_name, busy_ranges FROM gio_ban_cu WHERE date = ? OR date = ?").bind(ymd, dmy)
-      ]);
+      // Query lich_su first
+      let histRes = { results: [] };
+      try {
+        histRes = await db.prepare("SELECT date, patient_name, dob, room, procedure_name, start_time, end_time, staff_name, sub_staff_name, machine_name, bed FROM lich_su WHERE date = ? OR date = ? ORDER BY start_time ASC").bind(ymd, dmy).all();
+      } catch (e) {
+        console.warn("Error querying lich_su:", e);
+      }
 
-      const rows = histRes.results || [];
+      let rows = histRes.results || [];
+      // Fallback: If no records in lich_su, check lich_trinh (e.g. today's active schedule)
+      if (rows.length === 0) {
+        try {
+          const fallbackRes = await db.prepare("SELECT date, patient_name, dob, room, procedure_name, start_time, end_time, staff_name, sub_staff_name, machine_name, bed FROM lich_trinh WHERE date = ? OR date = ? ORDER BY start_time ASC").bind(ymd, dmy).all();
+          rows = fallbackRes.results || [];
+        } catch (e) {
+          console.warn("Error querying fallback lich_trinh:", e);
+        }
+      }
+
+      // Safe query for gio_ban_cu
+      let busyRows = [];
+      try {
+        const busyRes = await db.prepare("SELECT date, staff_name, busy_ranges FROM gio_ban_cu WHERE date = ? OR date = ?").bind(ymd, dmy).all();
+        busyRows = busyRes.results || [];
+      } catch (e) {
+        // gio_ban_cu optional
+      }
+
       const schedule = rows.map(r => ({
         ngay: r.date,
         tenBN: r.patient_name,
@@ -1119,7 +1157,7 @@ async function handleApiAction(action, args, env, request) {
         giuong: r.bed || ""
       }));
 
-      // 2. Aggregate unique benh_nhan with dsThuThuat list
+      // Aggregate unique benh_nhan with dsThuThuat list
       const patMap = {};
       rows.forEach(r => {
         const key = `${String(r.patient_name).trim().toUpperCase()}|${String(r.dob || '').trim()}`;
@@ -1132,11 +1170,10 @@ async function handleApiAction(action, args, env, request) {
       });
       const benh_nhan = Object.values(patMap);
 
-      // 3. Giờ bận nhân sự & bệnh nhân
+      // Staff busy & Patient busy synthesis
       const staffBusy = [];
-      const patBusy = [];
+      const patBusyMap = {};
       
-      const busyRows = busyRes.results || [];
       if (busyRows.length > 0) {
         busyRows.forEach(b => {
           const str = String(b.busy_ranges || '');
@@ -1147,7 +1184,6 @@ async function handleApiAction(action, args, env, request) {
           staffBusy.push({ ten: b.staff_name, slots: slots });
         });
       } else {
-        // Synthesize busy time from scheduled slots performed
         const staffMap = {};
         rows.forEach(r => {
           const nv = String(r.staff_name || '').trim();
@@ -1160,12 +1196,25 @@ async function handleApiAction(action, args, env, request) {
         });
       }
 
+      // Synthesize patient busy time from schedule
+      rows.forEach(r => {
+        const patName = String(r.patient_name || '').trim();
+        if (!patName) return;
+        const key = `${patName.toUpperCase()}|${String(r.dob || '').trim()}`;
+        if (!patBusyMap[key]) {
+          patBusyMap[key] = { tenBN: patName, namSinh: r.dob || "", slots: [] };
+        }
+        if (r.start_time && r.end_time && r.start_time !== '--' && !r.start_time.includes('Rớt')) {
+          patBusyMap[key].slots.push({ from: r.start_time, to: r.end_time, tt: r.procedure_name });
+        }
+      });
+
       return success({
         schedule: schedule,
         patients: benh_nhan,
         benh_nhan: benh_nhan,
         staffBusy: staffBusy,
-        patBusy: patBusy
+        patBusy: Object.values(patBusyMap)
       });
     }
 

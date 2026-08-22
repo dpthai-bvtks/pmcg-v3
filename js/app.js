@@ -8468,11 +8468,17 @@ window.showGlobalLoading = function (text) {
                 if (techNorm && counts[techNorm]) {
                     const procName = String(row['AE'] || '').trim();
                     const procInfo = mapProcedureJS(procName);
-                    const loaiVal = String(row['AN'] || (procInfo ? (procInfo.phanLoai || procInfo.loai || '') : '')).toLowerCase();
-                    if (loaiVal.includes('1') || loaiVal.includes('loại 1') || loaiVal.includes('loai 1') || loaiVal.includes('loại i') || loaiVal === 'i') counts[techNorm].l1++;
-                    else if (loaiVal.includes('2') || loaiVal.includes('ii')) counts[techNorm].l2++;
-                    else if (loaiVal.includes('3') || loaiVal.includes('iii')) counts[techNorm].l3++;
-                    else counts[techNorm].other++;
+                    const loaiVal = String(row['AN'] || (procInfo ? (procInfo.phanLoai || procInfo.loai || procInfo.phan_loai || '') : '')).normalize('NFC').toLowerCase().trim();
+
+                    if (/\bloại\s*3\b|\bloai\s*3\b|\b3\b|\bloại\s*iii\b|\bloai\s*iii\b/.test(loaiVal)) {
+                        counts[techNorm].l3++;
+                    } else if (/\bloại\s*2\b|\bloai\s*2\b|\b2\b|\bloại\s*ii\b|\bloai\s*ii\b/.test(loaiVal)) {
+                        counts[techNorm].l2++;
+                    } else if (/\bloại\s*1\b|\bloai\s*1\b|\b1\b|\bloại\s*i\b|\bloai\s*i\b/.test(loaiVal)) {
+                        counts[techNorm].l1++;
+                    } else {
+                        counts[techNorm].other++;
+                    }
                 }
 
                 if (!row['AH'] || !row['L']) continue;

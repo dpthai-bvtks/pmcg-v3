@@ -8452,7 +8452,7 @@ window.showGlobalLoading = function (text) {
 
             const counts = {};
             dataCache.staff.forEach(s => {
-                counts[s.ten] = { l2: 0, l3: 0, other: 0 };
+                counts[s.ten] = { l1: 0, l2: 0, l3: 0, other: 0 };
             });
 
             let sttTime = 1;
@@ -8469,7 +8469,8 @@ window.showGlobalLoading = function (text) {
                     const procName = String(row['AE'] || '').trim();
                     const procInfo = mapProcedureJS(procName);
                     const loaiVal = String(row['AN'] || (procInfo ? (procInfo.phanLoai || procInfo.loai || '') : '')).toLowerCase();
-                    if (loaiVal.includes('2') || loaiVal.includes('ii')) counts[techNorm].l2++;
+                    if (loaiVal.includes('1') || loaiVal.includes('loại 1') || loaiVal.includes('loai 1') || loaiVal.includes('loại i') || loaiVal === 'i') counts[techNorm].l1++;
+                    else if (loaiVal.includes('2') || loaiVal.includes('ii')) counts[techNorm].l2++;
                     else if (loaiVal.includes('3') || loaiVal.includes('iii')) counts[techNorm].l3++;
                     else counts[techNorm].other++;
                 }
@@ -8596,14 +8597,15 @@ window.showGlobalLoading = function (text) {
 
             if (countBody) {
                 let countHtml = '';
-                let t2 = 0, t3 = 0, to = 0;
+                let t1 = 0, t2 = 0, t3 = 0, to = 0;
                 dataCache.staff.forEach(s => {
                     const c = counts[s.ten];
                     if (!c) return;
-                    if (c.l2 === 0 && c.l3 === 0 && c.other === 0) return;
-                    t2 += c.l2; t3 += c.l3; to += c.other;
+                    if (c.l1 === 0 && c.l2 === 0 && c.l3 === 0 && c.other === 0) return;
+                    t1 += c.l1; t2 += c.l2; t3 += c.l3; to += c.other;
                     countHtml += `<tr>
                         <td><strong>${s.ten}</strong></td>
+                        <td style="text-align:center">${c.l1}</td>
                         <td style="text-align:center">${c.l2}</td>
                         <td style="text-align:center">${c.l3}</td>
                         <td style="text-align:center">${c.other}</td>
@@ -8611,11 +8613,12 @@ window.showGlobalLoading = function (text) {
                 });
                 countHtml += `<tr style="font-weight:bold; background:#eafaf1;">
                     <td>TỔNG CỘNG</td>
+                    <td style="text-align:center">${t1}</td>
                     <td style="text-align:center">${t2}</td>
                     <td style="text-align:center">${t3}</td>
                     <td style="text-align:center">${to}</td>
                 </tr>`;
-                countBody.innerHTML = countHtml || '<tr><td colspan="4" style="text-align:center;">Chưa có dữ liệu thủ thuật</td></tr>';
+                countBody.innerHTML = countHtml || '<tr><td colspan="5" style="text-align:center;">Chưa có dữ liệu thủ thuật</td></tr>';
             }
         }
 

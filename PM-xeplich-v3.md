@@ -605,3 +605,11 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   1. Thêm tham số `skipDashboard = false` cho `renderPatientsTable()`. Trong `applyHistoryDataToTabs()` và `restoreHistoryTabs()`, gọi `renderPatientsTable(true)` để vẽ lại bảng bệnh nhân mà không kích hoạt gọi lại `loadDashboard()`.
   2. Bổ sung Re-entrancy Guard (`window._isLoadingDashboard`) khóa hàm `loadDashboard()` khi đang trong tiến trình tải để triệt tiêu mọi kịch bản đệ quy trùng lặp.
 - **File:** `js/app.js`, `index.html` (v3.2.5)
+
+### Cập nhật 22/08/2026 (v3.2.6)
+- **Yêu cầu:** Rà soát kỹ lưỡng chức năng Xếp lịch bổ sung (`runExtraScheduling` / `existingSched`), đảm bảo đã khóa toàn bộ lịch đã xếp và chỉ lấp vào khoảng rảnh phù hợp.
+- **Phát hiện & Sửa đổi trong `js/scheduler-engine.js`:**
+  1. **Khóa Lịch Cá Nhân Bệnh Nhân (`patient.busy` & `free_at` & `last_room`):** Đã bổ sung cập nhật mốc bận `patient.busy.push([gioStart, gioEnd + 1])` cho các ca nằm trong `existingSched`. Điều này đảm bảo thuật toán không bao giờ xếp ca bổ sung trùng giờ với ca đã xếp trước đó của cùng một bệnh nhân.
+  2. **Cập nhật Tải Công Việc Nhân Sự (`staffLoad`):** Cộng dồn số phút làm việc (`used_mins`) và đếm số ca hoàn thành (`procs_done`) của các ca trong `existingSched` vào tải của KTV, giữ nguyên tắc cân bằng tải khi xếp bổ sung.
+  3. **Chuẩn hóa Trừ Thủ Thuật Đã Xếp (Count-by-count Deduction):** Thay thế logic `.includes()` bằng cơ chế trừ tần suất từng ca một trong `buildDbFromCache`. Bệnh nhân đăng ký nhiều ca cùng loại (như 2 ca Điện châm) khi mới xếp 1 ca sẽ chỉ bị trừ đúng 1 ca, giữ lại ca còn lại để xếp bổ sung.
+- **File:** `js/scheduler-engine.js`, `index.html` (v3.2.6)

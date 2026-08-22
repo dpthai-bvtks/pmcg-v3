@@ -245,10 +245,19 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
     (db.roomBeds[phong] || []).forEach(giuong => { bedTracker[phong][giuong] = []; });
   }
 
+  let patients = db.rawPatients.map(p => ({ ...p, pending: [...p.pending], failed: false, busy: p.busy ? p.busy.map(b => [...b]) : [] }));
+
   existingSched.forEach(row => {
+    const gioDienRaStr = String(row[5] || row.GIODIENRA || row.gioDienRa || '');
+    if (gioDienRaStr === '❌ Rớt' || gioDienRaStr === '--') return;
+
     const gioStart = t2m(row[5] || row.GIODIENRA || row.gioDienRa), gioEnd = t2m(row[6] || row.GIOKETTHUC || row.gioKetThuc);
+    if (isNaN(gioStart) || isNaN(gioEnd)) return;
+
     const nvChinh = row[7] || row["NV CHÍNH"] || row.nvChinh, nvPhu = row[8] || row["NV PHỤ"] || row.nvPhu;
     const may = row[9] || row.MAY || row.may, phong = row[3] || row.PHONG || row.phong, giuong = row[10] || row.GIUONG || row.giuong;
+    const patName = String(row[1] || row.HOTEN || row.tenBN || '').toUpperCase().trim();
+    const patNs = String(row[2] || row.NAMSINH || row.namSinh || '').trim();
     
     const tenThuThuat = String(row[4] || row.DICHVU || row.thuThuat || "").trim().toLowerCase();
     const info = thuThuatInfo[tenThuThuat] || ["Thủ công", 15, 5, "PHCN", 1, 0, [], 5];
@@ -271,9 +280,28 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
     }
     if (may && may !== "Thủ công" && machineTimeline[may]) pushAndMerge(machineTimeline, may, [gioStart, gioEnd]);
     if (phong && giuong && bedTracker[phong]?.[giuong]) pushAndMerge(bedTracker[phong], giuong, [gioStart, gioEnd]);
-  });
 
-  let patients = db.rawPatients.map(p => ({ ...p, pending: [...p.pending], failed: false }));
+    // 🔒 PATIENT LOCK: Update patient busy timeline, free_at, and last_room for existing schedule
+    if (patName) {
+      const patObj = patients.find(p => {
+        const pName = String(p.name || '').toUpperCase().trim();
+        const pNs = String(p.ns || p.namSinh || '').trim();
+        return pName === patName && (!patNs || !pNs || patNs === pNs);
+      });
+      if (patObj) {
+        patObj.busy.push([gioStart, gioEnd + 1]);
+        patObj.busy = mergeTimeline(patObj.busy);
+        patObj.free_at = Math.max(patObj.free_at || 0, gioEnd);
+        if (phong) patObj.last_room = phong;
+      }
+    }
+
+    // 🔒 STAFF WORKLOAD LOCK: Update staff load minutes and procedure count
+    if (nvChinh && staffLoad[nvChinh]) {
+      staffLoad[nvChinh].used_mins += (staffEnd - gioStart);
+      staffLoad[nvChinh].procs_done[tenThuThuat] = (staffLoad[nvChinh].procs_done[tenThuThuat] || 0) + 1;
+    }
+  });
   const tempDropList = [], results = [], localProcCount = {};
   
   const totalPendingProcs = patients.reduce((sum, p) => sum + p.pending.length, 0);
@@ -948,7 +976,7 @@ async function buildBaseDbFromD1(db) {
       let procs = Array.isArray(ttStr) ? ttStr : String(ttStr).split(",").map(x => x.trim()).filter(Boolean);
       if (!procs.length) return;
 
-      // Nếu đang xếp bổ sung (có existingSched), loại bỏ các thủ thuật CỦA BỆNH NHÂN NÀY đã được xếp lịch trước đó
+      // Nếu đang xếp bổ sung (có existingSched), loại bỏ các thủ thuật CỦA BỆNH NHÂN NÀY đã được xếp lịch trước đó (khớp theo số lượng)
       if (existingSched && existingSched.length > 0) {
         const scheduledProcsForPat = existingSched
           .filter(r => {
@@ -960,7 +988,18 @@ async function buildBaseDbFromD1(db) {
           })
           .map(r => String(r.thuThuat || r.DICHVU || r[4] || '').trim().toLowerCase());
 
-        procs = procs.filter(pr => !scheduledProcsForPat.includes(pr.toLowerCase()));
+        const remainingProcs = [];
+        const copyScheduled = [...scheduledProcsForPat];
+        for (const pr of procs) {
+          const lowerPr = pr.toLowerCase();
+          const matchIdx = copyScheduled.indexOf(lowerPr);
+          if (matchIdx !== -1) {
+            copyScheduled.splice(matchIdx, 1);
+          } else {
+            remainingProcs.push(pr);
+          }
+        }
+        procs = remainingProcs;
       }
       if (!procs.length) return; // Bệnh nhân đã được xếp đủ hết thủ thuật rồi, không cần xếp nữa
 

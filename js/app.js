@@ -2929,6 +2929,9 @@ window.showGlobalLoading = function (text) {
             if (window._savePatientLock) { console.warn("savePatient: blocked double call"); return; }
             window._savePatientLock = true;
 
+            const currentEditIdx = editIndex.pat;
+            const currentItem = currentEditIdx > -1 ? dataCache.pat[currentEditIdx] : null;
+
             let ten = document.getElementById('pat-name').value;
             const nam = document.getElementById('pat-year').value;
             // const ngay = document.getElementById('pat-date').value;
@@ -2995,8 +2998,6 @@ window.showGlobalLoading = function (text) {
             if (btnSave) { btnSave.disabled = true; btnSave.innerText = 'Đang lưu...'; }
 
             // Chụp index TRƯỚC khi cancelEdit reset về -1
-            const currentEditIdx = editIndex.pat;
-            const currentItem = currentEditIdx > -1 ? dataCache.pat[currentEditIdx] : null;
 
             // ⚡ Cập nhật tức thời lên giao diện (Optimistic UI Update) - 0ms delay!
             if (currentEditIdx > -1 && currentItem) {

@@ -8312,15 +8312,18 @@ window.showGlobalLoading = function (text) {
                                 const endFull = datePart ? `${ktStr} ${datePart}` : ktStr;
 
                                 const cleanBN = (colIdx.ten >= 0 ? String(r[colIdx.ten] || '') : '').replace(/\s*\((?:✔ RV|❌ Rớt|RV|Rớt)\)/gi, '').trim();
+                                const procName = colIdx.tt >= 0 ? String(r[colIdx.tt] || '').trim() : '';
+                                const procInfo = mapProcedureJS(procName);
+                                const procLoai = procInfo ? (procInfo.phanLoai || procInfo.loai || procInfo.he || '') : '';
 
                                 return {
                                     'AT': colIdx.nv >= 0 ? r[colIdx.nv] : '',
                                     'C': cleanBN,
-                                    'AE': colIdx.tt >= 0 ? r[colIdx.tt] : '',
-                                    'AG': colIdx.tt >= 0 ? r[colIdx.tt] : '',
+                                    'AE': procName,
+                                    'AG': procName,
                                     'AF': 'Chủ động',
                                     'AS': 'Khác',
-                                    'AN': 'Loại 2',
+                                    'AN': procLoai,
                                     'AH': startFull,
                                     'L': endFull
                                 };
@@ -8463,9 +8466,11 @@ window.showGlobalLoading = function (text) {
                 let techNorm = getShortNameJS(techRaw);
 
                 if (techNorm && counts[techNorm]) {
-                    const loai = String(row['AN'] || '').toLowerCase();
-                    if (loai.includes('2')) counts[techNorm].l2++;
-                    else if (loai.includes('3')) counts[techNorm].l3++;
+                    const procName = String(row['AE'] || '').trim();
+                    const procInfo = mapProcedureJS(procName);
+                    const loaiVal = String(row['AN'] || (procInfo ? (procInfo.phanLoai || procInfo.loai || '') : '')).toLowerCase();
+                    if (loaiVal.includes('2') || loaiVal.includes('ii')) counts[techNorm].l2++;
+                    else if (loaiVal.includes('3') || loaiVal.includes('iii')) counts[techNorm].l3++;
                     else counts[techNorm].other++;
                 }
 

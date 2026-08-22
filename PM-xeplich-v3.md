@@ -597,3 +597,11 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   2. Frontend (`js/app.js`): Đã nâng cấp `loadDashboard()` để luôn ẩn chỉ báo loading và đưa số liệu thống kê về `0` khi gặp sự cố mạng thay vì treo trạng thái `"..."`.
   3. Re-deploy Cloudflare Worker backend và đồng bộ số phiên bản v3.2.4.
 - **File:** `backend/src/index.js` (deploy), `js/app.js`, `index.html` (v3.2.4)
+
+### Cập nhật 22/08/2026 (v3.2.5)
+- **Lỗi:** RangeError: Maximum call stack size exceeded khi xem lại lịch sử (hàm getHistoryFullData / loadDashboard).
+- **Nguyên nhân:** Khi gọi `loadDashboard()`, hàm `processHistoryData` gọi `applyHistoryDataToTabs()`, hàm này gọi `renderPatientsTable()`. Do ở v3.2.2 `renderPatientsTable()` được thêm lệnh gọi `loadDashboard()` để cập nhật số liệu thời gian thực, điều này dẫn đến vòng lặp đệ quy vô tận: `loadDashboard() -> processHistoryData() -> applyHistoryDataToTabs() -> renderPatientsTable() -> loadDashboard() -> ...`
+- **Giải pháp:**
+  1. Thêm tham số `skipDashboard = false` cho `renderPatientsTable()`. Trong `applyHistoryDataToTabs()` và `restoreHistoryTabs()`, gọi `renderPatientsTable(true)` để vẽ lại bảng bệnh nhân mà không kích hoạt gọi lại `loadDashboard()`.
+  2. Bổ sung Re-entrancy Guard (`window._isLoadingDashboard`) khóa hàm `loadDashboard()` khi đang trong tiến trình tải để triệt tiêu mọi kịch bản đệ quy trùng lặp.
+- **File:** `js/app.js`, `index.html` (v3.2.5)

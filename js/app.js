@@ -2769,9 +2769,11 @@ window.showGlobalLoading = function (text) {
             renderPatientsTable();
         };
 
-        function renderPatientsTable() {
+        function renderPatientsTable(skipDashboard = false) {
             renderPatientsTable_Original();
-            if (typeof loadDashboard === 'function') loadDashboard();
+            if (!skipDashboard && !window._isLoadingDashboard && typeof loadDashboard === 'function') {
+                loadDashboard();
+            }
         }
 
         function renderPatientsTable_Original() {
@@ -4833,7 +4835,7 @@ window.showGlobalLoading = function (text) {
             document.title = 'Lịch Cũ – ' + ngayHT;
 
             // Render lại các tab
-            if (typeof renderPatientsTable === 'function') renderPatientsTable();
+            if (typeof renderPatientsTable === 'function') renderPatientsTable(true);
             if (typeof renderBusyPat === 'function') renderBusyPat();
             if (typeof renderBusyStaff === 'function') renderBusyStaff();
         }
@@ -4844,7 +4846,7 @@ window.showGlobalLoading = function (text) {
             dataCache.staff = window._liveDataCacheBackup.staff;
             window._liveDataCacheBackup = null;
             document.title = 'T.I.M.E.S. System';
-            if (typeof renderPatientsTable === 'function') renderPatientsTable();
+            if (typeof renderPatientsTable === 'function') renderPatientsTable(true);
             if (typeof renderBusyPat === 'function') renderBusyPat();
             if (typeof renderBusyStaff === 'function') renderBusyStaff();
             // Xóa panel cũ nếu còn

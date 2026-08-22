@@ -2944,23 +2944,38 @@ window.showGlobalLoading = function (text) {
             const ngay = `${dayVal}/${myVal}`;
 
             // Tự động xác định giờ vào và buổi điều trị
-            let gio = '07:30';
+            const gioTyped = (document.getElementById('pat-time')?.value || '').trim();
+            let gio = gioTyped || '07:30';
             let buoi_dieu_tri = 'TuDong';
 
             if (currentEditIdx > -1 && currentItem) {
-                // Bệnh nhân cũ -> để mặc định 07:30 và buổi tự động
-                gio = '07:30';
-                buoi_dieu_tri = 'TuDong';
+                // Bệnh nhân cũ -> để buổi tự động, nếu không nhập giờ y lệnh thì mặc định 07:30
+                if (gioTyped && gioTyped.includes(':')) {
+                    const hrTyped = parseInt(gioTyped.split(':')[0]);
+                    if (!isNaN(hrTyped)) {
+                        buoi_dieu_tri = (hrTyped < 12) ? 'Sang' : 'Chieu';
+                    }
+                } else {
+                    buoi_dieu_tri = 'TuDong';
+                }
             } else {
-                // Bệnh nhân mới -> lấy giờ hiện tại hệ thống để phân loại buổi
+                // Bệnh nhân mới -> lấy giờ y lệnh (nếu nhập) hoặc giờ hiện tại để phân loại buổi
                 const now = new Date();
                 const hr = now.getHours();
                 const mn = now.getMinutes();
-                gio = String(hr).padStart(2, '0') + ':' + String(mn).padStart(2, '0');
-                if (loai_bn === 'NgoaiTru') {
-                    buoi_dieu_tri = (hr < 12) ? 'Sang' : 'Chieu';
+                
+                if (gioTyped && gioTyped.includes(':')) {
+                    const hrTyped = parseInt(gioTyped.split(':')[0]);
+                    if (!isNaN(hrTyped)) {
+                        buoi_dieu_tri = (hrTyped < 12) ? 'Sang' : 'Chieu';
+                    }
                 } else {
-                    buoi_dieu_tri = 'Sang';
+                    // Trống -> lấy giờ hiện tại hệ thống
+                    if (loai_bn === 'NgoaiTru') {
+                        buoi_dieu_tri = (hr < 12) ? 'Sang' : 'Chieu';
+                    } else {
+                        buoi_dieu_tri = 'Sang';
+                    }
                 }
             }
 
@@ -3082,7 +3097,8 @@ window.showGlobalLoading = function (text) {
                 }
             }
 
-            document.getElementById('pat-time').value = item.gioVao || '07:30';
+            const gioVal = item.gioVao || '';
+            document.getElementById('pat-time').value = (gioVal === '07:30' || !gioVal) ? '' : gioVal;
 
             document.getElementById('pat-room').value = item.phong;
 

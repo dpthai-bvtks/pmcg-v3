@@ -113,7 +113,9 @@ async function ensureSchema(db) {
       "ALTER TABLE benh_nhan ADD COLUMN ngay_vao TEXT DEFAULT ''",
       "ALTER TABLE benh_nhan ADD COLUMN gio_ban TEXT DEFAULT ''",
       "ALTER TABLE benh_nhan ADD COLUMN is_saturday INTEGER DEFAULT 0",
-      "ALTER TABLE benh_nhan ADD COLUMN order_idx INTEGER DEFAULT 0"
+      "ALTER TABLE benh_nhan ADD COLUMN order_idx INTEGER DEFAULT 0",
+      "ALTER TABLE benh_nhan ADD COLUMN loai_bn TEXT DEFAULT 'NoiTru'",
+      "ALTER TABLE benh_nhan ADD COLUMN buoi_dieu_tri TEXT DEFAULT 'Sang'"
     ];
     for (const sql of migrations) {
       try { await db.prepare(sql).run(); } catch(e) {}

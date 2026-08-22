@@ -1591,10 +1591,15 @@ window.showGlobalLoading = function (text) {
                 document.getElementById('schedule-date').value = `${y}-${m}-${d}`;
             }
 
-            if (document.getElementById('pat-date')) {
-                const dd = String(today.getDate()).padStart(2, '0');
+            if (typeof populateMonthYearDropdown === 'function') {
+                populateMonthYearDropdown();
+            }
+            if (document.getElementById('pat-date-day')) {
+                document.getElementById('pat-date-day').value = String(today.getDate()).padStart(2, '0');
+            }
+            if (document.getElementById('pat-date-month-year')) {
                 const mm = String(today.getMonth() + 1).padStart(2, '0');
-                document.getElementById('pat-date').value = `${dd}/${mm}/${today.getFullYear()}`;
+                document.getElementById('pat-date-month-year').value = `${mm}/${today.getFullYear()}`;
             }
 
             if (typeof setupTableSorting === 'function') setupTableSorting();
@@ -2001,7 +2006,14 @@ window.showGlobalLoading = function (text) {
 
                     const today = new Date();
 
-                    document.getElementById('pat-date').value = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+                    if (typeof populateMonthYearDropdown === 'function') populateMonthYearDropdown();
+                    if (document.getElementById('pat-date-day')) {
+                        document.getElementById('pat-date-day').value = String(today.getDate()).padStart(2, '0');
+                    }
+                    if (document.getElementById('pat-date-month-year')) {
+                        const mm = String(today.getMonth() + 1).padStart(2, '0');
+                        document.getElementById('pat-date-month-year').value = `${mm}/${today.getFullYear()}`;
+                    }
 
                     if(document.getElementById('pat-room')) document.getElementById('pat-room').value = '';
                     if(document.getElementById('pat-loai-bn')) document.getElementById('pat-loai-bn').value = 'NoiTru';
@@ -2919,26 +2931,41 @@ window.showGlobalLoading = function (text) {
 
             let ten = document.getElementById('pat-name').value;
             const nam = document.getElementById('pat-year').value;
-            const ngay = document.getElementById('pat-date').value;
-            const gio = document.getElementById('pat-time').value.trim() || '07:30';
+            // const ngay = document.getElementById('pat-date').value;
+            // const gio = document.getElementById('pat-time').value.trim() || '07:30';
             const phong = document.getElementById('pat-room').value;
             const ban = document.getElementById('pat-busy').value;
             const ra = document.getElementById('pat-leave').value;
             const loai_bn = document.getElementById('pat-loai-bn').value;
             // Tự động xác định buổi điều trị cho bệnh nhân ngoại trú dựa trên giờ Y lệnh
+            // Concat ngày vào từ 2 ô nhập
+            const dayVal = String(document.getElementById('pat-date-day')?.value || '').trim().padStart(2, '0');
+            const myVal = document.getElementById('pat-date-month-year')?.value || '';
+            const ngay = `${dayVal}/${myVal}`;
+
+            // Tự động xác định giờ vào và buổi điều trị
+            let gio = '07:30';
             let buoi_dieu_tri = 'TuDong';
-            if (loai_bn === 'NgoaiTru') {
-                const gioTyped = document.getElementById('pat-time').value.trim();
-                if (gioTyped && gioTyped.includes(':')) {
-                    const hr = parseInt(gioTyped.split(':')[0]);
-                    if (!isNaN(hr)) {
-                        buoi_dieu_tri = (hr < 12) ? 'Sang' : 'Chieu';
-                    }
-                }
-                if (ra) {
+
+            if (currentEditIdx > -1 && currentItem) {
+                // Bệnh nhân cũ -> để mặc định 07:30 và buổi tự động
+                gio = '07:30';
+                buoi_dieu_tri = 'TuDong';
+            } else {
+                // Bệnh nhân mới -> lấy giờ hiện tại hệ thống để phân loại buổi
+                const now = new Date();
+                const hr = now.getHours();
+                const mn = now.getMinutes();
+                gio = String(hr).padStart(2, '0') + ':' + String(mn).padStart(2, '0');
+                if (loai_bn === 'NgoaiTru') {
+                    buoi_dieu_tri = (hr < 12) ? 'Sang' : 'Chieu';
+                } else {
                     buoi_dieu_tri = 'Sang';
                 }
-            } else {
+            }
+
+            // Nếu có giờ ra viện -> bắt buộc Sáng
+            if (ra) {
                 buoi_dieu_tri = 'Sang';
             }
             const tt = Array.from(document.querySelectorAll('.pat-proc-cb:checked')).map(cb => cb.value).join(', ');
@@ -3035,7 +3062,25 @@ window.showGlobalLoading = function (text) {
 
             document.getElementById('pat-year').value = item.namSinh;
 
-            document.getElementById('pat-date').value = item.ngayVao;
+            const ngayVao = item.ngayVao || '';
+            if (ngayVao.includes('/')) {
+                const parts = ngayVao.split('/');
+                if (document.getElementById('pat-date-day')) {
+                    document.getElementById('pat-date-day').value = parts[0];
+                }
+                if (document.getElementById('pat-date-month-year')) {
+                    document.getElementById('pat-date-month-year').value = `${parts[1]}/${parts[2]}`;
+                }
+            } else {
+                const today = new Date();
+                if (document.getElementById('pat-date-day')) {
+                    document.getElementById('pat-date-day').value = String(today.getDate()).padStart(2, '0');
+                }
+                if (document.getElementById('pat-date-month-year')) {
+                    const mm = String(today.getMonth() + 1).padStart(2, '0');
+                    document.getElementById('pat-date-month-year').value = `${mm}/${today.getFullYear()}`;
+                }
+            }
 
             document.getElementById('pat-time').value = item.gioVao || '07:30';
 
@@ -9216,3 +9261,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 200);
 });
+
+
+// ==========================================
+// DYNAMIC MONTH/YEAR DROPDOWN GENERATOR
+// ==========================================
+function populateMonthYearDropdown() {
+    const select = document.getElementById('pat-date-month-year');
+    if (!select) return;
+    select.innerHTML = '';
+    
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    
+    // Generate months for previous year, this year, and next year
+    for (let y = currentYear - 1; y <= currentYear + 1; y++) {
+        for (let m = 0; m < 12; m++) {
+            const mm = String(m + 1).padStart(2, '0');
+            const val = `${mm}/${y}`;
+            const option = document.createElement('option');
+            option.value = val;
+            option.textContent = `Tháng ${mm}/${y}`;
+            if (y === currentYear && m === currentMonth) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        }
+    }
+}
+window.populateMonthYearDropdown = populateMonthYearDropdown;

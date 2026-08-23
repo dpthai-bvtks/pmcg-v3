@@ -2844,9 +2844,25 @@ window.showGlobalLoading = function (text) {
                 });
             }
             if (_patSortMode === 1) {
-                displayPatList.sort((a, b) => parseNgayVao(b.ngayVao || '') - parseNgayVao(a.ngayVao || ''));
+                displayPatList.sort((a, b) => {
+                    const diff = parseNgayVao(b.ngayVao || '') - parseNgayVao(a.ngayVao || '');
+                    if (diff !== 0) return diff;
+                    const aLoai = a.loai_bn || 'NoiTru';
+                    const bLoai = b.loai_bn || 'NoiTru';
+                    if (aLoai === 'NgoaiTru' && bLoai !== 'NgoaiTru') return -1;
+                    if (bLoai === 'NgoaiTru' && aLoai !== 'NgoaiTru') return 1;
+                    return a._origIndex - b._origIndex;
+                });
             } else if (_patSortMode === 2) {
-                displayPatList.sort((a, b) => parseNgayVao(a.ngayVao || '') - parseNgayVao(b.ngayVao || ''));
+                displayPatList.sort((a, b) => {
+                    const diff = parseNgayVao(a.ngayVao || '') - parseNgayVao(b.ngayVao || '');
+                    if (diff !== 0) return diff;
+                    const aLoai = a.loai_bn || 'NoiTru';
+                    const bLoai = b.loai_bn || 'NoiTru';
+                    if (aLoai === 'NgoaiTru' && bLoai !== 'NgoaiTru') return -1;
+                    if (bLoai === 'NgoaiTru' && aLoai !== 'NgoaiTru') return 1;
+                    return a._origIndex - b._origIndex;
+                });
             } else {
                 displayPatList.sort((a, b) => a._origIndex - b._origIndex);
             }

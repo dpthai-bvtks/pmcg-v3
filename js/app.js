@@ -2799,7 +2799,7 @@ window.showGlobalLoading = function (text) {
         // ============================================================
 
 
-        let _patSortMode = 0; // 0 = mặc định (theo CSDL), 1 = Ngày vào mới -> cũ, 2 = Ngày vào cũ -> mới
+        let _patSortMode = 2; // 2 = Ngày vào cũ -> mới (Mặc định), 1 = Ngày vào mới -> cũ, 2 = Ngày vào cũ -> mới
         window.toggleSortPatientsByNgayVao = function() {
             if (!dataCache.pat || !dataCache.pat.length) return;
             _patSortMode = (_patSortMode + 1) % 3;

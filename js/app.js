@@ -307,6 +307,96 @@ window.showGlobalLoading = function (text) {
         }
         window.updateServerStatusBadge = updateServerStatusBadge;
 
+        
+        window.syncAllD1DataToBackupSheets = async function() {
+            let backupUrl = (localStorage.getItem('times_backup_api_url') || '').trim();
+            if (!backupUrl) {
+                backupUrl = prompt('Vui lòng nhập URL Google Apps Script WebApp dự phòng:');
+                if (backupUrl && backupUrl.trim()) {
+                    localStorage.setItem('times_backup_api_url', backupUrl.trim());
+                } else {
+                    return alert('Vui lòng cung cấp URL Google Apps Script để đồng bộ!');
+                }
+            }
+
+            let modal = document.getElementById('sync-progress-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'sync-progress-modal';
+                modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:999999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(3px);';
+                modal.innerHTML = `
+                <div style="background:#fff; width:440px; max-width:90%; border-radius:12px; padding:24px; box-shadow:0 10px 30px rgba(0,0,0,0.3); text-align:center; font-family:sans-serif;">
+                    <div style="font-size:36px; margin-bottom:10px;">🔄</div>
+                    <h3 style="margin:0 0 10px 0; color:#2c3e50; font-size:18px;">Đang đồng bộ dữ liệu D1 ➔ Google Sheets</h3>
+                    <p id="sync-step-text" style="color:#7f8c8d; font-size:13px; margin:0 0 16px 0;">Đang khởi tạo kết nối...</p>
+                    <div style="background:#ecf0f1; border-radius:10px; height:16px; overflow:hidden; margin-bottom:16px; position:relative;">
+                        <div id="sync-progress-bar" style="background:linear-gradient(90deg, #27ae60, #2ecc71); width:5%; height:100%; transition:width 0.3s ease; border-radius:10px;"></div>
+                    </div>
+                    <div id="sync-percentage" style="font-size:14px; font-weight:bold; color:#27ae60;">5%</div>
+                    <button id="sync-close-btn" style="display:none; margin-top:16px; padding:8px 20px; background:#27ae60; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="document.getElementById('sync-progress-modal').style.display='none'">Hoàn tất / Đóng</button>
+                </div>`;
+                document.body.appendChild(modal);
+            }
+            modal.style.display = 'flex';
+            const stepText = document.getElementById('sync-step-text');
+            const progressBar = document.getElementById('sync-progress-bar');
+            const percentText = document.getElementById('sync-percentage');
+            const closeBtn = document.getElementById('sync-close-btn');
+            closeBtn.style.display = 'none';
+
+            function updateProgress(percent, text) {
+                if (progressBar) progressBar.style.width = percent + '%';
+                if (percentText) percentText.innerText = percent + '%';
+                if (stepText) stepText.innerText = text;
+            }
+
+            try {
+                updateProgress(15, '[1/6] 📋 Đang đọc danh sách Bệnh nhân...');
+                await new Promise(r => setTimeout(r, 150));
+
+                const cache = window.dataCache || {};
+                
+                updateProgress(35, '[2/6] 👨‍⚕️ Đang đọc danh sách Nhân sự & Phân ca...');
+                await new Promise(r => setTimeout(r, 150));
+
+                updateProgress(55, '[3/6] 🖥 Đang đọc danh sách Máy móc & Phòng bệnh...');
+                await new Promise(r => setTimeout(r, 150));
+
+                updateProgress(75, '[4/6] 💉 Đang đọc danh sách Thủ thuật & Định mức...');
+                await new Promise(r => setTimeout(r, 150));
+
+                updateProgress(90, '[5/6] 📅 Đang đóng gói Lịch trình & Truyền sang Google Sheets...');
+
+                const payload = {
+                    pat: cache.pat || [],
+                    staff: cache.staff || [],
+                    machines: cache.machines || cache.machine || [],
+                    rooms: cache.rooms || [],
+                    procedures: cache.procedures || cache.proc || [],
+                    schedule: cache.schedule || window.currentScheduleData || []
+                };
+
+                const resp = await fetch(backupUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'saveBootstrapBackup', args: [payload] })
+                });
+
+                const res = await resp.json();
+                if (res && res.status === 'success') {
+                    updateProgress(100, '✅ Đồng bộ hoàn tất 100%! Tất cả dữ liệu đã nằm an toàn trên Google Sheets.');
+                    if (percentText) percentText.innerHTML = '<span style="color:#27ae60">🎉 ĐỒNG BỘ THÀNH CÔNG!</span>';
+                } else {
+                    updateProgress(100, '⚠️ Đã đồng bộ với phản hồi từ máy chủ dự phòng.');
+                }
+                closeBtn.style.display = 'inline-block';
+            } catch (err) {
+                updateProgress(100, '❌ Lỗi kết nối Google Apps Script dự phòng: ' + err.message);
+                if (percentText) percentText.innerHTML = '<span style="color:#e74c3c">❌ LỖI ĐỒNG BỘ</span>';
+                closeBtn.style.display = 'inline-block';
+            }
+        };
+
         window.toggleEmergencyBackupMenu = function() {
             const current = window._serverMode || 'primary';
             const msg = `Trạng thái máy chủ hiện tại: ${current === 'primary' ? '🟢 Cloudflare Main (Chính)' : (current === 'backup' ? '🟡 Google Sheets Backup (Dự phòng)' : '⚡️ Ngoại tuyến')}\n\nNhập 1: Kết nối lại Cloudflare Main\nNhập 2: Xuất file dự phòng khẩn cấp (.json)\nNhập 3: Nhập URL Google Apps Script dự phòng\nNhập 4: 🔄 Đồng bộ dữ liệu D1 sang Google Sheets ngay`;

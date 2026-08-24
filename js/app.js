@@ -555,6 +555,10 @@ window.renderSttOrderControl = function (type, i, total) {
         // ============================================================
         // DUAL-ENGINE HIGH-PERFORMANCE API DISPATCHER (FETCH + JSONP + DEDUPLICATION)
         // ============================================================
+        
+        // ============================================================
+        // GITHUB PAGES API CONFIGURATION (SELF-HEALING)
+        // ============================================================
         const MAX_CONCURRENT_API_REQUESTS = 3;
         let activeApiRequests = 0;
         let apiQueue = [];

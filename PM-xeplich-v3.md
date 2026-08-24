@@ -644,6 +644,12 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   3. **Chốt sổ tự động & Định dạng 24h:** Khắc phục lỗi chốt sổ tự động không hoạt động. Chuyển đổi hai ô nhập thời gian (Giờ chốt sổ tự động & Giờ nhắc sao lưu) từ kiểu `<input type="time">` (phụ thuộc locale, hiển thị kiểu AM/PM hoặc CH/SA) sang `<input type="text">` kết hợp class `time-input` để hiển thị đồng bộ 24h dạng `HH:mm` (Ví dụ: `16:00`). Đồng thời thiết lập hàm tự động chốt sổ ngày cũ (`checkAutoChotSo`) ngay tại Worker backend mỗi khi có request đồng bộ, đảm bảo chốt sổ chính xác mà không cần cron-job client.
 - **File sửa đổi:** `index.html`, `js/app.js`, `js/scheduler-engine.js`, `backend/src/index.js` (v3.2.9)
 
+### Cập nhật 24/08/2026 (v3.1.2)
+- **Tính năng Đồng bộ Tức thì Dữ liệu D1 ➔ Google Sheets Dự Phòng (1-Click Mirror Sync)**:
+  - Bổ sung tùy chọn **Nhập 4: Đồng bộ dữ liệu D1 sang Google Sheets ngay** trong menu điều khiển máy chủ dự phòng (`window.syncAllD1DataToBackupSheets()`).
+  - Cho phép người dùng chủ động đẩy toàn bộ Bệnh nhân, Nhân sự, Máy móc, Phòng, Thủ thuật và Lịch xếp hiện tại từ D1 sang tạo bản sao ngay lập tức trên Google Sheets.
+  - Nâng cấp `backend-backup/code.gs` bổ sung hàm `saveBootstrapBackup` và `saveAllBootstrapToSheets` tạo sẵn các tab dữ liệu.
+
 ### Cập nhật 24/08/2026 (v3.1.1)
 - **Triển khai Phương án Dự phòng Toàn diện (4-Tier High Availability & Redundancy)**:
   - Bổ sung **Bộ ngắt mạch Failover (Circuit Breaker)** trong `js/app.js`: Tự động ngắt và chuyển hướng kết nối sang Máy chủ Dự phòng Google Apps Script (Google Sheets) khi Cloudflare D1 bị sự cố 500 / overload 7429.

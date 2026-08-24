@@ -65,6 +65,10 @@ function handleApiRequest(action, args) {
         deleteRowByName(ss, 'BenhNhan', args[0]);
         return { status: 'success', data: 'Đã xóa bệnh nhân khỏi Google Sheets' };
 
+      case 'saveBootstrapBackup':
+        saveAllBootstrapToSheets(ss, args[0]);
+        return { status: 'success', data: 'Đã đồng bộ toàn bộ dữ liệu sang Google Sheets' };
+
       default:
         return { status: 'success', data: 'Backup Server Ok: ' + action };
     }
@@ -146,5 +150,36 @@ function saveScheduleToSheet(ss, dateVal, schedList) {
     for (var i = 0; i < schedList.length; i++) {
       sheet.appendRow(schedList[i]);
     }
+  }
+}
+
+function saveAllBootstrapToSheets(ss, dataObj) {
+  if (!dataObj) return;
+  if (dataObj.pat && dataObj.pat.length > 0) writeListToSheet(ss, 'BenhNhan', dataObj.pat);
+  if (dataObj.staff && dataObj.staff.length > 0) writeListToSheet(ss, 'NhanSu', dataObj.staff);
+  if (dataObj.machines && dataObj.machines.length > 0) writeListToSheet(ss, 'MayMoc', dataObj.machines);
+  if (dataObj.rooms && dataObj.rooms.length > 0) writeListToSheet(ss, 'Phong', dataObj.rooms);
+  if (dataObj.procedures && dataObj.procedures.length > 0) writeListToSheet(ss, 'ThuThuat', dataObj.procedures);
+  if (dataObj.schedule && dataObj.schedule.length > 0) writeListToSheet(ss, 'LichTrinh', dataObj.schedule);
+}
+
+function writeListToSheet(ss, sheetName, list) {
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) sheet = ss.insertSheet(sheetName);
+  else sheet.clearContents();
+
+  if (!list || list.length === 0) return;
+  var firstItem = list[0];
+  var headers = Array.isArray(firstItem) ? [] : Object.keys(firstItem);
+  
+  if (headers.length > 0) {
+    sheet.appendRow(headers);
+    for (var i = 0; i < list.length; i++) {
+      var row = [];
+      for (var h = 0; h < headers.length; h++) row.push(list[i][headers[h]] || '');
+      sheet.appendRow(row);
+    }
+  } else if (Array.isArray(firstItem)) {
+    for (var i = 0; i < list.length; i++) sheet.appendRow(list[i]);
   }
 }

@@ -644,6 +644,11 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   3. **Chốt sổ tự động & Định dạng 24h:** Khắc phục lỗi chốt sổ tự động không hoạt động. Chuyển đổi hai ô nhập thời gian (Giờ chốt sổ tự động & Giờ nhắc sao lưu) từ kiểu `<input type="time">` (phụ thuộc locale, hiển thị kiểu AM/PM hoặc CH/SA) sang `<input type="text">` kết hợp class `time-input` để hiển thị đồng bộ 24h dạng `HH:mm` (Ví dụ: `16:00`). Đồng thời thiết lập hàm tự động chốt sổ ngày cũ (`checkAutoChotSo`) ngay tại Worker backend mỗi khi có request đồng bộ, đảm bảo chốt sổ chính xác mà không cần cron-job client.
 - **File sửa đổi:** `index.html`, `js/app.js`, `js/scheduler-engine.js`, `backend/src/index.js` (v3.2.9)
 
+### Cập nhật 24/08/2026 (v3.1.6)
+- **Mở rộng đồng bộ toàn bộ 10 trang dữ liệu (Full 10-Sheet Backup Mirror)**:
+  - Bổ sung các bảng dữ liệu Chấm công (`ChamCong`), Thống kê (`ThongKe`), Tài khoản người dùng (`TaiKhoan`), Cấu hình hệ thống (`CaiDat`) vào tiến trình đồng bộ Google Sheets.
+  - Đảm bảo 100% tất cả các tính năng phụ trợ (Tìm giờ rảnh, Bảng Chấm công, Báo cáo Thống kê, Đăng nhập) hoạt động hoàn hảo 100% ở chế độ dự phòng.
+
 ### Cập nhật 24/08/2026 (v3.1.5)
 - **Cải tiến tốc độ đồng bộ bảng dữ liệu sang Google Sheets (Ultra-Fast Batch Write `setValues`)**:
   - Thay thế phương thức ghi từng dòng (`appendRow()`) bằng phương thức ghi ma trận hàng loạt (`setValues()`) trong `backend-backup/code.gs`.

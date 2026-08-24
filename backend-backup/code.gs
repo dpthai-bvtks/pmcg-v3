@@ -65,6 +65,13 @@ function handleApiRequest(action, args) {
         deleteRowByName(ss, 'BenhNhan', args[0]);
         return { status: 'success', data: 'Đã xóa bệnh nhân khỏi Google Sheets' };
 
+      case 'saveChamCong':
+        addOrUpdateRow(ss, 'ChamCong', { month_year: args[0], data_json: typeof args[1] === 'object' ? JSON.stringify(args[1]) : args[1] });
+        return { status: 'success', data: 'Đã lưu Chấm công' };
+
+      case 'getChamCong':
+        return { status: 'success', data: readSheetData(ss, 'ChamCong') };
+
       case 'saveBootstrapBackup':
         saveAllBootstrapToSheets(ss, args[0]);
         return { status: 'success', data: 'Đã đồng bộ toàn bộ dữ liệu sang Google Sheets thành công!' };
@@ -156,6 +163,10 @@ function saveAllBootstrapToSheets(ss, dataObj) {
   if (dataObj.rooms && dataObj.rooms.length > 0) writeListToSheet(ss, 'Phong', dataObj.rooms);
   if (dataObj.procedures && dataObj.procedures.length > 0) writeListToSheet(ss, 'ThuThuat', dataObj.procedures);
   if (dataObj.schedule && dataObj.schedule.length > 0) writeListToSheet(ss, 'LichTrinh', dataObj.schedule);
+  if (dataObj.chamCong) writeListToSheet(ss, 'ChamCong', Array.isArray(dataObj.chamCong) ? dataObj.chamCong : [dataObj.chamCong]);
+  if (dataObj.thongKe) writeListToSheet(ss, 'ThongKe', Array.isArray(dataObj.thongKe) ? dataObj.thongKe : [dataObj.thongKe]);
+  if (dataObj.accounts && dataObj.accounts.length > 0) writeListToSheet(ss, 'TaiKhoan', dataObj.accounts);
+  if (dataObj.caiDat) writeListToSheet(ss, 'CaiDat', Array.isArray(dataObj.caiDat) ? dataObj.caiDat : [dataObj.caiDat]);
 }
 
 function writeListToSheet(ss, sheetName, list) {

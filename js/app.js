@@ -373,7 +373,11 @@ window.showGlobalLoading = function (text) {
                     machines: cache.machines || cache.machine || [],
                     rooms: cache.rooms || [],
                     procedures: cache.procedures || cache.proc || [],
-                    schedule: cache.schedule || window.currentScheduleData || []
+                    schedule: cache.schedule || window.currentScheduleData || [],
+                    chamCong: localStorage.getItem('pmcg_cham_cong_data') || '',
+                    thongKe: localStorage.getItem('pmcg_thong_ke_cache') || '',
+                    accounts: JSON.parse(localStorage.getItem('times_accounts_cache') || '[]'),
+                    caiDat: localStorage.getItem('times_settings_cache') || ''
                 };
 
                 const resp = await fetch(backupUrl, {

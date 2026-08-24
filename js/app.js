@@ -347,9 +347,9 @@ window.showGlobalLoading = function (text) {
                 modal.id = 'sync-progress-modal';
                 modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:999999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(3px);';
                 modal.innerHTML = `
-                <div style="background:#fff; width:460px; max-width:90%; border-radius:12px; padding:24px; box-shadow:0 10px 30px rgba(0,0,0,0.3); text-align:center; font-family:sans-serif;">
+                <div style="background:#fff; width:480px; max-width:90%; border-radius:12px; padding:24px; box-shadow:0 10px 30px rgba(0,0,0,0.3); text-align:center; font-family:sans-serif;">
                     <div style="font-size:36px; margin-bottom:10px;">🔄</div>
-                    <h3 style="margin:0 0 10px 0; color:#2c3e50; font-size:18px;">Đồng bộ Toàn bộ Dữ liệu & Lịch sử D1 ➔ Google Sheets</h3>
+                    <h3 style="margin:0 0 10px 0; color:#2c3e50; font-size:18px;">Đồng bộ Trọn bộ Cơ sở Dữ liệu D1 ➔ Google Sheets</h3>
                     <p id="sync-step-text" style="color:#7f8c8d; font-size:13px; margin:0 0 16px 0;">Đang khởi tạo kết nối...</p>
                     <div style="background:#ecf0f1; border-radius:10px; height:16px; overflow:hidden; margin-bottom:16px; position:relative;">
                         <div id="sync-progress-bar" style="background:linear-gradient(90deg, #27ae60, #2ecc71); width:5%; height:100%; transition:width 0.3s ease; border-radius:10px;"></div>
@@ -373,50 +373,43 @@ window.showGlobalLoading = function (text) {
             }
 
             try {
-                updateProgress(15, '[1/7] 📡 Đang truy vấn dữ liệu & Lịch sử từ máy chủ D1...');
+                updateProgress(15, '[1/6] 📡 Đang tải xuất trọn bộ CSDL & Lịch Sử từ Cloudflare D1...');
                 
-                const dateVal = document.getElementById('schedule-date')?.value || new Date().toISOString().slice(0, 10);
-                let d1Data = null;
+                let dbTables = null;
                 try {
-                    const respD1 = await fetch(DEFAULT_API_URL, {
+                    const respExport = await fetch(DEFAULT_API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'getBootstrapData', args: [dateVal] })
+                        body: JSON.stringify({ action: 'exportDatabase', args: [] })
                     });
-                    const resD1 = await respD1.json();
-                    if (resD1 && resD1.status === 'success') d1Data = resD1.data;
-                } catch(e) { console.warn('Could not fetch directly from D1, fallback to local cache:', e); }
+                    const resExport = await respExport.json();
+                    if (resExport && resExport.status === 'success' && resExport.data && resExport.data.tables) {
+                        dbTables = resExport.data.tables;
+                    }
+                } catch(e) { console.warn('Could not fetch exportDatabase from D1, fallback to local cache:', e); }
 
                 const cache = window.dataCache || {};
 
-                updateProgress(30, '[2/7] 📋 Đóng gói Bệnh nhân, Nhân sự, Máy móc, Phòng & Thủ thuật...');
-                await new Promise(r => setTimeout(r, 150));
+                updateProgress(45, '[2/6] 📦 Đóng gói trọn bộ các bảng dữ liệu (Bệnh nhân, Nhân sự, Máy, Phòng, Thủ thuật, Lịch trình, Lịch sử...)...');
+                await new Promise(r => setTimeout(r, 200));
 
-                updateProgress(50, '[3/7] 📅 Đóng gói Bảng Lịch Trình Hiện Tại...');
-                await new Promise(r => setTimeout(r, 150));
+                updateProgress(75, '[3/6] 📤 Truyền toàn bộ CSDL sang Google Apps Script...');
 
-                updateProgress(70, '[4/7] 📜 Đóng gói Bảng Lịch Sử từ trước đến nay...');
-                await new Promise(r => setTimeout(r, 150));
-
-                updateProgress(85, '[5/7] 📤 Truyền dữ liệu sang Google Apps Script...');
-
-                const historyList = (d1Data && (d1Data.history || d1Data.lich_su)) ? (d1Data.history || d1Data.lich_su) : (cache.history || []);
-
-                const payload = {
-                    pat: (d1Data && d1Data.pat) ? d1Data.pat : (cache.pat || []),
-                    staff: (d1Data && d1Data.staff) ? d1Data.staff : (cache.staff || []),
-                    machines: (d1Data && (d1Data.machines || d1Data.may_moc)) ? (d1Data.machines || d1Data.may_moc) : (cache.machines || []),
-                    rooms: (d1Data && (d1Data.rooms || d1Data.phong)) ? (d1Data.rooms || d1Data.phong) : (cache.rooms || []),
-                    procedures: (d1Data && (d1Data.procedures || d1Data.thu_thuat)) ? (d1Data.procedures || d1Data.thu_thuat) : (cache.procedures || []),
-                    schedule: (d1Data && (d1Data.schedule || d1Data.lich_trinh)) ? (d1Data.schedule || d1Data.lich_trinh) : (cache.schedule || window.currentScheduleData || []),
-                    history: historyList,
-                    chamCong: localStorage.getItem('pmcg_cham_cong_data') || '',
-                    thongKe: localStorage.getItem('pmcg_thong_ke_cache') || '',
-                    accounts: (d1Data && d1Data.accounts) ? d1Data.accounts : JSON.parse(localStorage.getItem('times_accounts_cache') || '[]'),
-                    caiDat: localStorage.getItem('times_settings_cache') || ''
+                const payload = dbTables || {
+                    benh_nhan: cache.pat || [],
+                    nhan_su: cache.staff || [],
+                    may_moc: cache.machines || [],
+                    phong: cache.rooms || [],
+                    thu_thuat: cache.procedures || [],
+                    lich_trinh: cache.schedule || window.currentScheduleData || [],
+                    lich_su: cache.history || [],
+                    tai_khoan: JSON.parse(localStorage.getItem('times_accounts_cache') || '[]'),
+                    cham_cong: localStorage.getItem('pmcg_cham_cong_data') || '',
+                    thong_ke: localStorage.getItem('pmcg_thong_ke_cache') || '',
+                    cai_dat: localStorage.getItem('times_settings_cache') || ''
                 };
 
-                updateProgress(95, '[6/7] 📝 Đang ghi các trang Google Sheets...');
+                updateProgress(90, '[4/6] 📝 Đang ghi trọn bộ các trang Google Sheets...');
 
                 const resp = await fetch(backupUrl, {
                     method: 'POST',
@@ -426,8 +419,8 @@ window.showGlobalLoading = function (text) {
 
                 const res = await resp.json();
                 if (res && res.status === 'success') {
-                    updateProgress(100, '✅ Đồng bộ hoàn tất 100%! Đã tạo đủ các trang Bệnh nhân, Nhân sự, Máy móc, Phòng, Thủ thuật, Lịch trình & Lịch sử!');
-                    if (percentText) percentText.innerHTML = '<span style="color:#27ae60">🎉 ĐỒNG BỘ THÀNH CÔNG!</span>';
+                    updateProgress(100, '✅ Đồng bộ hoàn tất 100%! Đã tạo trọn bộ tất cả các trang Bệnh nhân, Nhân sự, Máy móc, Phòng, Thủ thuật, Lịch trình, Lịch sử, Tài khoản!');
+                    if (percentText) percentText.innerHTML = '<span style="color:#27ae60">🎉 ĐỒNG BỘ TRỌN BỘ THÀNH CÔNG!</span>';
                 } else {
                     updateProgress(100, '⚠️ Đã gửi dữ liệu: ' + (res.error || res.data || 'Thành công'));
                 }
@@ -438,27 +431,127 @@ window.showGlobalLoading = function (text) {
                 closeBtn.style.display = 'inline-block';
             }
         };
+        // =========================================================
+// TURBO CLOUDFLARE API BRIDGE & GLOBAL INITIALIZATION
+// =========================================================
+window.dataCache = window.dataCache || { pat: [], staff: [], machine: [], room: [], proc: [] };
+var dataCache = window.dataCache;
 
-        function getApiUrl() {
-            if (window._serverMode === 'backup' && SECONDARY_BACKUP_URL) {
-                return SECONDARY_BACKUP_URL;
-            }
-            let customUrl = (localStorage.getItem('times_custom_api_url') || '').trim();
-            if (customUrl.includes('script.google.com') || customUrl.includes('google.com/macros')) {
-                localStorage.removeItem('times_custom_api_url');
-                customUrl = '';
-            }
-            return customUrl || DEFAULT_API_URL;
+window.google = window.google || {};
+window.google.script = window.google.script || {};
+window.google.script.run = window.google.script.run || new Proxy({}, {
+    get: function (target, prop) {
+        if (prop === 'withSuccessHandler') {
+            return function (onSuccess) {
+                return new Proxy({}, {
+                    get: function (t, fnName) {
+                        if (fnName === 'withFailureHandler') {
+                            return function (onError) {
+                                return new Proxy({}, {
+                                    get: function (t2, realFnName) {
+                                        return function (...args) {
+                                            callApi(realFnName, args, onSuccess, onError);
+                                        };
+                                    }
+                                });
+                            };
+                        }
+                        return function (...args) {
+                            callApi(fnName, args, onSuccess, null);
+                        };
+                    }
+                });
+            };
         }
-        window.getApiUrl = getApiUrl;
-        window.setCustomApiUrl = function(newUrl) {
-            if (!newUrl || newUrl.trim() === '' || newUrl.trim() === DEFAULT_API_URL) {
-                localStorage.removeItem('times_custom_api_url');
-            } else {
-                localStorage.setItem('times_custom_api_url', newUrl.trim());
-            }
+        if (prop === 'withFailureHandler') {
+            return function (onError) {
+                return new Proxy({}, {
+                    get: function (t, fnName) {
+                        return function (...args) {
+                            callApi(fnName, args, null, onError);
+                        };
+                    }
+                });
+            };
+        }
+        return function (...args) {
+            callApi(prop, args, null, null);
         };
-        
+    }
+});
+var google = window.google;
+
+
+// =========================================================
+// GLOBAL HELPERS & DUAL-MODE TABLE REORDERING ENGINE
+// =========================================================
+function withLock(fn) {
+    let locked = false;
+    return function (...args) {
+        if (locked) {
+            console.warn('[withLock]: Thao tác đang được xử lý, vui lòng chờ...');
+            return;
+        }
+        locked = true;
+        try {
+            const res = fn.apply(this, args);
+            if (res && typeof res.then === 'function') {
+                return res.finally(() => { locked = false; });
+            }
+            setTimeout(() => { locked = false; }, 300);
+            return res;
+        } catch (e) {
+            locked = false;
+            throw e;
+        }
+    };
+}
+window.withLock = withLock;
+
+window.moveRowUp = function (type, index) {
+    let arr = null;
+    let renderFn = null;
+    if (type === 'staff') { arr = dataCache.staff; renderFn = renderStaffTable; }
+    else if (type === 'machines') { arr = dataCache.machine; renderFn = renderMachinesTable; }
+    else if (type === 'procedures') { arr = dataCache.proc; renderFn = renderProceduresTable; }
+    else if (type === 'rooms') { arr = dataCache.room; renderFn = renderRoomsTable; }
+
+    if (!arr || index <= 0 || index >= arr.length) return;
+    const item = arr.splice(index, 1)[0];
+    arr.splice(index - 1, 0, item);
+    if (typeof renderFn === 'function') renderFn();
+    saveReorderedData(type, arr);
+};
+
+window.moveRowDown = function (type, index) {
+    let arr = null;
+    let renderFn = null;
+    if (type === 'staff') { arr = dataCache.staff; renderFn = renderStaffTable; }
+    else if (type === 'machines') { arr = dataCache.machine; renderFn = renderMachinesTable; }
+    else if (type === 'procedures') { arr = dataCache.proc; renderFn = renderProceduresTable; }
+    else if (type === 'rooms') { arr = dataCache.room; renderFn = renderRoomsTable; }
+
+    if (!arr || index < 0 || index >= arr.length - 1) return;
+    const item = arr.splice(index, 1)[0];
+    arr.splice(index + 1, 0, item);
+    if (typeof renderFn === 'function') renderFn();
+    saveReorderedData(type, arr);
+};
+
+window.renderSttOrderControl = function (type, i, total) {
+    const upDisabled = (i === 0) ? 'disabled style="opacity:0.25; cursor:not-allowed;"' : '';
+    const downDisabled = (i >= total - 1) ? 'disabled style="opacity:0.25; cursor:not-allowed;"' : '';
+    return `<div class="stt-order-cell">
+        <span class="drag-handle-btn" title="Bấm giữ kéo thả để di chuyển">☰</span>
+        <button type="button" class="btn-order-arrow" ${upDisabled} onclick="event.preventDefault(); event.stopPropagation(); window.moveRowUp('${type}', ${i})" title="Di chuyển lên 1 dòng">▲</button>
+        <button type="button" class="btn-order-arrow" ${downDisabled} onclick="event.preventDefault(); event.stopPropagation(); window.moveRowDown('${type}', ${i})" title="Di chuyển xuống 1 dòng">▼</button>
+        <span style="font-weight:700; margin-left:2px;">${i + 1}</span>
+    </div>`;
+};
+
+// ============================================================
+        // GITHUB PAGES API CONFIGURATION (SELF-HEALING)
+        // ============================================================
         // ============================================================
         // DUAL-ENGINE HIGH-PERFORMANCE API DISPATCHER (FETCH + JSONP + DEDUPLICATION)
         // ============================================================

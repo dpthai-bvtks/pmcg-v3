@@ -159,18 +159,30 @@ function saveScheduleToSheet(ss, dateVal, schedList) {
 
 function saveAllBootstrapToSheets(ss, dataObj) {
   if (!dataObj) return;
-  if (dataObj.pat && dataObj.pat.length > 0) writeListToSheet(ss, 'BenhNhan', dataObj.pat);
-  if (dataObj.staff && dataObj.staff.length > 0) writeListToSheet(ss, 'NhanSu', dataObj.staff);
-  if (dataObj.machines && dataObj.machines.length > 0) writeListToSheet(ss, 'MayMoc', dataObj.machines);
-  if (dataObj.rooms && dataObj.rooms.length > 0) writeListToSheet(ss, 'Phong', dataObj.rooms);
-  if (dataObj.procedures && dataObj.procedures.length > 0) writeListToSheet(ss, 'ThuThuat', dataObj.procedures);
-  if (dataObj.schedule && dataObj.schedule.length > 0) writeListToSheet(ss, 'LichTrinh', dataObj.schedule);
-  if (dataObj.history && dataObj.history.length > 0) writeListToSheet(ss, 'LichSu', dataObj.history);
-  else if (dataObj.lich_su && dataObj.lich_su.length > 0) writeListToSheet(ss, 'LichSu', dataObj.lich_su);
-  if (dataObj.chamCong) writeListToSheet(ss, 'ChamCong', Array.isArray(dataObj.chamCong) ? dataObj.chamCong : [dataObj.chamCong]);
-  if (dataObj.thongKe) writeListToSheet(ss, 'ThongKe', Array.isArray(dataObj.thongKe) ? dataObj.thongKe : [dataObj.thongKe]);
-  if (dataObj.accounts && dataObj.accounts.length > 0) writeListToSheet(ss, 'TaiKhoan', dataObj.accounts);
-  if (dataObj.caiDat) writeListToSheet(ss, 'CaiDat', Array.isArray(dataObj.caiDat) ? dataObj.caiDat : [dataObj.caiDat]);
+
+  var pat = dataObj.pat || dataObj.benh_nhan || [];
+  var staff = dataObj.staff || dataObj.nhan_su || [];
+  var machines = dataObj.machines || dataObj.may_moc || [];
+  var rooms = dataObj.rooms || dataObj.phong || [];
+  var procs = dataObj.procedures || dataObj.thu_thuat || [];
+  var sched = dataObj.schedule || dataObj.lich_trinh || [];
+  var hist = dataObj.history || dataObj.lich_su || [];
+  var accs = dataObj.accounts || dataObj.tai_khoan || [];
+  var cc = dataObj.chamCong || dataObj.cham_cong || [];
+  var tk = dataObj.thongKe || dataObj.thong_ke || [];
+  var cd = dataObj.caiDat || dataObj.cai_dat || [];
+
+  if (pat.length > 0) writeListToSheet(ss, 'BenhNhan', pat);
+  if (staff.length > 0) writeListToSheet(ss, 'NhanSu', staff);
+  if (machines.length > 0) writeListToSheet(ss, 'MayMoc', machines);
+  if (rooms.length > 0) writeListToSheet(ss, 'Phong', rooms);
+  if (procs.length > 0) writeListToSheet(ss, 'ThuThuat', procs);
+  if (sched.length > 0) writeListToSheet(ss, 'LichTrinh', sched);
+  if (hist.length > 0) writeListToSheet(ss, 'LichSu', hist);
+  if (accs.length > 0) writeListToSheet(ss, 'TaiKhoan', accs);
+  if (cc.length > 0) writeListToSheet(ss, 'ChamCong', Array.isArray(cc) ? cc : [cc]);
+  if (tk.length > 0) writeListToSheet(ss, 'ThongKe', Array.isArray(tk) ? tk : [tk]);
+  if (cd.length > 0) writeListToSheet(ss, 'CaiDat', Array.isArray(cd) ? cd : [cd]);
 }
 
 function writeListToSheet(ss, sheetName, list) {

@@ -644,6 +644,9 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   3. **Chốt sổ tự động & Định dạng 24h:** Khắc phục lỗi chốt sổ tự động không hoạt động. Chuyển đổi hai ô nhập thời gian (Giờ chốt sổ tự động & Giờ nhắc sao lưu) từ kiểu `<input type="time">` (phụ thuộc locale, hiển thị kiểu AM/PM hoặc CH/SA) sang `<input type="text">` kết hợp class `time-input` để hiển thị đồng bộ 24h dạng `HH:mm` (Ví dụ: `16:00`). Đồng thời thiết lập hàm tự động chốt sổ ngày cũ (`checkAutoChotSo`) ngay tại Worker backend mỗi khi có request đồng bộ, đảm bảo chốt sổ chính xác mà không cần cron-job client.
 - **File sửa đổi:** `index.html`, `js/app.js`, `js/scheduler-engine.js`, `backend/src/index.js` (v3.2.9)
 
+### Cập nhật 24/08/2026 (v3.3.4)
+- **Sửa lỗi 404 resource**: Xóa bỏ liên kết đến file cấu hình thương mại thương mại hóa `config.js` không cần thiết trong `index.html` của bản v3-Cloudflare, giải quyết triệt để lỗi 404 trong Console trình duyệt.
+
 ### Cập nhật 24/08/2026 (v3.3.3)
 - **Bảo toàn phân loại Nội/Ngoại trú khi nhập Excel/HIS**:
   1. Khi nhập danh sách bệnh nhân từ HIS hoặc Excel bình thường mà **không có cột Đối tượng/Loại điều trị**, hệ thống sẽ tự động đối chiếu và **giữ nguyên phân loại Nội trú / Ngoại trú** hiện có của bệnh nhân trong cơ sở dữ liệu thay vì ghi đè hết về Nội trú như trước.

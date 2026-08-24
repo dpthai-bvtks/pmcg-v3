@@ -644,6 +644,11 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   3. **Chốt sổ tự động & Định dạng 24h:** Khắc phục lỗi chốt sổ tự động không hoạt động. Chuyển đổi hai ô nhập thời gian (Giờ chốt sổ tự động & Giờ nhắc sao lưu) từ kiểu `<input type="time">` (phụ thuộc locale, hiển thị kiểu AM/PM hoặc CH/SA) sang `<input type="text">` kết hợp class `time-input` để hiển thị đồng bộ 24h dạng `HH:mm` (Ví dụ: `16:00`). Đồng thời thiết lập hàm tự động chốt sổ ngày cũ (`checkAutoChotSo`) ngay tại Worker backend mỗi khi có request đồng bộ, đảm bảo chốt sổ chính xác mà không cần cron-job client.
 - **File sửa đổi:** `index.html`, `js/app.js`, `js/scheduler-engine.js`, `backend/src/index.js` (v3.2.9)
 
+### Cập nhật 24/08/2026 (v3.1.4)
+- **Khắc phục triệt để lỗi kết nối Google Apps Script (`Failed to fetch` / CORS Preflight)**:
+  - Sửa đổi tham số `Content-Type` từ `application/json` sang `text/plain;charset=utf-8` trong các yêu cầu `fetch()` gửi tới Google Apps Script WebApp.
+  - Ngăn chặn trình duyệt gửi yêu cầu kiểm tra tiền trạm CORS `OPTIONS` - vốn không được Google Apps Script hỗ trợ, giải quyết triệt để lỗi `Failed to fetch`.
+
 ### Cập nhật 24/08/2026 (v3.1.3)
 - **Bổ sung Thanh Tiến Trình Trực Quan (Visual Sync Progress Modal)** cho tính năng Đồng bộ D1 ➔ Google Sheets:
   - Hiển thị cửa sổ nổi có **Thanh tiến trình (Progress Bar %)** động theo thời gian thực (`15% -> 35% -> 55% -> 75% -> 90% -> 100%`).

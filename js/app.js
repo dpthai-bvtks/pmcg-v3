@@ -311,7 +311,7 @@ window.showGlobalLoading = function (text) {
         window.syncAllD1DataToBackupSheets = async function() {
             let backupUrl = (localStorage.getItem('times_backup_api_url') || '').trim();
             if (!backupUrl) {
-                backupUrl = prompt('Vui lòng nhập URL Google Apps Script WebApp dự phòng:');
+                backupUrl = prompt('Vui lòng nhập URL Google Apps Script WebApp dự phòng (Dạng: https://script.google.com/macros/s/.../exec):');
                 if (backupUrl && backupUrl.trim()) {
                     localStorage.setItem('times_backup_api_url', backupUrl.trim());
                 } else {
@@ -378,7 +378,7 @@ window.showGlobalLoading = function (text) {
 
                 const resp = await fetch(backupUrl, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({ action: 'saveBootstrapBackup', args: [payload] })
                 });
 

@@ -307,6 +307,28 @@ window.showGlobalLoading = function (text) {
         }
         window.updateServerStatusBadge = updateServerStatusBadge;
 
+        window.toggleEmergencyBackupMenu = function() {
+            const current = window._serverMode || 'primary';
+            const msg = `Trạng thái máy chủ hiện tại: ${current === 'primary' ? '🟢 Cloudflare Main (Chính)' : (current === 'backup' ? '🟡 Google Sheets Backup (Dự phòng)' : '⚡️ Ngoại tuyến')}\n\nNhập 1: Kết nối lại Cloudflare Main\nNhập 2: Xuất file dự phòng khẩn cấp (.json)\nNhập 3: Nhập URL Google Apps Script dự phòng\nNhập 4: 🔄 Đồng bộ toàn bộ dữ liệu & Lịch sử D1 sang Google Sheets ngay`;
+            const choice = prompt(msg);
+            if (choice === '1') {
+                _consecutiveApiErrors = 0;
+                updateServerStatusBadge('primary');
+                alert('Đã kết nối lại Máy chủ chính Cloudflare Main!');
+            } else if (choice === '2') {
+                if (window.OfflineSyncEngine) window.OfflineSyncEngine.exportEmergencyBackupData();
+            } else if (choice === '3') {
+                const url = prompt('Nhập URL Google Apps Script WebApp dự phòng (Dạng: https://script.google.com/macros/s/.../exec):');
+                if (url && url.trim()) {
+                    localStorage.setItem('times_backup_api_url', url.trim());
+                    alert('Đã lưu URL máy chủ dự phòng Google Apps Script!');
+                }
+            } else if (choice === '4') {
+                window.syncAllD1DataToBackupSheets();
+            }
+        };
+
+
         
         window.syncAllD1DataToBackupSheets = async function() {
             let backupUrl = (localStorage.getItem('times_backup_api_url') || '').trim();

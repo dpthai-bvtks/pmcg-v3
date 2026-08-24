@@ -2987,38 +2987,8 @@ window.showGlobalLoading = function (text) {
             // Tự động xác định giờ vào và buổi điều trị
             const gioTyped = (document.getElementById('pat-time')?.value || '').trim();
             let gio = gioTyped || '07:30';
-            let buoi_dieu_tri = 'TuDong';
-
-            if (currentEditIdx > -1 && currentItem) {
-                // Bệnh nhân cũ -> để buổi tự động, nếu không nhập giờ y lệnh thì mặc định 07:30
-                if (gioTyped && gioTyped.includes(':')) {
-                    const hrTyped = parseInt(gioTyped.split(':')[0]);
-                    if (!isNaN(hrTyped)) {
-                        buoi_dieu_tri = (hrTyped < 12) ? 'Sang' : 'Chieu';
-                    }
-                } else {
-                    buoi_dieu_tri = 'TuDong';
-                }
-            } else {
-                // Bệnh nhân mới -> lấy giờ y lệnh (nếu nhập) hoặc giờ hiện tại để phân loại buổi
-                const now = new Date();
-                const hr = now.getHours();
-                const mn = now.getMinutes();
-                
-                if (gioTyped && gioTyped.includes(':')) {
-                    const hrTyped = parseInt(gioTyped.split(':')[0]);
-                    if (!isNaN(hrTyped)) {
-                        buoi_dieu_tri = (hrTyped < 12) ? 'Sang' : 'Chieu';
-                    }
-                } else {
-                    // Trống -> lấy giờ hiện tại hệ thống
-                    if (loai_bn === 'NgoaiTru') {
-                        buoi_dieu_tri = (hr < 12) ? 'Sang' : 'Chieu';
-                    } else {
-                        buoi_dieu_tri = 'Sang';
-                    }
-                }
-            }
+            // Luôn mặc định là Tự động (TuDong) theo yêu cầu ẩn cột của bác sĩ
+            let buoi_dieu_tri = (currentEditIdx > -1 && currentItem) ? (currentItem.buoi_dieu_tri || 'TuDong') : 'TuDong';
 
             // Nếu có giờ ra viện -> bắt buộc Sáng
             if (ra) {

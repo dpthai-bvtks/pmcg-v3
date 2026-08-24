@@ -772,7 +772,7 @@ async function handleApiAction(action, args, env, request) {
           String(p.ngayVao || ""),
           String(p.gioBan || ""),
           String(p.loai_bn || "NoiTru"),
-          String(p.buoi_dieu_tri || "Sang")
+          String(p.buoi_dieu_tri || "TuDong")
         ),
         db.prepare("INSERT INTO cai_dat (key, value) VALUES ('data_version', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(versionVal)
       ]);
@@ -947,7 +947,7 @@ async function handleApiAction(action, args, env, request) {
         const bed = String(p.giuong || p.bed || "");
         const status = String(p.trangThai || p.status || "Chưa xếp");
         const loaiBn = String(p.loai_bn || p.loaiBN || "NoiTru");
-        const buoiDieuTri = String(p.buoi_dieu_tri || p.buoiDieuTri || "Sang");
+        const buoiDieuTri = String(p.buoi_dieu_tri || p.buoiDieuTri || "TuDong");
 
         const rawProcs = p.thuThuat !== undefined ? p.thuThuat : (p.thu_thuat !== undefined ? p.thu_thuat : "");
         let procs = [];

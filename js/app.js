@@ -307,6 +307,29 @@ window.showGlobalLoading = function (text) {
         }
         window.updateServerStatusBadge = updateServerStatusBadge;
 
+        function getApiUrl() {
+            const backupUrl = (localStorage.getItem('times_backup_api_url') || '').trim();
+            if (window._serverMode === 'backup' && backupUrl) {
+                return backupUrl;
+            }
+            let customUrl = (localStorage.getItem('times_custom_api_url') || '').trim();
+            if (customUrl.includes('script.google.com') || customUrl.includes('google.com/macros')) {
+                localStorage.removeItem('times_custom_api_url');
+                customUrl = '';
+            }
+            return customUrl || DEFAULT_API_URL;
+        }
+        window.getApiUrl = getApiUrl;
+
+        window.setCustomApiUrl = function(newUrl) {
+            if (!newUrl || newUrl.trim() === '' || newUrl.trim() === DEFAULT_API_URL) {
+                localStorage.removeItem('times_custom_api_url');
+            } else {
+                localStorage.setItem('times_custom_api_url', newUrl.trim());
+            }
+        };
+
+
         window.toggleEmergencyBackupMenu = function() {
             const current = window._serverMode || 'primary';
             const msg = `Trạng thái máy chủ hiện tại: ${current === 'primary' ? '🟢 Cloudflare Main (Chính)' : (current === 'backup' ? '🟡 Google Sheets Backup (Dự phòng)' : '⚡️ Ngoại tuyến')}\n\nNhập 1: Kết nối lại Cloudflare Main\nNhập 2: Xuất file dự phòng khẩn cấp (.json)\nNhập 3: Nhập URL Google Apps Script dự phòng\nNhập 4: 🔄 Đồng bộ toàn bộ dữ liệu & Lịch sử D1 sang Google Sheets ngay`;
@@ -554,6 +577,10 @@ window.renderSttOrderControl = function (type, i, total) {
         // ============================================================
         // ============================================================
         // DUAL-ENGINE HIGH-PERFORMANCE API DISPATCHER (FETCH + JSONP + DEDUPLICATION)
+        // ============================================================
+        
+        // ============================================================
+        // GITHUB PAGES API CONFIGURATION (SELF-HEALING)
         // ============================================================
         
         // ============================================================

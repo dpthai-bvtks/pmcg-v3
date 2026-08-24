@@ -569,6 +569,7 @@ window.renderSttOrderControl = function (type, i, total) {
             }
         }
 
+        
         async function executeApiTask(task) {
             const { functionName, args, onSuccess, onError, isMutation, retries = 0 } = task;
             activeApiRequests++;

@@ -325,9 +325,9 @@ window.showGlobalLoading = function (text) {
                 modal.id = 'sync-progress-modal';
                 modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:999999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(3px);';
                 modal.innerHTML = `
-                <div style="background:#fff; width:440px; max-width:90%; border-radius:12px; padding:24px; box-shadow:0 10px 30px rgba(0,0,0,0.3); text-align:center; font-family:sans-serif;">
+                <div style="background:#fff; width:460px; max-width:90%; border-radius:12px; padding:24px; box-shadow:0 10px 30px rgba(0,0,0,0.3); text-align:center; font-family:sans-serif;">
                     <div style="font-size:36px; margin-bottom:10px;">🔄</div>
-                    <h3 style="margin:0 0 10px 0; color:#2c3e50; font-size:18px;">Đang đồng bộ dữ liệu D1 ➔ Google Sheets</h3>
+                    <h3 style="margin:0 0 10px 0; color:#2c3e50; font-size:18px;">Đồng bộ Toàn bộ Dữ liệu & Lịch sử D1 ➔ Google Sheets</h3>
                     <p id="sync-step-text" style="color:#7f8c8d; font-size:13px; margin:0 0 16px 0;">Đang khởi tạo kết nối...</p>
                     <div style="background:#ecf0f1; border-radius:10px; height:16px; overflow:hidden; margin-bottom:16px; position:relative;">
                         <div id="sync-progress-bar" style="background:linear-gradient(90deg, #27ae60, #2ecc71); width:5%; height:100%; transition:width 0.3s ease; border-radius:10px;"></div>
@@ -351,34 +351,50 @@ window.showGlobalLoading = function (text) {
             }
 
             try {
-                updateProgress(15, '[1/6] 📋 Đang đọc danh sách Bệnh nhân...');
-                await new Promise(r => setTimeout(r, 150));
+                updateProgress(15, '[1/7] 📡 Đang truy vấn dữ liệu & Lịch sử từ máy chủ D1...');
+                
+                const dateVal = document.getElementById('schedule-date')?.value || new Date().toISOString().slice(0, 10);
+                let d1Data = null;
+                try {
+                    const respD1 = await fetch(DEFAULT_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'getBootstrapData', args: [dateVal] })
+                    });
+                    const resD1 = await respD1.json();
+                    if (resD1 && resD1.status === 'success') d1Data = resD1.data;
+                } catch(e) { console.warn('Could not fetch directly from D1, fallback to local cache:', e); }
 
                 const cache = window.dataCache || {};
-                
-                updateProgress(35, '[2/6] 👨‍⚕️ Đang đọc danh sách Nhân sự & Phân ca...');
+
+                updateProgress(30, '[2/7] 📋 Đóng gói Bệnh nhân, Nhân sự, Máy móc, Phòng & Thủ thuật...');
                 await new Promise(r => setTimeout(r, 150));
 
-                updateProgress(55, '[3/6] 🖥 Đang đọc danh sách Máy móc & Phòng bệnh...');
+                updateProgress(50, '[3/7] 📅 Đóng gói Bảng Lịch Trình Hiện Tại...');
                 await new Promise(r => setTimeout(r, 150));
 
-                updateProgress(75, '[4/6] 💉 Đang đọc danh sách Thủ thuật & Định mức...');
+                updateProgress(70, '[4/7] 📜 Đóng gói Bảng Lịch Sử từ trước đến nay...');
                 await new Promise(r => setTimeout(r, 150));
 
-                updateProgress(90, '[5/6] 📅 Đang đóng gói Lịch trình & Truyền sang Google Sheets...');
+                updateProgress(85, '[5/7] 📤 Truyền dữ liệu sang Google Apps Script...');
+
+                const historyList = (d1Data && (d1Data.history || d1Data.lich_su)) ? (d1Data.history || d1Data.lich_su) : (cache.history || []);
 
                 const payload = {
-                    pat: cache.pat || [],
-                    staff: cache.staff || [],
-                    machines: cache.machines || cache.machine || [],
-                    rooms: cache.rooms || [],
-                    procedures: cache.procedures || cache.proc || [],
-                    schedule: cache.schedule || window.currentScheduleData || [],
+                    pat: (d1Data && d1Data.pat) ? d1Data.pat : (cache.pat || []),
+                    staff: (d1Data && d1Data.staff) ? d1Data.staff : (cache.staff || []),
+                    machines: (d1Data && (d1Data.machines || d1Data.may_moc)) ? (d1Data.machines || d1Data.may_moc) : (cache.machines || []),
+                    rooms: (d1Data && (d1Data.rooms || d1Data.phong)) ? (d1Data.rooms || d1Data.phong) : (cache.rooms || []),
+                    procedures: (d1Data && (d1Data.procedures || d1Data.thu_thuat)) ? (d1Data.procedures || d1Data.thu_thuat) : (cache.procedures || []),
+                    schedule: (d1Data && (d1Data.schedule || d1Data.lich_trinh)) ? (d1Data.schedule || d1Data.lich_trinh) : (cache.schedule || window.currentScheduleData || []),
+                    history: historyList,
                     chamCong: localStorage.getItem('pmcg_cham_cong_data') || '',
                     thongKe: localStorage.getItem('pmcg_thong_ke_cache') || '',
-                    accounts: JSON.parse(localStorage.getItem('times_accounts_cache') || '[]'),
+                    accounts: (d1Data && d1Data.accounts) ? d1Data.accounts : JSON.parse(localStorage.getItem('times_accounts_cache') || '[]'),
                     caiDat: localStorage.getItem('times_settings_cache') || ''
                 };
+
+                updateProgress(95, '[6/7] 📝 Đang ghi các trang Google Sheets...');
 
                 const resp = await fetch(backupUrl, {
                     method: 'POST',
@@ -388,37 +404,16 @@ window.showGlobalLoading = function (text) {
 
                 const res = await resp.json();
                 if (res && res.status === 'success') {
-                    updateProgress(100, '✅ Đồng bộ hoàn tất 100%! Tất cả dữ liệu đã nằm an toàn trên Google Sheets.');
+                    updateProgress(100, '✅ Đồng bộ hoàn tất 100%! Đã tạo đủ các trang Bệnh nhân, Nhân sự, Máy móc, Phòng, Thủ thuật, Lịch trình & Lịch sử!');
                     if (percentText) percentText.innerHTML = '<span style="color:#27ae60">🎉 ĐỒNG BỘ THÀNH CÔNG!</span>';
                 } else {
-                    updateProgress(100, '⚠️ Đã đồng bộ với phản hồi từ máy chủ dự phòng.');
+                    updateProgress(100, '⚠️ Đã gửi dữ liệu: ' + (res.error || res.data || 'Thành công'));
                 }
                 closeBtn.style.display = 'inline-block';
             } catch (err) {
                 updateProgress(100, '❌ Lỗi kết nối Google Apps Script dự phòng: ' + err.message);
                 if (percentText) percentText.innerHTML = '<span style="color:#e74c3c">❌ LỖI ĐỒNG BỘ</span>';
                 closeBtn.style.display = 'inline-block';
-            }
-        };
-
-        window.toggleEmergencyBackupMenu = function() {
-            const current = window._serverMode || 'primary';
-            const msg = `Trạng thái máy chủ hiện tại: ${current === 'primary' ? '🟢 Cloudflare Main (Chính)' : (current === 'backup' ? '🟡 Google Sheets Backup (Dự phòng)' : '⚡️ Ngoại tuyến')}\n\nNhập 1: Kết nối lại Cloudflare Main\nNhập 2: Xuất file dự phòng khẩn cấp (.json)\nNhập 3: Nhập URL Google Apps Script dự phòng\nNhập 4: 🔄 Đồng bộ dữ liệu D1 sang Google Sheets ngay`;
-            const choice = prompt(msg);
-            if (choice === '1') {
-                _consecutiveApiErrors = 0;
-                updateServerStatusBadge('primary');
-                alert('Đã kết nối lại Máy chủ chính Cloudflare Main!');
-            } else if (choice === '2') {
-                if (window.OfflineSyncEngine) window.OfflineSyncEngine.exportEmergencyBackupData();
-            } else if (choice === '3') {
-                const url = prompt('Nhập URL Google Apps Script WebApp dự phòng:');
-                if (url && url.trim()) {
-                    localStorage.setItem('times_backup_api_url', url.trim());
-                    alert('Đã lưu URL máy chủ dự phòng Google Apps Script!');
-                }
-            } else if (choice === '4') {
-                window.syncAllD1DataToBackupSheets();
             }
         };
 

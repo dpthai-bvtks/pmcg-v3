@@ -92,6 +92,8 @@ function getBootstrapDataFromSheets(ss, dateVal) {
     rooms: readSheetData(ss, 'Phong'),
     procedures: readSheetData(ss, 'ThuThuat'),
     schedule: readSheetData(ss, 'LichTrinh'),
+    history: readSheetData(ss, 'LichSu'),
+    lich_su: readSheetData(ss, 'LichSu'),
     serverTime: new Date().toISOString()
   };
 }
@@ -163,6 +165,8 @@ function saveAllBootstrapToSheets(ss, dataObj) {
   if (dataObj.rooms && dataObj.rooms.length > 0) writeListToSheet(ss, 'Phong', dataObj.rooms);
   if (dataObj.procedures && dataObj.procedures.length > 0) writeListToSheet(ss, 'ThuThuat', dataObj.procedures);
   if (dataObj.schedule && dataObj.schedule.length > 0) writeListToSheet(ss, 'LichTrinh', dataObj.schedule);
+  if (dataObj.history && dataObj.history.length > 0) writeListToSheet(ss, 'LichSu', dataObj.history);
+  else if (dataObj.lich_su && dataObj.lich_su.length > 0) writeListToSheet(ss, 'LichSu', dataObj.lich_su);
   if (dataObj.chamCong) writeListToSheet(ss, 'ChamCong', Array.isArray(dataObj.chamCong) ? dataObj.chamCong : [dataObj.chamCong]);
   if (dataObj.thongKe) writeListToSheet(ss, 'ThongKe', Array.isArray(dataObj.thongKe) ? dataObj.thongKe : [dataObj.thongKe]);
   if (dataObj.accounts && dataObj.accounts.length > 0) writeListToSheet(ss, 'TaiKhoan', dataObj.accounts);

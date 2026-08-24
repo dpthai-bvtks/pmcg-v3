@@ -645,6 +645,10 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
 - **File sửa đổi:** `index.html`, `js/app.js`, `js/scheduler-engine.js`, `backend/src/index.js` (v3.2.9)
 
 ### Cập nhật 24/08/2026 (v3.1.6)
+- **Bổ sung bảng Lịch Sử toàn bộ từ trước đến nay (`LichSu`)**:
+  - Tự động truy vấn bảng dữ liệu `lich_su` từ máy chủ Cloudflare D1 khi bấm nút đồng bộ số 4.
+  - Tự động tạo và ghi trang **`LichSu`** trên Google Sheets chứa toàn bộ lịch trình quá khứ từ trước đến nay.
+  - Phục vụ 100% tính năng tra cứu xem lại lịch cũ và báo cáo thống kê lịch trình quá khứ ở chế độ dự phòng.
 - **Mở rộng đồng bộ toàn bộ 10 trang dữ liệu (Full 10-Sheet Backup Mirror)**:
   - Bổ sung các bảng dữ liệu Chấm công (`ChamCong`), Thống kê (`ThongKe`), Tài khoản người dùng (`TaiKhoan`), Cấu hình hệ thống (`CaiDat`) vào tiến trình đồng bộ Google Sheets.
   - Đảm bảo 100% tất cả các tính năng phụ trợ (Tìm giờ rảnh, Bảng Chấm công, Báo cáo Thống kê, Đăng nhập) hoạt động hoàn hảo 100% ở chế độ dự phòng.

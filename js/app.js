@@ -5085,9 +5085,16 @@ window.showGlobalLoading = function (text) {
         };
 
         window.togglePatSessionSelect = function() {
+            const loaiBnSelect = document.getElementById('pat-loai-bn');
             const sessionGroup = document.getElementById('pat-session-group');
-            if (sessionGroup) {
-                sessionGroup.style.display = 'none'; // Ẩn hoàn toàn theo yêu cầu của bác sĩ
+            if (loaiBnSelect && sessionGroup) {
+                if (loaiBnSelect.value === 'NgoaiTru') {
+                    sessionGroup.style.display = ''; // Hiển thị cho Ngoại trú
+                } else {
+                    sessionGroup.style.display = 'none'; // Ẩn đối với Nội trú
+                    const buoiSelect = document.getElementById('pat-buoi-dieu-tri');
+                    if (buoiSelect) buoiSelect.value = 'TuDong'; // Reset về Tự động cho Nội trú
+                }
             }
         };
 

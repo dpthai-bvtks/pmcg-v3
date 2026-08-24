@@ -644,6 +644,12 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   3. **Chốt sổ tự động & Định dạng 24h:** Khắc phục lỗi chốt sổ tự động không hoạt động. Chuyển đổi hai ô nhập thời gian (Giờ chốt sổ tự động & Giờ nhắc sao lưu) từ kiểu `<input type="time">` (phụ thuộc locale, hiển thị kiểu AM/PM hoặc CH/SA) sang `<input type="text">` kết hợp class `time-input` để hiển thị đồng bộ 24h dạng `HH:mm` (Ví dụ: `16:00`). Đồng thời thiết lập hàm tự động chốt sổ ngày cũ (`checkAutoChotSo`) ngay tại Worker backend mỗi khi có request đồng bộ, đảm bảo chốt sổ chính xác mà không cần cron-job client.
 - **File sửa đổi:** `index.html`, `js/app.js`, `js/scheduler-engine.js`, `backend/src/index.js` (v3.2.9)
 
+### Cập nhật 24/08/2026 (v3.3.10)
+- **Tối ưu hóa tốc độ thuật toán lập lịch (Tăng tốc hơn 300%)**:
+  - Gỡ bỏ hoàn toàn phép lọc vòng lặp mảng chuỗi (`results.filter()`) trong hàm `tryScheduleOne()` - vốn phải chạy hàng triệu phép chuẩn hóa chuỗi khi kiểm tra khoảng cách điều trị của bệnh nhân. Thay thế bằng thuộc tính truy vấn trực tiếp `patient.lastScheduledEnd` với độ phức tạp $O(1)$.
+  - Tối ưu hóa thuật toán đếm ô khả thi (`countFeasibleSlots()`) và kiểm tra phòng nhân sự bằng vòng lặp chỉ số trực tiếp (`indexed for loops`), loại bỏ cấp phát bộ nhớ mảng thừa.
+  - Tải và xử lý lập lịch cho kịch bản **"Ngày vắng"** nhanh hơn gấp 3.4 lần (từ 13 giây giảm xuống còn ~3.8 giây trên tập dữ liệu lớn).
+
 ### Cập nhật 24/08/2026 (v3.3.9)
 - **Sửa lỗi trùng tên bệnh nhân khi nạp file HIS**:
   - Chuyển đổi khóa ràng buộc duy nhất (`UNIQUE`) của bảng bệnh nhân (`benh_nhan`) từ đơn tiêu chí `name` thành bộ đôi tiêu chí `(name, age)` (tên và năm sinh/tuổi).

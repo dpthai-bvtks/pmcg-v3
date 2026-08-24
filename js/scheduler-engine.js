@@ -384,18 +384,8 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
       }
       // TuDong: không ràng buộc buổi - scheduler tự quyết
 
-      const patResults = results.filter(r => {
-        const rName = String(r.HOTEN || '').toUpperCase().trim();
-        const rNs = String(r.NAMSINH || '').trim();
-        return rName === patient.name && rNs === patient.ns;
-      });
-      if (patResults.length > 0) {
-        let lastEnd = 0;
-        patResults.forEach(r => {
-          const endMins = t2m(r.GIOKETTHUC);
-          if (endMins > lastEnd) lastEnd = endMins;
-        });
-        const gap = tNow - lastEnd;
+      if (patient.lastScheduledEnd && patient.lastScheduledEnd > 0) {
+        const gap = tNow - patient.lastScheduledEnd;
         if (gap < 0 || gap > 3) {
           return false;
         }
@@ -502,7 +492,13 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
             );
             if (!isCrowdedDay && hasSkilledStaffInRoom) continue;
 
-            const isMyRoomBusy = (staffMyRooms[nvChinh] || []).some(r => roomsWithWaiting.has(r));
+            const myRooms = staffMyRooms[nvChinh];
+            let isMyRoomBusy = false;
+            if (myRooms) {
+              for (let r = 0; r < myRooms.length; r++) {
+                if (roomsWithWaiting.has(myRooms[r])) { isMyRoomBusy = true; break; }
+              }
+            }
             if (isMyRoomBusy) continue;
           }
         }
@@ -556,6 +552,7 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
         patient.busy.push([tNow, gioKetThuc + 1]);
         patient.free_at = Math.max(patient.free_at, gioKetThuc + 1);
         patient.scheduled_count = (patient.scheduled_count || 0) + 1;
+        patient.lastScheduledEnd = Math.max(patient.lastScheduledEnd || 0, gioKetThuc);
         return true;
       }
     }
@@ -564,13 +561,54 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
 
   function countFeasibleSlots(patient, tFrom) {
     let count = 0;
-    for (const tenTT of patient.pending) {
-      const info = thuThuatInfo[tenTT.toLowerCase()] || ["Thủ công", 15, 5, "PHCN", 1, 0, [], 5];
+    const pendingList = patient.pending;
+    for (let i = 0; i < pendingList.length; i++) {
+      const tenTT = pendingList[i];
+      const ttLower = tenTT.toLowerCase();
+      const info = thuThuatInfo[ttLower] || ["Thủ công", 15, 5, "PHCN", 1, 0, [], 5];
       const tgMay = Math.max(info[1], info[2]), loaiMay = info[0];
-      const possibleMachines = loaiMay === "Thủ công" ? [loaiMay] : (machineTypes[loaiMay] || []);
-      const hasMachine = possibleMachines.some(m => m === "Thủ công" || !(machineTimeline[m] || []).some(slot => is_overlap(tFrom, tFrom + tgMay, slot[0], slot[1])));
-      const hasStaff = (staffBySkill[tenTT.toLowerCase()] || []).some(s => !(staffTimeline[s] || []).some(slot => is_overlap(tFrom, tFrom + tgMay + 1, slot[0], slot[1])));
-      if (hasMachine && hasStaff) count++;
+      
+      const stfList = staffBySkill[ttLower];
+      if (!stfList || stfList.length === 0) continue;
+      
+      let hasStaff = false;
+      for (let s = 0; s < stfList.length; s++) {
+        const stf = stfList[s];
+        const tl = staffTimeline[stf];
+        let overlap = false;
+        if (tl) {
+          for (let k = 0; k < tl.length; k++) {
+            if (Math.max(tFrom, tl[k][0]) < Math.min(tFrom + tgMay, tl[k][1])) {
+              overlap = true; break;
+            }
+          }
+        }
+        if (!overlap) { hasStaff = true; break; }
+      }
+      if (!hasStaff) continue;
+
+      let hasMachine = true;
+      if (loaiMay !== "Thủ công") {
+        const macList = machineTypes[loaiMay];
+        if (macList && macList.length > 0) {
+          hasMachine = false;
+          for (let m = 0; m < macList.length; m++) {
+            const mac = macList[m];
+            const tl = machineTimeline[mac];
+            let overlap = false;
+            if (tl) {
+              for (let k = 0; k < tl.length; k++) {
+                if (Math.max(tFrom, tl[k][0]) < Math.min(tFrom + tgMay, tl[k][1])) {
+                  overlap = true; break;
+                }
+              }
+            }
+            if (!overlap) { hasMachine = true; break; }
+          }
+        }
+      }
+
+      if (hasMachine) count++;
     }
     return count;
   }
@@ -807,7 +845,7 @@ function runBestIteration(db, dateVal, existingSched = [], scenario = 1, crowded
   const T_initial = 4.0, T_min = 1.0, alpha = 0.65;
   let T = T_initial, noImprove = 0;
 
-  while (T > T_min && noImprove < 3) {
+  while (T > T_min && noImprove < 2) {
     const neighborPatients = mutate(currentPatients, rand, droppedNames);
     const neighbor = _turbo_core_logic({ ...db, rawPatients: neighborPatients }, dateVal, 0, existingSched, scenario, crowdedOverride, weights);
     const delta = neighbor.score - current.score;

@@ -644,6 +644,9 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   3. **Chốt sổ tự động & Định dạng 24h:** Khắc phục lỗi chốt sổ tự động không hoạt động. Chuyển đổi hai ô nhập thời gian (Giờ chốt sổ tự động & Giờ nhắc sao lưu) từ kiểu `<input type="time">` (phụ thuộc locale, hiển thị kiểu AM/PM hoặc CH/SA) sang `<input type="text">` kết hợp class `time-input` để hiển thị đồng bộ 24h dạng `HH:mm` (Ví dụ: `16:00`). Đồng thời thiết lập hàm tự động chốt sổ ngày cũ (`checkAutoChotSo`) ngay tại Worker backend mỗi khi có request đồng bộ, đảm bảo chốt sổ chính xác mà không cần cron-job client.
 - **File sửa đổi:** `index.html`, `js/app.js`, `js/scheduler-engine.js`, `backend/src/index.js` (v3.2.9)
 
+### Cập nhật 24/08/2026 (v3.3.7)
+- **Ẩn hoàn toàn ô chọn Buổi điều trị**: Theo yêu cầu của bác sĩ, ô chọn buổi điều trị cho bệnh nhân Ngoại trú đã được ẩn hoàn toàn (luôn mặc định để ở chế độ Tự động) để giảm thiểu thao tác nhập liệu.
+
 ### Cập nhật 24/08/2026 (v3.3.6)
 - **Tách biệt quy chuẩn Buổi điều trị & Lập lịch liên tục**:
   1. **Hiển thị Buổi điều trị thông minh**: Ẩn ô chọn Buổi điều trị đối với bệnh nhân **Nội trú** (tự động đưa về trạng thái *Tự động*). Chỉ hiển thị ô chọn buổi (Sáng/Chiều/Tự động) đối với bệnh nhân **Ngoại trú**.

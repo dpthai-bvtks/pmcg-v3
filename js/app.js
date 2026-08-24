@@ -4198,7 +4198,42 @@ window.showGlobalLoading = function (text) {
             const btn = document.getElementById('btn-run-sched');
 
             btn.innerText = '⏳ ĐANG XẾP LỊCH...'; btn.disabled = true; btn.style.background = '#f39c12';
-            res.innerHTML = '<div class="alert alert-success" style="margin-top:10px">Xếp thành công: <b>' + schedCount + '</b> ca. Rớt: <b>' + unschCount + '</b> ca. <span style="margin-left:15px; color:#555; font-size:13px;">(⏱ <b>' + timeTaken + ' giây</b>)</span></div>';
+            res.innerHTML = '';
+            list.innerHTML = '<tr><td colspan="12" align="center"><div class="spinner"></div></td></tr>';
+
+            const startTime = performance.now();
+            if (window.showGlobalLoading) window.showGlobalLoading("Đang chạy thuật toán tối ưu xếp lịch...");
+
+            setTimeout(() => {
+                try {
+                    let out = null;
+                    if (window.SchedulerEngine && typeof window.SchedulerEngine.runScheduling === 'function') {
+                        out = window.SchedulerEngine.runScheduling(dateVal, strategy, skipVal, crowdedVal);
+                    }
+
+                    if (window.hideGlobalLoading) window.hideGlobalLoading();
+                    const timeTaken = (out && out.elapsedMs !== undefined) ? (out.elapsedMs / 1000).toFixed(2) : ((performance.now() - startTime) / 1000).toFixed(2);
+                    btn.innerText = 'CHẠY XẾP LỊCH TỔNG'; btn.disabled = false; btn.style.background = '#008b02';
+
+                    const sched = (out && (out.schedule || out.sched)) ? (out.schedule || out.sched) : [];
+                    const unsch = (out && (out.unscheduled || out.rot)) ? (out.unscheduled || out.rot) : [];
+                    const schedCount = (out && out.scheduleCount !== undefined) ? out.scheduleCount : sched.length;
+                    const unschCount = (out && out.unscheduledCount !== undefined) ? out.unscheduledCount : unsch.length;
+
+                    window.currentScheduleData = markDischargedInSchedule(sched);
+                    if (typeof dataCache !== 'undefined') dataCache.schedule = sched;
+                    if (window.dataCache) window.dataCache.schedule = sched;
+                    setUnscheduledData(unsch, dateVal);
+                    window._systemActiveYMD = dateVal;
+
+                    const dashboardDate = document.getElementById('dashboard-date-filter');
+                    if (dashboardDate) dashboardDate.value = dateVal;
+
+                    localStorage.setItem('meds_schedule_date', dateVal);
+                    localStorage.setItem('meds_success', JSON.stringify(sched));
+                    localStorage.setItem('meds_unscheduled', JSON.stringify(unsch));
+
+                    res.innerHTML = '<div class="alert alert-success" style="margin-top:10px">Xếp thành công: <b>' + schedCount + '</b> ca. Rớt: <b>' + unschCount + '</b> ca. <span style="margin-left:15px; color:#555; font-size:13px;">(⏱ <b>' + timeTaken + ' giây</b>)</span></div>';
                     
                     // Hiển thị Popup kết quả tức thì
                     const contentEl = document.getElementById('custom-popup-content');

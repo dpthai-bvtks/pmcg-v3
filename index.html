@@ -24,7 +24,7 @@
     <meta property="og:title" content="T.I.M.E.S. System - Hệ thống Xếp lịch Thủ thuật Y tế Tự động">
     <meta property="og:description"
         content="Phần mềm xếp lịch thủ thuật y học cổ truyền và phục hồi chức năng tự động, tối ưu hóa công suất máy móc và nhân sự tại BVTKS CS2.">
-    <meta property="og:image" content="https://xeplichthuthuat.io.vn/logo-chuan-chinh.png?v=3.1.0">
+    <meta property="og:image" content="https://xeplichthuthuat.io.vn/logo-chuan-chinh.png?v=3.1.1">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
@@ -32,7 +32,7 @@
     <meta property="twitter:title" content="T.I.M.E.S. System - Hệ thống Xếp lịch Thủ thuật Y tế Tự động">
     <meta property="twitter:description"
         content="Phần mềm xếp lịch thủ thuật y học cổ truyền và phục hồi chức năng tự động, tối ưu hóa công suất máy móc và nhân sự tại BVTKS CS2.">
-    <meta property="twitter:image" content="https://xeplichthuthuat.io.vn/logo-chuan-chinh.png?v=3.1.0">
+    <meta property="twitter:image" content="https://xeplichthuthuat.io.vn/logo-chuan-chinh.png?v=3.1.1">
 
     <!-- Schema Structured Data -->
     <script type="application/ld+json">
@@ -59,9 +59,9 @@
     }
     </script>
     <meta name="theme-color" content="#1e3d2b">
-    <link rel="icon" type="image/png" sizes="128x128" href="favicon-128.png?v=3.1.0">
+    <link rel="icon" type="image/png" sizes="128x128" href="favicon-128.png?v=3.1.1">
     <!-- Thêm icon cho iOS -->
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=3.1.0">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=3.1.1">
 
 
 
@@ -72,9 +72,9 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
     <!-- CSS Custom -->
-    <link rel="stylesheet" href="css/style.css?v=3.1.0">
+    <link rel="stylesheet" href="css/style.css?v=3.1.1">
     <!-- JS Thư viện kéo thả nội bộ -->
-    <script src="js/sortable.min.js?v=3.1.0"></script>
+    <script src="js/sortable.min.js?v=3.1.1"></script>
     <!-- Chart.js for Thống Kê & ExcelJS -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
@@ -92,7 +92,7 @@
 
             <div class="login-box">
 
-                <img src="logo-chuan-chinh.png?v=3.1.0" alt="Logo Bệnh viện Than - Khoáng sản"
+                <img src="logo-chuan-chinh.png?v=3.1.1" alt="Logo Bệnh viện Than - Khoáng sản"
                     style="width:100px; margin-bottom:15px;">
 
                 <h2 style="margin-bottom:20px; color:#2c3e50;">HỆ THỐNG XẾP LỊCH</h2>
@@ -184,7 +184,7 @@
 
                     <div class="banner-left">
 
-                        <img src="logo-chuan-chinh.png?v=3.1.0" alt="Logo" class="banner-logo"
+                        <img src="logo-chuan-chinh.png?v=3.1.1" alt="Logo" class="banner-logo"
                             onclick="document.querySelector('.nav-tab[data-tab=\'tab-home\']')?.click()"
                             title="Về trang chủ">
 
@@ -210,6 +210,12 @@
                                 <div id="clock-time">00:00:00</div>
 
                                 <div id="clock-date">Thứ Hai, 01/01/2026</div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px;">
+                                <div id="server-status-badge" class="status-badge status-primary" title="Bấm để xem/đổi máy chủ dự phòng" onclick="window.toggleEmergencyBackupMenu()" style="cursor: pointer; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; background: #27ae60; color: white; display: inline-block;">🟢 Cloudflare Main</div>
+                                <button onclick="window.OfflineSyncEngine?.exportEmergencyBackupData()" title="Xuất toàn bộ dữ liệu ra file JSON để sao lưu khẩn cấp" style="padding: 2px 6px; font-size: 11px; border-radius: 4px; border: 1px solid #16a085; background: #1abc9c; color: white; cursor: pointer;">⚡️ Xuất Dự Phòng</button>
+                                <button onclick="document.getElementById('emergency-import-input').click()" title="Nạp dữ liệu từ file sao lưu JSON khẩn cấp" style="padding: 2px 6px; font-size: 11px; border-radius: 4px; border: 1px solid #d35400; background: #e67e22; color: white; cursor: pointer;">📥 Nạp File</button>
+                                <input type="file" id="emergency-import-input" accept=".json" style="display: none;" onchange="window.OfflineSyncEngine?.importEmergencyBackupData(this)">
 
                             </div>
 
@@ -2902,7 +2908,7 @@
 
                     <h4><span class="f-icon">⚙️</span> <span>THÔNG TIN HỆ THỐNG</span></h4>
 
-                    <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.1.0</span></p>
+                    <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.1.1</span></p>
 
                     <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 12:10 24/08/2026</span></p>
 
@@ -3176,11 +3182,12 @@
     <div id="sidebar-tooltip"></div>
 
     <!-- JavaScript Modules -->
-    <script src="js/scheduler-engine.js?v=3.1.0"></script>
-    <script src="js/app.js?v=3.1.0"></script>
-        <script src="js/init.js?v=3.1.0"></script>
-    <script src="js/sync.js?v=3.1.0"></script>
-    <script src="js/thongke.js?v=3.1.0"></script>
+    <script src="js/offline-sync-engine.js?v=3.1.1"></script>
+    <script src="js/scheduler-engine.js?v=3.1.1"></script>
+    <script src="js/app.js?v=3.1.1"></script>
+        <script src="js/init.js?v=3.1.1"></script>
+    <script src="js/sync.js?v=3.1.1"></script>
+    <script src="js/thongke.js?v=3.1.1"></script>
 </body>
 
 </html>

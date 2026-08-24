@@ -644,6 +644,14 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   3. **Chốt sổ tự động & Định dạng 24h:** Khắc phục lỗi chốt sổ tự động không hoạt động. Chuyển đổi hai ô nhập thời gian (Giờ chốt sổ tự động & Giờ nhắc sao lưu) từ kiểu `<input type="time">` (phụ thuộc locale, hiển thị kiểu AM/PM hoặc CH/SA) sang `<input type="text">` kết hợp class `time-input` để hiển thị đồng bộ 24h dạng `HH:mm` (Ví dụ: `16:00`). Đồng thời thiết lập hàm tự động chốt sổ ngày cũ (`checkAutoChotSo`) ngay tại Worker backend mỗi khi có request đồng bộ, đảm bảo chốt sổ chính xác mà không cần cron-job client.
 - **File sửa đổi:** `index.html`, `js/app.js`, `js/scheduler-engine.js`, `backend/src/index.js` (v3.2.9)
 
+### Cập nhật 24/08/2026 (v3.1.1)
+- **Triển khai Phương án Dự phòng Toàn diện (4-Tier High Availability & Redundancy)**:
+  - Bổ sung **Bộ ngắt mạch Failover (Circuit Breaker)** trong `js/app.js`: Tự động ngắt và chuyển hướng kết nối sang Máy chủ Dự phòng Google Apps Script (Google Sheets) khi Cloudflare D1 bị sự cố 500 / overload 7429.
+  - Tích hợp **Module Ngoại tuyến Độc lập (`js/offline-sync-engine.js`)**: Cho phép hệ thống lưu bộ nhớ đệm `IndexedDB` và chạy lập lịch 100% không phụ thuộc máy chủ khi mất kết nối mạng.
+  - Bổ sung **Nút bấm Dự phòng Khẩn cấp 1-Click** trên Header: Cho phép **Xuất file dự phòng khẩn cấp (.json)** và **Nạp dữ liệu từ file sao lưu** tức thì.
+  - Thêm thẻ hiển thị trạng thái kết nối máy chủ (`🟢 Cloudflare Main` / `🟡 Google Sheets Backup` / `⚡️ Mode Ngoại Tuyến`) trên thanh Header.
+  - Cung cấp kịch bản máy chủ dự phòng Google Apps Script Mirror (`backend-backup/code.gs`).
+
 ### Cập nhật 24/08/2026 (v3.1.0)
 - **Đột phá tốc độ hiển thị kết quả xếp lịch (< 1 giây)**:
   - Tách bạch thời gian tính toán thuật toán thực tế (`out.elapsedMs`) khỏi tổng thời gian chờ UI DOM re-render & vẽ biểu đồ Dashboard.

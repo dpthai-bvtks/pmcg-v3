@@ -289,7 +289,47 @@ window.showGlobalLoading = function (text) {
         // GITHUB PAGES API CONFIGURATION (SELF-HEALING)
         // ============================================================
         const DEFAULT_API_URL = 'https://pmcg-api.dpthai-ttytmk.workers.dev';
+        const SECONDARY_BACKUP_URL = (localStorage.getItem('times_backup_api_url') || '').trim();
+        window._serverMode = 'primary'; // 'primary' | 'backup' | 'offline'
+        let _consecutiveApiErrors = 0;
+
+        function updateServerStatusBadge(mode) {
+            window._serverMode = mode;
+            const badge = document.getElementById('server-status-badge');
+            if (!badge) return;
+            if (mode === 'primary') {
+                badge.style.background = '#27ae60'; badge.innerText = '🟢 Cloudflare Main';
+            } else if (mode === 'backup') {
+                badge.style.background = '#f39c12'; badge.innerText = '🟡 Google Sheets Backup';
+            } else {
+                badge.style.background = '#e74c3c'; badge.innerText = '⚡️ Mode Ngoại Tuyến';
+            }
+        }
+        window.updateServerStatusBadge = updateServerStatusBadge;
+
+        window.toggleEmergencyBackupMenu = function() {
+            const current = window._serverMode || 'primary';
+            const msg = `Trạng thái máy chủ hiện tại: ${current === 'primary' ? '🟢 Cloudflare Main (Chính)' : (current === 'backup' ? '🟡 Google Sheets Backup (Dự phòng)' : '⚡️ Ngoại tuyến')}\n\nNhập 1: Kết nối lại Cloudflare Main\nNhập 2: Xuất file dự phòng khẩn cấp (.json)\nNhập 3: Nhập URL Google Apps Script dự phòng`;
+            const choice = prompt(msg);
+            if (choice === '1') {
+                _consecutiveApiErrors = 0;
+                updateServerStatusBadge('primary');
+                alert('Đã kết nối lại Máy chủ chính Cloudflare Main!');
+            } else if (choice === '2') {
+                if (window.OfflineSyncEngine) window.OfflineSyncEngine.exportEmergencyBackupData();
+            } else if (choice === '3') {
+                const url = prompt('Nhập URL Google Apps Script WebApp dự phòng:');
+                if (url && url.trim()) {
+                    localStorage.setItem('times_backup_api_url', url.trim());
+                    alert('Đã lưu URL máy chủ dự phòng Google Apps Script!');
+                }
+            }
+        };
+
         function getApiUrl() {
+            if (window._serverMode === 'backup' && SECONDARY_BACKUP_URL) {
+                return SECONDARY_BACKUP_URL;
+            }
             let customUrl = (localStorage.getItem('times_custom_api_url') || '').trim();
             if (customUrl.includes('script.google.com') || customUrl.includes('google.com/macros')) {
                 localStorage.removeItem('times_custom_api_url');
@@ -357,6 +397,7 @@ window.showGlobalLoading = function (text) {
                 finish();
 
                 if (result && result.status === 'success') {
+                    _consecutiveApiErrors = 0;
                     if (onSuccess) {
                         try { onSuccess(result.data); } catch(e) { console.error(`Error in onSuccess for ${functionName}:`, e); }
                     }

@@ -845,7 +845,7 @@ function runBestIteration(db, dateVal, existingSched = [], scenario = 1, crowded
   const T_initial = 4.0, T_min = 1.0, alpha = 0.65;
   let T = T_initial, noImprove = 0;
 
-  while (T > T_min && noImprove < 2) {
+  while (T > T_min && noImprove < 1) {
     const neighborPatients = mutate(currentPatients, rand, droppedNames);
     const neighbor = _turbo_core_logic({ ...db, rawPatients: neighborPatients }, dateVal, 0, existingSched, scenario, crowdedOverride, weights);
     const delta = neighbor.score - current.score;

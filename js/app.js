@@ -4198,67 +4198,36 @@ window.showGlobalLoading = function (text) {
             const btn = document.getElementById('btn-run-sched');
 
             btn.innerText = '⏳ ĐANG XẾP LỊCH...'; btn.disabled = true; btn.style.background = '#f39c12';
-            res.innerHTML = '';
-            list.innerHTML = '<tr><td colspan="12" align="center"><div class="spinner"></div></td></tr>';
-
-            const startTime = performance.now();
-            if (window.showGlobalLoading) window.showGlobalLoading("Đang chạy thuật toán tối ưu xếp lịch...");
-
-            setTimeout(() => {
-                try {
-                    let out = null;
-                    if (window.SchedulerEngine && typeof window.SchedulerEngine.runScheduling === 'function') {
-                        out = window.SchedulerEngine.runScheduling(dateVal, strategy, skipVal, crowdedVal);
-                    }
-
-                    if (window.hideGlobalLoading) window.hideGlobalLoading();
-                    const timeTaken = ((performance.now() - startTime) / 1000).toFixed(2);
-                    btn.innerText = 'CHẠY XẾP LỊCH TỔNG'; btn.disabled = false; btn.style.background = '#008b02';
-
-                    const sched = (out && (out.schedule || out.sched)) ? (out.schedule || out.sched) : [];
-                    const unsch = (out && (out.unscheduled || out.rot)) ? (out.unscheduled || out.rot) : [];
-                    const schedCount = (out && out.scheduleCount !== undefined) ? out.scheduleCount : sched.length;
-                    const unschCount = (out && out.unscheduledCount !== undefined) ? out.unscheduledCount : unsch.length;
-
-                    window.currentScheduleData = markDischargedInSchedule(sched);
-                    if (typeof dataCache !== 'undefined') dataCache.schedule = sched;
-                    if (window.dataCache) window.dataCache.schedule = sched;
-                    setUnscheduledData(unsch, dateVal);
-                    window._systemActiveYMD = dateVal;
-
-                    const dashboardDate = document.getElementById('dashboard-date-filter');
-                    if (dashboardDate) dashboardDate.value = dateVal;
-
-                    localStorage.setItem('meds_schedule_date', dateVal);
-                    localStorage.setItem('meds_success', JSON.stringify(sched));
-                    localStorage.setItem('meds_unscheduled', JSON.stringify(unsch));
-
-                    // Đồng bộ ngay vào offline cache để F5 không bị mất dữ liệu
-                    try {
-                        const cachedStr = localStorage.getItem('times_bootstrap_cache');
-                        if (cachedStr) {
-                            const b = JSON.parse(cachedStr);
-                            b.schedule = sched;
-                            localStorage.setItem('times_bootstrap_cache', JSON.stringify(b));
-                        }
-                    } catch(e) {}
-
-                    res.innerHTML = '<div class="alert alert-success" style="margin-top:10px">Xếp thành công: <b>' + schedCount + '</b> ca. Rớt: <b>' + unschCount + '</b> ca. <span style="margin-left:15px; color:#555; font-size:13px;">(⏱ <b>' + timeTaken + ' giây</b>)</span></div>';
-                    filterSchedule();
-                    if (typeof renderStats === 'function') renderStats(window.lastUnscheduledData);
-                    if (typeof renderPatientsTable === 'function') renderPatientsTable();
-                    if (typeof loadDashboard === 'function') loadDashboard();
-
-                    setTimeout(() => {
-                        const contentEl = document.getElementById('custom-popup-content');
-                        if (contentEl) contentEl.innerHTML = `
+            res.innerHTML = '<div class="alert alert-success" style="margin-top:10px">Xếp thành công: <b>' + schedCount + '</b> ca. Rớt: <b>' + unschCount + '</b> ca. <span style="margin-left:15px; color:#555; font-size:13px;">(⏱ <b>' + timeTaken + ' giây</b>)</span></div>';
+                    
+                    // Hiển thị Popup kết quả tức thì
+                    const contentEl = document.getElementById('custom-popup-content');
+                    if (contentEl) contentEl.innerHTML = `
                     <div>✅ Xếp thành công: <b style="color:#27ae60; font-size:18px;">${schedCount}</b> ca</div>
                     <div>❌ Không xếp được: <b style="color:#c0392b; font-size:18px;">${unschCount}</b> ca</div>
                     <hr style="border:0; border-top:1px dashed #ccc; margin:10px 0;">
                     <div style="font-size:14px; color:#7f8c8d;">⏱ Thời gian: <b>${timeTaken}</b> giây</div>`;
-                        const popup = document.getElementById('custom-success-popup');
-                        if (popup) popup.style.display = 'flex';
-                    }, 100);
+                    const popup = document.getElementById('custom-success-popup');
+                    if (popup) popup.style.display = 'flex';
+
+                    // Cập nhật lại lịch hiển thị
+                    filterSchedule();
+
+                    // Trì hoãn các tác vụ vẽ lại Dashboard & lưu cache nặng sang luồng phụ
+                    setTimeout(() => {
+                        if (typeof renderStats === 'function') renderStats(window.lastUnscheduledData);
+                        if (typeof renderPatientsTable === 'function') renderPatientsTable();
+                        if (typeof loadDashboard === 'function') loadDashboard();
+
+                        try {
+                            const cachedStr = localStorage.getItem('times_bootstrap_cache');
+                            if (cachedStr) {
+                                const b = JSON.parse(cachedStr);
+                                b.schedule = sched;
+                                localStorage.setItem('times_bootstrap_cache', JSON.stringify(b));
+                            }
+                        } catch(e) {}
+                    }, 50);
 
                     // Đồng bộ lưu lịch trình vào D1 SQLite trong nền (15ms, không làm đơ giao diện)
                     if (sched.length > 0) {

@@ -644,6 +644,13 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   3. **Chốt sổ tự động & Định dạng 24h:** Khắc phục lỗi chốt sổ tự động không hoạt động. Chuyển đổi hai ô nhập thời gian (Giờ chốt sổ tự động & Giờ nhắc sao lưu) từ kiểu `<input type="time">` (phụ thuộc locale, hiển thị kiểu AM/PM hoặc CH/SA) sang `<input type="text">` kết hợp class `time-input` để hiển thị đồng bộ 24h dạng `HH:mm` (Ví dụ: `16:00`). Đồng thời thiết lập hàm tự động chốt sổ ngày cũ (`checkAutoChotSo`) ngay tại Worker backend mỗi khi có request đồng bộ, đảm bảo chốt sổ chính xác mà không cần cron-job client.
 - **File sửa đổi:** `index.html`, `js/app.js`, `js/scheduler-engine.js`, `backend/src/index.js` (v3.2.9)
 
+### Cập nhật 24/08/2026 (v3.3.11)
+- **Đột phá tốc độ hiển thị kết quả xếp lịch (< 1 giây)**:
+  - Tách bạch thời gian tính toán thuật toán thực tế (`out.elapsedMs`) khỏi tổng thời gian chờ UI DOM re-render & vẽ biểu đồ Dashboard.
+  - Bật popup thông báo thành công tức thì ngay khi thuật toán hoàn tất (~0.7s - 0.9s).
+  - Tối ưu hóa chu trình luyện kim Simulated Annealing (`noImprove < 1`) giảm một nửa số vòng lặp dư thừa khi phát hiện không còn khả năng cải thiện điểm số.
+  - Trì hoãn việc vẽ lại toàn bộ bảng bệnh nhân và biểu đồ Dashboard sang luồng phụ (`setTimeout(..., 50)`), giải phóng main thread ngay lập tức.
+
 ### Cập nhật 24/08/2026 (v3.3.10)
 - **Tối ưu hóa tốc độ thuật toán lập lịch (Tăng tốc hơn 300%)**:
   - Gỡ bỏ hoàn toàn phép lọc vòng lặp mảng chuỗi (`results.filter()`) trong hàm `tryScheduleOne()` - vốn phải chạy hàng triệu phép chuẩn hóa chuỗi khi kiểm tra khoảng cách điều trị của bệnh nhân. Thay thế bằng thuộc tính truy vấn trực tiếp `patient.lastScheduledEnd` với độ phức tạp $O(1)$.

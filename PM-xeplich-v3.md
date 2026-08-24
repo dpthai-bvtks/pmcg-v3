@@ -750,3 +750,17 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   3. **Tách trường Ngày vào viện:** Thay thế ô nhập ngày định dạng dd/mm/yyyy trước đây bằng 2 trường riêng biệt: Ô nhập Ngày (dạng text, tự nhập số ngày) và Dropdown chọn Tháng/Năm (danh sách 36 tháng từ năm trước đến năm sau, mặc định là tháng hiện tại). Cải tiến này giúp người dùng chỉnh sửa từng thành phần của ngày vào viện ở bất kỳ vị trí nào mà không lo bị lỗi định dạng ngày.
   4. **Thêm cột "Loại ĐT" hiển thị Nội trú/Ngoại trú:** Bổ sung thêm 1 cột mới "Loại ĐT" tại bảng danh sách bệnh nhân chính, giúp hiển thị trực quan trạng thái phân loại Nội trú (màu xanh lá) / Ngoại trú (màu cam) của từng người.
 - **File sửa đổi:** `index.html`, `js/app.js`, `backend/src/index.js` (v3.3.0)
+
+### Cập nhật 24/08/2026 (v3.1.7)
+- **Biên soạn tài liệu Hướng Dẫn Sử Dụng Toàn Diện v3 & Trang Web Tài Liệu Độc Lập**:
+  1. **Tài liệu toàn diện 12 chương (`HUONG_DAN_SU_DUNG.md` & Artifact)**:
+     - Biên soạn toàn bộ 12 chương hướng dẫn sử dụng chi tiết 100% tất cả các phân hệ: Đăng nhập, Dashboard, Danh mục (Máy móc, Thủ thuật, Nhân sự, Phòng), Tiếp nhận bệnh nhân, Giờ bận / Ra viện, Xếp lịch ngày thường (3 kịch bản: Tối ưu tối đa, Cân bằng tải, Dự phòng), Xếp lịch Thứ 7, Kiểm tra lỗi & xung đột, Tìm giờ rảnh, Bảng chấm công, Thống kê tổng hợp & KPI, Quản trị hệ thống, Quy trình xử lý sự cố & Backup, Bảng phím tắt & mẹo sử dụng.
+  2. **Tự động chụp 17 ảnh minh họa sắc nét (`docs/images/`)**:
+     - Chụp đầy đủ 17 màn hình và modal của hệ thống thực tế từ môi trường chạy thử: `01_login.png`, `02_dashboard.png`, `03_machines.png`, `04_procedures.png`, `05_staff.png`, `06_rooms.png`, `07_patients.png`, `08_busy.png`, `09_schedule_strategy_modal.png`, `09_schedule_success_popup.png`, `09_schedule_table.png`, `10_sat.png`, `11_kiemtra.png`, `12_utils.png`, `13_chamcong.png`, `14_thongke.png`, `15_admin_system.png`, `15_admin_accounts.png`, `15_admin_backup.png`.
+  3. **Xây dựng trang web tài liệu trực quan (`huong-dan-su-dung.html` & `hdsd.html`)**:
+     - Giao diện chuẩn Docs hiện đại với tông màu Y tế `#1e3d2b`, `#27ae60`.
+     - Thanh điều hướng mục lục Sidebar TOC thông minh có ScrollSpy tự động bám theo nội dung đọc.
+     - Tính năng tìm kiếm nội dung thời gian thực (Live Search), phóng to ảnh (Lightbox Zoom), chuyển đổi giao diện Sáng / Tối (Dark/Light Mode), nút In Hướng Dẫn tối ưu khổ giấy A4 (Print-Ready CSS), nút Về Phần Mềm và nút Lên đầu trang (Back to top).
+  4. **Cập nhật liên kết nhanh Footer**:
+     - Cập nhật cấu hình `quick_links` trên Cloudflare D1 Database và fallback `js/app.js`, mục "📖 Hướng dẫn sử dụng phần mềm" ở Footer chuyển sang mở trực tiếp trang web `huong-dan-su-dung.html`.
+- **File tạo mới & sửa đổi**: `HUONG_DAN_SU_DUNG.md`, `huong-dan-su-dung.html`, `hdsd.html`, `docs/images/*`, `index.html`, `js/app.js`, `PM-xeplich-v3.md` (v3.1.7).

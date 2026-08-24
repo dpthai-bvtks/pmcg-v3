@@ -84,7 +84,8 @@ async function ensureSchema(db) {
       db.prepare("CREATE TABLE IF NOT EXISTS lich_trinh (id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, patient_name TEXT NOT NULL, dob TEXT DEFAULT '', room TEXT DEFAULT '', procedure_name TEXT NOT NULL, staff_name TEXT DEFAULT '', sub_staff_name TEXT DEFAULT '', machine_name TEXT DEFAULT '', bed TEXT DEFAULT '', start_time TEXT NOT NULL, end_time TEXT NOT NULL, is_saturday INTEGER DEFAULT 0, order_idx INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
       db.prepare("CREATE TABLE IF NOT EXISTS lich_su (id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, patient_name TEXT NOT NULL, dob TEXT DEFAULT '', room TEXT DEFAULT '', procedure_name TEXT NOT NULL, staff_name TEXT DEFAULT '', sub_staff_name TEXT DEFAULT '', machine_name TEXT DEFAULT '', bed TEXT DEFAULT '', start_time TEXT NOT NULL, end_time TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
       db.prepare("CREATE TABLE IF NOT EXISTS gio_ban_cu (id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, staff_name TEXT NOT NULL, busy_ranges TEXT DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
-      db.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_patients_name ON benh_nhan(name)"),
+      db.prepare("DROP INDEX IF EXISTS idx_patients_name"),
+      db.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_patients_name_age ON benh_nhan(name, age)"),
       db.prepare("CREATE INDEX IF NOT EXISTS idx_lich_su_date ON lich_su(date)"),
       db.prepare("CREATE INDEX IF NOT EXISTS idx_lich_trinh_date ON lich_trinh(date)"),
       db.prepare("CREATE INDEX IF NOT EXISTS idx_gio_ban_cu_date ON gio_ban_cu(date)"),
@@ -758,7 +759,7 @@ async function handleApiAction(action, args, env, request) {
       
       const res = await db.batch([
         db.prepare(
-          "INSERT INTO benh_nhan (name, age, gender, room, bed, arrive_time, leave_time, thu_thuat, status, ngay_vao, gio_ban, loai_bn, buoi_dieu_tri) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(name) DO UPDATE SET age = excluded.age, room = excluded.room, arrive_time = excluded.arrive_time, leave_time = excluded.leave_time, thu_thuat = excluded.thu_thuat, ngay_vao = excluded.ngay_vao, gio_ban = excluded.gio_ban, loai_bn = excluded.loai_bn, buoi_dieu_tri = excluded.buoi_dieu_tri, updated_at = CURRENT_TIMESTAMP"
+          "INSERT INTO benh_nhan (name, age, gender, room, bed, arrive_time, leave_time, thu_thuat, status, ngay_vao, gio_ban, loai_bn, buoi_dieu_tri) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(name, age) DO UPDATE SET age = excluded.age, room = excluded.room, arrive_time = excluded.arrive_time, leave_time = excluded.leave_time, thu_thuat = excluded.thu_thuat, ngay_vao = excluded.ngay_vao, gio_ban = excluded.gio_ban, loai_bn = excluded.loai_bn, buoi_dieu_tri = excluded.buoi_dieu_tri, updated_at = CURRENT_TIMESTAMP"
         ).bind(
           String(p.ten || p.name || ""),
           parseInt(p.namSinh || p.age) || 0,
@@ -827,7 +828,7 @@ async function handleApiAction(action, args, env, request) {
 
       if (updateRes.meta && updateRes.meta.changes === 0) {
         await db.prepare(
-          "INSERT INTO benh_nhan (name, age, gender, room, bed, arrive_time, leave_time, thu_thuat, status, ngay_vao, gio_ban, loai_bn, buoi_dieu_tri) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(name) DO UPDATE SET age = excluded.age, gender = excluded.gender, room = excluded.room, bed = excluded.bed, arrive_time = excluded.arrive_time, leave_time = excluded.leave_time, thu_thuat = excluded.thu_thuat, status = excluded.status, ngay_vao = excluded.ngay_vao, gio_ban = excluded.gio_ban, loai_bn = excluded.loai_bn, buoi_dieu_tri = excluded.buoi_dieu_tri, updated_at = CURRENT_TIMESTAMP"
+          "INSERT INTO benh_nhan (name, age, gender, room, bed, arrive_time, leave_time, thu_thuat, status, ngay_vao, gio_ban, loai_bn, buoi_dieu_tri) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(name, age) DO UPDATE SET age = excluded.age, gender = excluded.gender, room = excluded.room, bed = excluded.bed, arrive_time = excluded.arrive_time, leave_time = excluded.leave_time, thu_thuat = excluded.thu_thuat, status = excluded.status, ngay_vao = excluded.ngay_vao, gio_ban = excluded.gio_ban, loai_bn = excluded.loai_bn, buoi_dieu_tri = excluded.buoi_dieu_tri, updated_at = CURRENT_TIMESTAMP"
         ).bind(
           patName,
           parseInt(p.namSinh || p.age) || 0,
@@ -964,7 +965,7 @@ async function handleApiAction(action, args, env, request) {
 
         const sql = replaceAll
           ? "INSERT INTO benh_nhan (name, age, gender, room, bed, arrive_time, leave_time, thu_thuat, status, ngay_vao, gio_ban, loai_bn, buoi_dieu_tri, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-          : "INSERT INTO benh_nhan (name, age, gender, room, bed, arrive_time, leave_time, thu_thuat, status, ngay_vao, gio_ban, loai_bn, buoi_dieu_tri, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(name) DO UPDATE SET age = excluded.age, gender = excluded.gender, room = excluded.room, bed = excluded.bed, arrive_time = excluded.arrive_time, leave_time = excluded.leave_time, thu_thuat = excluded.thu_thuat, status = excluded.status, ngay_vao = excluded.ngay_vao, gio_ban = excluded.gio_ban, loai_bn = excluded.loai_bn, buoi_dieu_tri = excluded.buoi_dieu_tri, order_idx = excluded.order_idx, updated_at = CURRENT_TIMESTAMP";
+          : "INSERT INTO benh_nhan (name, age, gender, room, bed, arrive_time, leave_time, thu_thuat, status, ngay_vao, gio_ban, loai_bn, buoi_dieu_tri, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(name, age) DO UPDATE SET age = excluded.age, gender = excluded.gender, room = excluded.room, bed = excluded.bed, arrive_time = excluded.arrive_time, leave_time = excluded.leave_time, thu_thuat = excluded.thu_thuat, status = excluded.status, ngay_vao = excluded.ngay_vao, gio_ban = excluded.gio_ban, loai_bn = excluded.loai_bn, buoi_dieu_tri = excluded.buoi_dieu_tri, order_idx = excluded.order_idx, updated_at = CURRENT_TIMESTAMP";
 
         insertStatements.push(
           db.prepare(sql).bind(

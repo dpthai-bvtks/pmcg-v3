@@ -644,6 +644,12 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   3. **Chốt sổ tự động & Định dạng 24h:** Khắc phục lỗi chốt sổ tự động không hoạt động. Chuyển đổi hai ô nhập thời gian (Giờ chốt sổ tự động & Giờ nhắc sao lưu) từ kiểu `<input type="time">` (phụ thuộc locale, hiển thị kiểu AM/PM hoặc CH/SA) sang `<input type="text">` kết hợp class `time-input` để hiển thị đồng bộ 24h dạng `HH:mm` (Ví dụ: `16:00`). Đồng thời thiết lập hàm tự động chốt sổ ngày cũ (`checkAutoChotSo`) ngay tại Worker backend mỗi khi có request đồng bộ, đảm bảo chốt sổ chính xác mà không cần cron-job client.
 - **File sửa đổi:** `index.html`, `js/app.js`, `js/scheduler-engine.js`, `backend/src/index.js` (v3.2.9)
 
+### Cập nhật 24/08/2026 (v3.3.9)
+- **Sửa lỗi trùng tên bệnh nhân khi nạp file HIS**:
+  - Chuyển đổi khóa ràng buộc duy nhất (`UNIQUE`) của bảng bệnh nhân (`benh_nhan`) từ đơn tiêu chí `name` thành bộ đôi tiêu chí `(name, age)` (tên và năm sinh/tuổi).
+  - Cập nhật các câu lệnh `ON CONFLICT(name)` của bảng bệnh nhân trong các API `addBenhNhan`, `editBenhNhan`, và `bulkUpdatePatients` thành `ON CONFLICT(name, age)`.
+  - Giúp hệ thống hỗ trợ nạp và quản lý đồng thời nhiều bệnh nhân trùng tên nhau nhưng khác năm sinh/tuổi mà không bị ghi đè hay xóa mất người cũ.
+
 ### Cập nhật 24/08/2026 (v3.3.8)
 - **Sửa lỗi reset buổi điều trị về Sáng khi lưu bệnh nhân**:
   - Gỡ bỏ hoàn toàn logic tự động gán buổi điều trị về Sáng/Chiều dựa trên giờ y lệnh của bệnh nhân cũ/mới trong hàm `savePatient()`. Giờ đây, mọi bệnh nhân khi thêm mới hoặc sửa qua UI sẽ luôn giữ nguyên trạng thái buổi điều trị là `TuDong` (Tự động) trừ khi có thiết lập khác trước đó.

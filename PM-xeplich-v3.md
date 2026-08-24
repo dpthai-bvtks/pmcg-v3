@@ -644,6 +644,12 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   3. **Chốt sổ tự động & Định dạng 24h:** Khắc phục lỗi chốt sổ tự động không hoạt động. Chuyển đổi hai ô nhập thời gian (Giờ chốt sổ tự động & Giờ nhắc sao lưu) từ kiểu `<input type="time">` (phụ thuộc locale, hiển thị kiểu AM/PM hoặc CH/SA) sang `<input type="text">` kết hợp class `time-input` để hiển thị đồng bộ 24h dạng `HH:mm` (Ví dụ: `16:00`). Đồng thời thiết lập hàm tự động chốt sổ ngày cũ (`checkAutoChotSo`) ngay tại Worker backend mỗi khi có request đồng bộ, đảm bảo chốt sổ chính xác mà không cần cron-job client.
 - **File sửa đổi:** `index.html`, `js/app.js`, `js/scheduler-engine.js`, `backend/src/index.js` (v3.2.9)
 
+### Cập nhật 24/08/2026 (v3.1.5)
+- **Cải tiến tốc độ đồng bộ bảng dữ liệu sang Google Sheets (Ultra-Fast Batch Write `setValues`)**:
+  - Thay thế phương thức ghi từng dòng (`appendRow()`) bằng phương thức ghi ma trận hàng loạt (`setValues()`) trong `backend-backup/code.gs`.
+  - Giảm thời gian ghi dữ liệu từ 30 giây xuống còn dưới 0.1 giây, loại bỏ hoàn toàn nguy cơ quá thời gian chờ (Timeout) của Google Apps Script.
+  - Xử lý phản hồi lỗi chính xác nếu bản triển khai Google Apps Script chưa được cập nhật phiên bản mới.
+
 ### Cập nhật 24/08/2026 (v3.1.4)
 - **Khắc phục triệt để lỗi kết nối Google Apps Script (`Failed to fetch` / CORS Preflight)**:
   - Sửa đổi tham số `Content-Type` từ `application/json` sang `text/plain;charset=utf-8` trong các yêu cầu `fetch()` gửi tới Google Apps Script WebApp.

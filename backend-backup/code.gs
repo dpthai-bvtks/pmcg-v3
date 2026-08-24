@@ -1,5 +1,5 @@
 /**
- * GOOGLE APPS SCRIPT BACKUP SERVER CHO XEPLICHTHUTHUAT V3
+ * GOOGLE APPS SCRIPT BACKUP SERVER CHO XEPLICHTHUTHUAT V3 (BẢN V3.1.5)
  * Máy chủ dự phòng 100% tự động khi Cloudflare Worker + D1 gặp sự cố 500 / Overload.
  * Đóng vai trò làm Mirror API đọc/ghi vào Google Sheets.
  */
@@ -67,10 +67,10 @@ function handleApiRequest(action, args) {
 
       case 'saveBootstrapBackup':
         saveAllBootstrapToSheets(ss, args[0]);
-        return { status: 'success', data: 'Đã đồng bộ toàn bộ dữ liệu sang Google Sheets' };
+        return { status: 'success', data: 'Đã đồng bộ toàn bộ dữ liệu sang Google Sheets thành công!' };
 
       default:
-        return { status: 'success', data: 'Backup Server Ok: ' + action };
+        return { status: 'error', error: 'Hành động không hợp lệ: ' + action };
     }
   } catch (err) {
     return { status: 'error', error: 'Backup Error: ' + err.toString() };
@@ -78,20 +78,13 @@ function handleApiRequest(action, args) {
 }
 
 function getBootstrapDataFromSheets(ss, dateVal) {
-  var pat = readSheetData(ss, 'BenhNhan');
-  var staff = readSheetData(ss, 'NhanSu');
-  var machines = readSheetData(ss, 'MayMoc');
-  var rooms = readSheetData(ss, 'Phong');
-  var procedures = readSheetData(ss, 'ThuThuat');
-  var schedule = readSheetData(ss, 'LichTrinh');
-
   return {
-    pat: pat,
-    staff: staff,
-    machines: machines,
-    rooms: rooms,
-    procedures: procedures,
-    schedule: schedule,
+    pat: readSheetData(ss, 'BenhNhan'),
+    staff: readSheetData(ss, 'NhanSu'),
+    machines: readSheetData(ss, 'MayMoc'),
+    rooms: readSheetData(ss, 'Phong'),
+    procedures: readSheetData(ss, 'ThuThuat'),
+    schedule: readSheetData(ss, 'LichTrinh'),
     serverTime: new Date().toISOString()
   };
 }
@@ -146,10 +139,12 @@ function saveScheduleToSheet(ss, dateVal, schedList) {
     sheet = ss.insertSheet('LichTrinh');
     sheet.appendRow(['Ngay', 'TenBN', 'NamSinh', 'Phong', 'ThuThuat', 'GioDienRa', 'GioKetThuc', 'NVChinh', 'NVPhu', 'May', 'Giuong']);
   }
-  if (Array.isArray(schedList)) {
+  if (Array.isArray(schedList) && schedList.length > 0) {
+    var matrix = [];
     for (var i = 0; i < schedList.length; i++) {
-      sheet.appendRow(schedList[i]);
+      matrix.push(schedList[i]);
     }
+    sheet.getRange(sheet.getLastRow() + 1, 1, matrix.length, matrix[0].length).setValues(matrix);
   }
 }
 
@@ -170,16 +165,29 @@ function writeListToSheet(ss, sheetName, list) {
 
   if (!list || list.length === 0) return;
   var firstItem = list[0];
-  var headers = Array.isArray(firstItem) ? [] : Object.keys(firstItem);
+  var matrix = [];
   
-  if (headers.length > 0) {
-    sheet.appendRow(headers);
+  if (!Array.isArray(firstItem) && typeof firstItem === 'object') {
+    var headers = Object.keys(firstItem);
+    matrix.push(headers);
     for (var i = 0; i < list.length; i++) {
+      var item = list[i] || {};
       var row = [];
-      for (var h = 0; h < headers.length; h++) row.push(list[i][headers[h]] || '');
-      sheet.appendRow(row);
+      for (var h = 0; h < headers.length; h++) {
+        var val = item[headers[h]];
+        if (val === null || val === undefined) val = '';
+        else if (typeof val === 'object') val = JSON.stringify(val);
+        row.push(val);
+      }
+      matrix.push(row);
     }
   } else if (Array.isArray(firstItem)) {
-    for (var i = 0; i < list.length; i++) sheet.appendRow(list[i]);
+    for (var i = 0; i < list.length; i++) {
+      matrix.push(list[i] || []);
+    }
+  }
+
+  if (matrix.length > 0 && matrix[0].length > 0) {
+    sheet.getRange(1, 1, matrix.length, matrix[0].length).setValues(matrix);
   }
 }

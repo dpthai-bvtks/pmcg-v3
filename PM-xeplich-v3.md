@@ -644,6 +644,12 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   3. **Chốt sổ tự động & Định dạng 24h:** Khắc phục lỗi chốt sổ tự động không hoạt động. Chuyển đổi hai ô nhập thời gian (Giờ chốt sổ tự động & Giờ nhắc sao lưu) từ kiểu `<input type="time">` (phụ thuộc locale, hiển thị kiểu AM/PM hoặc CH/SA) sang `<input type="text">` kết hợp class `time-input` để hiển thị đồng bộ 24h dạng `HH:mm` (Ví dụ: `16:00`). Đồng thời thiết lập hàm tự động chốt sổ ngày cũ (`checkAutoChotSo`) ngay tại Worker backend mỗi khi có request đồng bộ, đảm bảo chốt sổ chính xác mà không cần cron-job client.
 - **File sửa đổi:** `index.html`, `js/app.js`, `js/scheduler-engine.js`, `backend/src/index.js` (v3.2.9)
 
+### Cập nhật 24/08/2026 (v3.3.3)
+- **Bảo toàn phân loại Nội/Ngoại trú khi nhập Excel/HIS**:
+  1. Khi nhập danh sách bệnh nhân từ HIS hoặc Excel bình thường mà **không có cột Đối tượng/Loại điều trị**, hệ thống sẽ tự động đối chiếu và **giữ nguyên phân loại Nội trú / Ngoại trú** hiện có của bệnh nhân trong cơ sở dữ liệu thay vì ghi đè hết về Nội trú như trước.
+  2. Hỗ trợ tự động nhận diện cột Loại điều trị trong HIS nếu có các tiêu đề cột như: *Loại ĐT, Loại điều trị, Hình thức điều trị, Đối tượng, Nội/Ngoại trú*.
+  3. Bảo toàn các trường thông tin khác như *Trạng thái xếp lịch, Giới tính, Số giường* và *Thứ tự kéo thả* khi cập nhật từ file Excel/HIS.
+
 ### Cập nhật 23/08/2026 (v3.3.2)
 - **Ưu tiên Ngoại trú khi cùng ngày**: Khi bệnh nhân có cùng ngày vào viện, hệ thống sẽ tự động xếp các bệnh nhân **Ngoại trú lên trước** bệnh nhân **Nội trú** trong bảng danh sách bệnh nhân chính.
 

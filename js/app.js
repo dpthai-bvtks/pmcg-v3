@@ -6255,16 +6255,47 @@ window.showGlobalLoading = function (text) {
                     const workbook = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' });
                     const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
 
-                    const patientList = rows.slice(1).filter(r => r[1]).map(r => ({
-                        ten: String(r[1] || '').trim(),
-                        namSinh: String(r[2] || '').trim(),
-                        ngayVao: String(r[3] || '').trim(),
-                        gioVao: String(r[4] || '').trim(),
-                        gioBan: String(r[5] || '').trim(),
-                        gioRa: String(r[6] || '').trim(),
-                        phong: String(r[7] || '').trim(),
-                        thuThuat: String(r[8] || '').trim()
-                    })).filter(p => p.ten);
+                    function buildMatchKeyLocal(t, ns) {
+                        const cleanTen = String(t || '')
+                            .normalize('NFD')
+                            .replace(/[\u0300-\u036f]/g, '')
+                            .replace(/đ/g, 'd')
+                            .replace(/Đ/g, 'd')
+                            .toLowerCase()
+                            .replace(/[^a-z0-9]/g, '');
+                        const cleanNS = String(ns || '').trim();
+                        return cleanTen + '|' + cleanNS;
+                    }
+
+                    const existingPats = (dataCache && dataCache.pat) ? dataCache.pat : [];
+                    const existingMap = {};
+                    existingPats.forEach(p => {
+                        const k = buildMatchKeyLocal(p.ten, p.namSinh);
+                        existingMap[k] = p;
+                    });
+
+                    const patientList = rows.slice(1).filter(r => r[1]).map(r => {
+                        const ten = String(r[1] || '').trim();
+                        const namSinh = String(r[2] || '').trim();
+                        const key = buildMatchKeyLocal(ten, namSinh);
+                        const existing = existingMap[key];
+                        return {
+                            ten: ten,
+                            namSinh: namSinh,
+                            ngayVao: String(r[3] || '').trim(),
+                            gioVao: String(r[4] || '').trim(),
+                            gioBan: String(r[5] || '').trim(),
+                            gioRa: String(r[6] || '').trim(),
+                            phong: String(r[7] || '').trim(),
+                            thuThuat: String(r[8] || '').trim(),
+                            loai_bn: r[9] ? String(r[9]).trim() : (existing ? (existing.loai_bn || existing.loaiBN || 'NoiTru') : 'NoiTru'),
+                            buoi_dieu_tri: r[10] ? String(r[10]).trim() : (existing ? (existing.buoi_dieu_tri || existing.buoiDieuTri || 'TuDong') : 'TuDong'),
+                            status: existing ? (existing.status || existing.trangThai || 'Chưa xếp') : 'Chưa xếp',
+                            gender: existing ? (existing.gender || existing.gioiTinh || 'Nam') : 'Nam',
+                            bed: existing ? (existing.bed || existing.giuong || '') : '',
+                            order_idx: existing ? (existing.order_idx !== undefined ? Number(existing.order_idx) : 0) : 0
+                        };
+                    }).filter(p => p.ten);
 
                     const replaceAll = confirm("Bác sĩ có muốn THAY THẾ TOÀN BỘ danh sách hiện tại không?\n\n- OK: Xóa sạch, nạp mới.\n- Cancel: Bổ sung thêm.");
 
@@ -6409,6 +6440,8 @@ window.showGlobalLoading = function (text) {
                                         cn === 'nam_sinh' || cn === 'namsanh' || cn.includes('birth')) colNamSinh = idx;
                                     else if (cn.includes('dich vu') || cn.includes('thu thuat') || cn.includes('ten dvkt') ||
                                         cn === 'dichvu' || cn === 'dich_vu' || cn.includes('service') || cn.includes('procedure')) colDichVu = idx;
+                                    else if (cn.includes('doi tuong') || cn.includes('loai dt') || cn.includes('loai dieu tri') ||
+                                        cn.includes('hinh thuc') || cn.includes('noi/ngoai') || cn === 'loai_bn') colLoaiDieuTri = idx;
                                 });
                                 break;
                             }
@@ -6492,9 +6525,18 @@ window.showGlobalLoading = function (text) {
                             const k = buildMatchKey(p.ten, p.namSinh);
                             if (hisMap[k]) {
                                 updatedCount++;
-                                return { ...p, thuThuat: [...hisMap[k].procs].join(',') };
+                                return { 
+                                    ...p, 
+                                    thuThuat: [...hisMap[k].procs].join(','),
+                                    loai_bn: (colLoaiDieuTri >= 0) ? hisMap[k].loaiBn : (p.loai_bn || p.loaiBN || 'NoiTru'),
+                                    buoi_dieu_tri: (colLoaiDieuTri >= 0) ? hisMap[k].buoiDieuTri : (p.buoi_dieu_tri || p.buoiDieuTri || 'TuDong')
+                                };
                             }
-                            return { ...p };
+                            return { 
+                                ...p,
+                                loai_bn: p.loai_bn || p.loaiBN || 'NoiTru',
+                                buoi_dieu_tri: p.buoi_dieu_tri || p.buoiDieuTri || 'TuDong'
+                            };
                         });
                         Object.values(hisMap).forEach(hisPat => {
                             const k = buildMatchKey(hisPat.ten, hisPat.namSinh);
@@ -6562,7 +6604,13 @@ window.showGlobalLoading = function (text) {
                                 gioBan: String(p.gioBan || p.gio_ban || '').trim(),
                                 gioRa: String(p.gioRa || p.leave_time || '').trim(),
                                 phong: String(p.phong || p.room || '').trim(),
-                                thuThuat: String(p.thuThuat || '').trim()
+                                thuThuat: String(p.thuThuat || '').trim(),
+                                loai_bn: String(p.loai_bn || p.loaiBN || 'NoiTru').trim(),
+                                buoi_dieu_tri: String(p.buoi_dieu_tri || p.buoiDieuTri || 'TuDong').trim(),
+                                status: String(p.status || p.trangThai || 'Chưa xếp').trim(),
+                                gender: String(p.gender || p.gioiTinh || 'Nam').trim(),
+                                bed: String(p.bed || p.giuong || '').trim(),
+                                order_idx: p.order_idx !== undefined ? Number(p.order_idx) : 0
                             })).filter(p => p.ten);
 
                             savePatientsWithFallback(

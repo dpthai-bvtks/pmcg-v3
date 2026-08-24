@@ -2040,6 +2040,16 @@ window.showGlobalLoading = function (text) {
             return new Date(y, m, d).getTime();
         }
 
+        function getGioVaoMinutes(gStr) {
+            if (!gStr || typeof gStr !== 'string' || !gStr.includes(':')) {
+                return 7 * 60 + 30; // 07:30 mặc định
+            }
+            const parts = gStr.split(':');
+            const h = parseInt(parts[0], 10) || 0;
+            const m = parseInt(parts[1], 10) || 0;
+            return h * 60 + m;
+        }
+
         // ============================================================
 
         // ⚙️ 1. MÁY MÓC
@@ -2845,23 +2855,33 @@ window.showGlobalLoading = function (text) {
             }
             if (_patSortMode === 1) {
                 displayPatList.sort((a, b) => {
-                    const diff = parseNgayVao(b.ngayVao || '') - parseNgayVao(a.ngayVao || '');
-                    if (diff !== 0) return diff;
-                    const aLoai = a.loai_bn || 'NoiTru';
-                    const bLoai = b.loai_bn || 'NoiTru';
-                    if (aLoai === 'NgoaiTru' && bLoai !== 'NgoaiTru') return -1;
-                    if (bLoai === 'NgoaiTru' && aLoai !== 'NgoaiTru') return 1;
-                    return a._origIndex - b._origIndex;
+                    // 1. Ngày vào (Mới -> Cũ)
+                    const dateA = parseNgayVao(a.ngayVao || '');
+                    const dateB = parseNgayVao(b.ngayVao || '');
+                    if (dateA !== dateB) return dateB - dateA;
+
+                    // 2. Giờ vào (Muộn -> Sớm)
+                    const timeA = getGioVaoMinutes(a.gioVao || '');
+                    const timeB = getGioVaoMinutes(b.gioVao || '');
+                    if (timeA !== timeB) return timeB - timeA;
+
+                    // 3. Tên từ Z-A
+                    return (b.ten || '').localeCompare(a.ten || '', 'vi');
                 });
             } else if (_patSortMode === 2) {
                 displayPatList.sort((a, b) => {
-                    const diff = parseNgayVao(a.ngayVao || '') - parseNgayVao(b.ngayVao || '');
-                    if (diff !== 0) return diff;
-                    const aLoai = a.loai_bn || 'NoiTru';
-                    const bLoai = b.loai_bn || 'NoiTru';
-                    if (aLoai === 'NgoaiTru' && bLoai !== 'NgoaiTru') return -1;
-                    if (bLoai === 'NgoaiTru' && aLoai !== 'NgoaiTru') return 1;
-                    return a._origIndex - b._origIndex;
+                    // 1. Ngày vào (Cũ -> Mới)
+                    const dateA = parseNgayVao(a.ngayVao || '');
+                    const dateB = parseNgayVao(b.ngayVao || '');
+                    if (dateA !== dateB) return dateA - dateB;
+
+                    // 2. Giờ vào (Sớm -> Muộn)
+                    const timeA = getGioVaoMinutes(a.gioVao || '');
+                    const timeB = getGioVaoMinutes(b.gioVao || '');
+                    if (timeA !== timeB) return timeA - timeB;
+
+                    // 3. Tên từ A-Z
+                    return (a.ten || '').localeCompare(b.ten || '', 'vi');
                 });
             } else {
                 displayPatList.sort((a, b) => a._origIndex - b._origIndex);
@@ -6528,8 +6548,8 @@ window.showGlobalLoading = function (text) {
                                 return { 
                                     ...p, 
                                     thuThuat: [...hisMap[k].procs].join(','),
-                                    loai_bn: (colLoaiDieuTri >= 0) ? hisMap[k].loaiBn : (p.loai_bn || p.loaiBN || 'NoiTru'),
-                                    buoi_dieu_tri: (colLoaiDieuTri >= 0) ? hisMap[k].buoiDieuTri : (p.buoi_dieu_tri || p.buoiDieuTri || 'TuDong')
+                                    loai_bn: p.loai_bn || p.loaiBN || 'NoiTru',
+                                    buoi_dieu_tri: p.buoi_dieu_tri || p.buoiDieuTri || 'TuDong'
                                 };
                             }
                             return { 

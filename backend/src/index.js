@@ -793,6 +793,7 @@ async function handleApiAction(action, args, env, request) {
         phong: args[offset + 6],
         thuThuat: args[offset + 7],
         oldTen: args[offset + 8] || args[offset],
+        oldNamSinh: args[offset + 9] || args[offset + 1],
         loai_bn: args[offset + 10],
         buoi_dieu_tri: args[offset + 11]
       };
@@ -800,10 +801,11 @@ async function handleApiAction(action, args, env, request) {
       const procs = typeof p.thuThuat === "string" ? p.thuThuat.split(",").map(x => ({ name: x.trim(), status: "Chưa xếp" })).filter(x => x.name) : (p.thu_thuat || []);
       const patName = String(p.ten || p.name || "").trim();
       const targetName = String(p.oldTen || patName).trim();
+      const targetAge = parseInt(p.oldNamSinh || p.namSinh || p.age) || 0;
       const versionVal = String(Date.now());
 
       const updateStmt = db.prepare(
-        "UPDATE benh_nhan SET name = ?, age = ?, gender = ?, room = ?, bed = ?, arrive_time = ?, leave_time = ?, thu_thuat = ?, status = ?, ngay_vao = ?, gio_ban = ?, loai_bn = ?, buoi_dieu_tri = ?, updated_at = CURRENT_TIMESTAMP WHERE name = ?"
+        "UPDATE benh_nhan SET name = ?, age = ?, gender = ?, room = ?, bed = ?, arrive_time = ?, leave_time = ?, thu_thuat = ?, status = ?, ngay_vao = ?, gio_ban = ?, loai_bn = ?, buoi_dieu_tri = ?, updated_at = CURRENT_TIMESTAMP WHERE name = ? AND age = ?"
       ).bind(
         patName,
         parseInt(p.namSinh || p.age) || 0,
@@ -818,7 +820,8 @@ async function handleApiAction(action, args, env, request) {
         String(p.gioBan || ""),
         String(p.loai_bn || "NoiTru"),
         String(p.buoi_dieu_tri || "TuDong"),
-        targetName
+        targetName,
+        targetAge
       );
 
       const bumpStmt = db.prepare("INSERT INTO cai_dat (key, value) VALUES ('data_version', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(versionVal);

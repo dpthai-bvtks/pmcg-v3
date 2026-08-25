@@ -2,23 +2,23 @@
    T.I.M.E.S SYSTEM - THỐNG KÊ HIS & EXCEL EXPORT
    ========================================== */
 
-// ==========================================
-        // QUẢN LÝ NHÂN SỰ CHẤM CÔNG (TỪ PM CŨ)
+        // ==========================================
+        // QUẢN LÝ NHÂN SỰ CHẤM CÔNG (HỌ VÀ TÊN ĐẦY ĐỦ CHUẨN BVTKS CS2)
         // ==========================================
         const DEFAULT_CHAMCONG_STAFF = {
-            'KTV Lương': { keys: ['nguyễn thị xuân lương', 'ktv lương'], skills: 'PHCN', role: 'KTV', heSo: 1.0 },
-            'KTV Hà': { keys: ['nguyễn thị hà', 'ktv hà chip', 'ktv hà'], skills: 'PHCN', role: 'KTV', heSo: 1.0 },
-            'KTV Phan Hiền': { keys: ['phan thị thu hiền', 'ktv phan hiền'], skills: 'PHCN', role: 'KTV', heSo: 1.0 },
-            'KTV Lê Hiền': { keys: ['lê thị thu hiền', 'ktv lê hiền', 'ltv lê hiền'], skills: 'PHCN', role: 'KTV', heSo: 1.0 },
-            'KTV Khính': { keys: ['nguyễn văn khính', 'ktv khính'], skills: 'PHCN', role: 'KTV', heSo: 1.0 },
-            'ĐD Thuyến': { keys: ['phạm thị thuyến', 'đd thuyến', 'ktv thuyến'], skills: 'PHCN', role: 'Điều dưỡng', heSo: 1.0 },
-            'ĐD Duyên': { keys: ['trần thị duyên', 'đd duyên', 'ktv duyên'], skills: 'PHCN', role: 'Điều dưỡng', heSo: 1.0 },
-            'BS Đạt': { keys: ['hoàng đức đạt', 'bs đạt'], skills: 'Cả hai', role: 'Bác sĩ', heSo: 1.0 },
-            'BS Hoa': { keys: ['lê thị thu hoa', 'bs hoa'], skills: 'Cả hai', role: 'Bác sĩ', heSo: 1.0 },
-            'BS Thảo': { keys: ['nguyễn thị duyên thảo', 'bs thảo', 'bs thảo 2'], skills: 'Cả hai', role: 'Bác sĩ', heSo: 1.0 },
-            'BS Hằng': { keys: ['nguyễn thu hằng', 'bs hằng'], skills: 'Cả hai', role: 'Bác sĩ', heSo: 1.0 },
-            'BS Thái': { keys: ['đặng phong thái', 'bs thái'], skills: 'YHCT', role: 'Bác sĩ', heSo: 1.0 },
-            'BS Khuyến': { keys: ['phạm thạch khuyến', 'bs khuyến'], skills: 'YHCT', role: 'Bác sĩ', heSo: 1.0 }
+            'Hoàng Đức Đạt': { keys: ['hoàng đức đạt', 'bs đạt', 'bs dat', 'đạt'], skills: 'Cả hai', role: 'Bác sĩ', heSo: 1.0 },
+            'Lê Thị Thu Hoa': { keys: ['lê thị thu hoa', 'bs hoa', 'thu hoa', 'hoa'], skills: 'Cả hai', role: 'Bác sĩ', heSo: 1.0 },
+            'Nguyễn Thị Duyên Thảo': { keys: ['nguyễn thị duyên thảo', 'bs thảo', 'bs thảo 2', 'duyên thảo', 'thảo'], skills: 'Cả hai', role: 'Bác sĩ', heSo: 1.0 },
+            'Nguyễn Thu Hằng': { keys: ['nguyễn thu hằng', 'bs hằng', 'thu hằng', 'hằng'], skills: 'Cả hai', role: 'Bác sĩ', heSo: 1.0 },
+            'Đặng Phong Thái': { keys: ['đặng phong thái', 'bs thái', 'phong thái', 'thái'], skills: 'YHCT', role: 'Bác sĩ', heSo: 1.0 },
+            'Phạm Thạch Khuyến': { keys: ['phạm thạch khuyến', 'bs khuyến', 'thạch khuyến', 'khuyến'], skills: 'YHCT', role: 'Bác sĩ', heSo: 1.0 },
+            'Nguyễn Thị Xuân Lương': { keys: ['nguyễn thị xuân lương', 'ktv lương', 'xuân lương', 'lương'], skills: 'PHCN', role: 'KTV', heSo: 1.0 },
+            'Nguyễn Thị Hà': { keys: ['nguyễn thị hà', 'ktv hà chip', 'ktv hà', 'hà chip', 'hà'], skills: 'PHCN', role: 'KTV', heSo: 1.0 },
+            'Phan Thị Thu Hiền': { keys: ['phan thị thu hiền', 'ktv phan hiền', 'phan hiền'], skills: 'PHCN', role: 'KTV', heSo: 1.0 },
+            'Lê Thị Thu Hiền': { keys: ['lê thị thu hiền', 'ktv lê hiền', 'ltv lê hiền', 'lê hiền'], skills: 'PHCN', role: 'KTV', heSo: 1.0 },
+            'Nguyễn Văn Khính': { keys: ['nguyễn văn khính', 'ktv khính', 'khính'], skills: 'PHCN', role: 'KTV', heSo: 1.0 },
+            'Phạm Thị Thuyến': { keys: ['phạm thị thuyến', 'đd thuyến', 'ktv thuyến', 'thuyến'], skills: 'PHCN', role: 'Điều dưỡng', heSo: 1.0 },
+            'Trần Thị Duyên': { keys: ['trần thị duyên', 'đd duyên', 'ktv duyên', 'duyên'], skills: 'PHCN', role: 'Điều dưỡng', heSo: 1.0 }
         };
 
         function getEmployeeRole(empName) {
@@ -31,9 +31,8 @@
                 return DEFAULT_CHAMCONG_STAFF[name].role;
             }
             const lower = name.toLowerCase();
-            if (lower.startsWith('bs') || lower.includes('bác sĩ') || lower.includes('bac si')) return 'Bác sĩ';
-            if (lower.startsWith('ktv') || lower.includes('kỹ thuật viên') || lower.includes('ky thuat vien')) return 'KTV';
-            if (lower.startsWith('đd') || lower.startsWith('dd') || lower.includes('điều dưỡng') || lower.includes('dieu duong')) return 'Điều dưỡng';
+            if (lower.includes('đạt') || lower.includes('hoa') || lower.includes('thảo') || lower.includes('hằng') || lower.includes('thái') || lower.includes('khuyến') || lower.startsWith('bs') || lower.includes('bác sĩ')) return 'Bác sĩ';
+            if (lower.includes('thuyến') || lower.includes('duyên') || lower.startsWith('đd') || lower.startsWith('dd') || lower.includes('điều dưỡng')) return 'Điều dưỡng';
             return 'KTV';
         }
 

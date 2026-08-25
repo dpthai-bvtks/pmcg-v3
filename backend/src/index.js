@@ -1445,26 +1445,21 @@ async function handleApiAction(action, args, env, request, ctx) {
       if (rec && rec.value) {
         try {
           const list = JSON.parse(rec.value);
-          if (Array.isArray(list) && list.length > 0 && !list.includes("Phụ 4")) return success(list);
+          if (Array.isArray(list) && list.length > 0 && !list.includes("Phụ 4") && list.some(n => n.includes(" "))) return success(list);
         } catch(e) {}
       }
       const defaultList = [
-        "BS Đạt", "BS Hoa", "BS Thảo", "BS Hằng", "BS Thái", "BS Khuyến",
-        "KTV Lương", "KTV Hà", "KTV Phan Hiền", "KTV Lê Hiền", "KTV Khính",
-        "ĐD Thuyến", "ĐD Duyên"
+        "Hoàng Đức Đạt", "Lê Thị Thu Hoa", "Nguyễn Thị Duyên Thảo", "Nguyễn Thu Hằng",
+        "Đặng Phong Thái", "Phạm Thạch Khuyến", "Nguyễn Thị Xuân Lương", "Nguyễn Thị Hà",
+        "Phan Thị Thu Hiền", "Lê Thị Thu Hiền", "Nguyễn Văn Khính", "Phạm Thị Thuyến", "Trần Thị Duyên"
       ];
       await db.prepare("INSERT OR REPLACE INTO cai_dat (key, value) VALUES ('chamcong_employees', ?)").bind(JSON.stringify(defaultList)).run();
       return success(defaultList);
     }
 
     case "saveEmployees": {
-      let list = args[0] || [];
-      if (typeof list === "object" && list !== null && !Array.isArray(list)) {
-        list = list.employees || list.list || [];
-      }
-      await db.prepare("INSERT INTO cai_dat (key, value) VALUES ('chamcong_employees', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
-        .bind(JSON.stringify(list)).run();
-      await bumpDataVersion(db);
+      const list = args[0] || [];
+      await db.prepare("INSERT OR REPLACE INTO cai_dat (key, value) VALUES ('chamcong_employees', ?)").bind(JSON.stringify(list)).run();
       return success({ message: "Đã lưu danh sách nhân sự chấm công thành công!" });
     }
 
@@ -1473,23 +1468,23 @@ async function handleApiAction(action, args, env, request, ctx) {
       if (rec && rec.value) {
         try {
           const cfg = JSON.parse(rec.value);
-          if (cfg && cfg.staff && Object.keys(cfg.staff).length > 0 && !cfg.staff['Phụ 4']) return success(cfg);
+          if (cfg && cfg.staff && Object.keys(cfg.staff).length > 0 && !cfg.staff['Phụ 4'] && Object.keys(cfg.staff).some(n => n.includes(" "))) return success(cfg);
         } catch(e) {}
       }
       const defaultStaff = {
-        'BS Đạt': { keys: ['hoàng đức đạt', 'bs đạt'], skills: 'Cả hai', role: 'Bác sĩ', heSo: 1.0 },
-        'BS Hoa': { keys: ['lê thị thu hoa', 'bs hoa'], skills: 'Cả hai', role: 'Bác sĩ', heSo: 1.0 },
-        'BS Thảo': { keys: ['nguyễn thị duyên thảo', 'bs thảo', 'bs thảo 2'], skills: 'Cả hai', role: 'Bác sĩ', heSo: 1.0 },
-        'BS Hằng': { keys: ['nguyễn thu hằng', 'bs hằng'], skills: 'Cả hai', role: 'Bác sĩ', heSo: 1.0 },
-        'BS Thái': { keys: ['đặng phong thái', 'bs thái'], skills: 'YHCT', role: 'Bác sĩ', heSo: 1.0 },
-        'BS Khuyến': { keys: ['phạm thạch khuyến', 'bs khuyến'], skills: 'YHCT', role: 'Bác sĩ', heSo: 1.0 },
-        'KTV Lương': { keys: ['nguyễn thị xuân lương', 'ktv lương'], skills: 'PHCN', role: 'KTV', heSo: 1.0 },
-        'KTV Hà': { keys: ['nguyễn thị hà', 'ktv hà chip', 'ktv hà'], skills: 'PHCN', role: 'KTV', heSo: 1.0 },
-        'KTV Phan Hiền': { keys: ['phan thị thu hiền', 'ktv phan hiền'], skills: 'PHCN', role: 'KTV', heSo: 1.0 },
-        'KTV Lê Hiền': { keys: ['lê thị thu hiền', 'ktv lê hiền', 'ltv lê hiền'], skills: 'PHCN', role: 'KTV', heSo: 1.0 },
-        'KTV Khính': { keys: ['nguyễn văn khính', 'ktv khính'], skills: 'PHCN', role: 'KTV', heSo: 1.0 },
-        'ĐD Thuyến': { keys: ['phạm thị thuyến', 'đd thuyến', 'ktv thuyến'], skills: 'PHCN', role: 'Điều dưỡng', heSo: 1.0 },
-        'ĐD Duyên': { keys: ['trần thị duyên', 'đd duyên', 'ktv duyên'], skills: 'PHCN', role: 'Điều dưỡng', heSo: 1.0 }
+        'Hoàng Đức Đạt': { keys: ['hoàng đức đạt', 'bs đạt', 'bs dat', 'đạt'], skills: 'Cả hai', role: 'Bác sĩ', heSo: 1.0 },
+        'Lê Thị Thu Hoa': { keys: ['lê thị thu hoa', 'bs hoa', 'thu hoa', 'hoa'], skills: 'Cả hai', role: 'Bác sĩ', heSo: 1.0 },
+        'Nguyễn Thị Duyên Thảo': { keys: ['nguyễn thị duyên thảo', 'bs thảo', 'bs thảo 2', 'duyên thảo', 'thảo'], skills: 'Cả hai', role: 'Bác sĩ', heSo: 1.0 },
+        'Nguyễn Thu Hằng': { keys: ['nguyễn thu hằng', 'bs hằng', 'thu hằng', 'hằng'], skills: 'Cả hai', role: 'Bác sĩ', heSo: 1.0 },
+        'Đặng Phong Thái': { keys: ['đặng phong thái', 'bs thái', 'phong thái', 'thái'], skills: 'YHCT', role: 'Bác sĩ', heSo: 1.0 },
+        'Phạm Thạch Khuyến': { keys: ['phạm thạch khuyến', 'bs khuyến', 'thạch khuyến', 'khuyến'], skills: 'YHCT', role: 'Bác sĩ', heSo: 1.0 },
+        'Nguyễn Thị Xuân Lương': { keys: ['nguyễn thị xuân lương', 'ktv lương', 'xuân lương', 'lương'], skills: 'PHCN', role: 'KTV', heSo: 1.0 },
+        'Nguyễn Thị Hà': { keys: ['nguyễn thị hà', 'ktv hà chip', 'ktv hà', 'hà chip', 'hà'], skills: 'PHCN', role: 'KTV', heSo: 1.0 },
+        'Phan Thị Thu Hiền': { keys: ['phan thị thu hiền', 'ktv phan hiền', 'phan hiền'], skills: 'PHCN', role: 'KTV', heSo: 1.0 },
+        'Lê Thị Thu Hiền': { keys: ['lê thị thu hiền', 'ktv lê hiền', 'ltv lê hiền', 'lê hiền'], skills: 'PHCN', role: 'KTV', heSo: 1.0 },
+        'Nguyễn Văn Khính': { keys: ['nguyễn văn khính', 'ktv khính', 'khính'], skills: 'PHCN', role: 'KTV', heSo: 1.0 },
+        'Phạm Thị Thuyến': { keys: ['phạm thị thuyến', 'đd thuyến', 'ktv thuyến', 'thuyến'], skills: 'PHCN', role: 'Điều dưỡng', heSo: 1.0 },
+        'Trần Thị Duyên': { keys: ['trần thị duyên', 'đd duyên', 'ktv duyên', 'duyên'], skills: 'PHCN', role: 'Điều dưỡng', heSo: 1.0 }
       };
       const defaultCfg = { staff: defaultStaff };
       await db.prepare("INSERT OR REPLACE INTO cai_dat (key, value) VALUES ('error_config', ?)").bind(JSON.stringify(defaultCfg)).run();

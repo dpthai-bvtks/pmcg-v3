@@ -22,15 +22,18 @@
         };
 
         function getEmployeeRole(empName) {
-            if (adminChamCongStaffConfig && adminChamCongStaffConfig[empName] && adminChamCongStaffConfig[empName].role) {
-                return adminChamCongStaffConfig[empName].role;
+            if (!empName) return 'KTV';
+            const name = String(empName).trim();
+            if (adminChamCongStaffConfig && adminChamCongStaffConfig[name] && adminChamCongStaffConfig[name].role) {
+                return adminChamCongStaffConfig[name].role;
             }
-            if (DEFAULT_CHAMCONG_STAFF[empName] && DEFAULT_CHAMCONG_STAFF[empName].role) {
-                return DEFAULT_CHAMCONG_STAFF[empName].role;
+            if (DEFAULT_CHAMCONG_STAFF[name] && DEFAULT_CHAMCONG_STAFF[name].role) {
+                return DEFAULT_CHAMCONG_STAFF[name].role;
             }
-            if (empName.startsWith('BS') || empName.toLowerCase().includes('bác sĩ')) return 'Bác sĩ';
-            if (empName.startsWith('KTV') || empName.toLowerCase().includes('kỹ thuật viên')) return 'KTV';
-            if (empName.startsWith('ĐD') || empName.toLowerCase().includes('điều dưỡng')) return 'Điều dưỡng';
+            const lower = name.toLowerCase();
+            if (lower.startsWith('bs') || lower.includes('bác sĩ') || lower.includes('bac si')) return 'Bác sĩ';
+            if (lower.startsWith('ktv') || lower.includes('kỹ thuật viên') || lower.includes('ky thuat vien')) return 'KTV';
+            if (lower.startsWith('đd') || lower.startsWith('dd') || lower.includes('điều dưỡng') || lower.includes('dieu duong')) return 'Điều dưỡng';
             return 'KTV';
         }
 
@@ -127,7 +130,29 @@
             }).getEmployees();
         }
 
-        function renderAdminChamCongTable() {
+        
+        window.restoreDefaultChamCongStaffList = function() {
+            if (!confirm("Bác sĩ có chắc muốn khôi phục lại danh sách 13 nhân sự Chấm công & Thống kê chuẩn BVTKS CS2?")) return;
+            adminChamCongEmployees = [...DEFAULT_CHAMCONG_EMPLOYEES];
+            adminChamCongStaffConfig = { ...DEFAULT_CHAMCONG_STAFF };
+            try {
+                localStorage.setItem('med_chamcong_employees', JSON.stringify(adminChamCongEmployees));
+                localStorage.setItem('med_chamcong_staff_config', JSON.stringify(adminChamCongStaffConfig));
+            } catch(e){}
+            renderAdminChamCongTable();
+
+            // Save to server
+            if (window.google && window.google.script && window.google.script.run) {
+                window.google.script.run.saveEmployees(adminChamCongEmployees);
+                window.google.script.run.saveErrorConfig({ staff: adminChamCongStaffConfig });
+            } else if (typeof callApi === 'function') {
+                callApi('saveEmployees', [adminChamCongEmployees]);
+                callApi('saveErrorConfig', [{ staff: adminChamCongStaffConfig }]);
+            }
+            alert("✅ Đã khôi phục thành công danh sách 13 nhân sự chấm công chuẩn!");
+        };
+
+function renderAdminChamCongTable() {
             const tbody = document.getElementById('admin-employees-body');
             if(!tbody) return;
             tbody.innerHTML = '';

@@ -2191,10 +2191,17 @@
                                                 dùng riêng cho tính năng Chấm Công và Thống Kê Thủ Thuật (Độc lập với
                                                 danh sách xếp lịch).</p>
                                         </div>
-                                        <button class="btn btn-success" onclick="openAddAdminEmployeeModal()"
-                                            style="padding: 9px 18px; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; background: #10b981; border: none; color: #fff; cursor: pointer; box-shadow: 0 2px 4px rgba(16,185,129,0.2); transition: all 0.2s;">
-                                            <i class="bx bx-plus"></i> Thêm Nhân Viên
-                                        </button>
+                                        <div style="display: flex; gap: 10px;">
+                                            <button class="btn btn-success" onclick="openAddAdminEmployeeModal()"
+                                                style="padding: 9px 18px; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; background: #10b981; border: none; color: #fff; cursor: pointer; box-shadow: 0 2px 4px rgba(16,185,129,0.2); transition: all 0.2s;">
+                                                <i class="bx bx-plus"></i> Thêm Nhân Viên
+                                            </button>
+                                            <button type="button" onclick="restoreDefaultChamCongStaffList()"
+                                                style="padding: 9px 15px; border-radius: 8px; font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; background: #f8fafc; border: 1px solid #cbd5e1; color: #334155; cursor: pointer; transition: all 0.2s;"
+                                                title="Khôi phục 13 nhân sự chuẩn BVTKS CS2">
+                                                <span>🔄</span> Mẫu Chuẩn Nhân Sự
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <div

@@ -1456,6 +1456,7 @@ async function handleApiAction(action, args, env, request, ctx) {
 
     case "checkLogin":
     case "verifyLogin": {
+      await ensureSchema(db);
       const rawUser = String(args[0] || "").trim();
       const rawPass = String(args[1] || "").trim();
       if (!rawUser || !rawPass) return error("Thiếu tên đăng nhập hoặc mật khẩu");
@@ -1463,7 +1464,10 @@ async function handleApiAction(action, args, env, request, ctx) {
       const lowerUser = rawUser.toLowerCase();
 
       // 1. Find user (case-insensitive)
-      let user = await db.prepare("SELECT * FROM tai_khoan WHERE LOWER(username) = LOWER(?)").bind(lowerUser).first();
+      let user = null;
+      try {
+        user = await db.prepare("SELECT * FROM tai_khoan WHERE LOWER(username) = LOWER(?)").bind(lowerUser).first();
+      } catch(e) {}
 
       // 2. If user is 'admin' and not found, auto-create default admin account on the fly
       if (!user && lowerUser === "admin") {

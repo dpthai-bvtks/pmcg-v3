@@ -935,85 +935,85 @@ window.renderSttOrderControl = function (type, i, total) {
         console.log('--- JS Block: Auth & Permissions started ---');
 
         window.doLogin = function () {
-
-            const user = document.getElementById('login-user').value;
-
-            const pass = document.getElementById('login-pass').value;
-
+            const user = (document.getElementById('login-user')?.value || '').trim();
+            const pass = (document.getElementById('login-pass')?.value || '').trim();
             const errDiv = document.getElementById('login-error');
-
             const btn = document.getElementById('btn-do-login');
 
-
-
             if (!user || !pass) {
-                errDiv.innerText = "Vui lòng nhập đủ thông tin!";
-
-                errDiv.style.display = "block"; return;
+                if (errDiv) {
+                    errDiv.innerText = "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!";
+                    errDiv.style.display = "block";
+                }
+                return;
             }
 
-            btn.innerText = "Đang kiểm tra..."; btn.disabled = true;
+            if (btn) { btn.innerText = "⏳ Đang kiểm tra..."; btn.disabled = true; }
+            if (errDiv) errDiv.style.display = "none";
 
+            const resetBtn = () => {
+                if (btn) { btn.innerText = "Đăng Nhập ➔"; btn.disabled = false; }
+            };
 
-
-            google.script.run.withSuccessHandler(res => {
-
-                if (res && (res.username || res.success)) {
-
-                    // 1. Lưu thông tin người dùng
+            const handleSuccess = res => {
+                resetBtn();
+                if (res && (res.username || res.role || res.success)) {
+                    const uName = res.username || user || 'admin';
+                    const uRole = res.role || 'Admin';
+                    const uPerms = res.permissions || 'all';
 
                     localStorage.setItem('meds_session', JSON.stringify({
-                        username: res.username, role:
-
-                            res.role, permissions: res.permissions
+                        username: uName,
+                        role: uRole,
+                        permissions: uPerms
                     }));
 
-                    // Gọi tải dữ liệu Tìm Rảnh ngay sau khi đăng nhập thành công
+                    const overlay = document.getElementById('login-overlay');
+                    if (overlay) overlay.style.display = 'none';
+
+                    if (typeof updateLogoutButton === 'function') updateLogoutButton(uName);
+                    if (typeof applyPermissions === 'function') applyPermissions(uRole, uPerms);
                     if (typeof window.loadTimRanhDataFromServer === 'function') {
-                        window.loadTimRanhDataFromServer();
+                        try { window.loadTimRanhDataFromServer(); } catch(e) {}
                     }
 
                     window.isNetworkErrorAlertShown = false;
 
-                    document.getElementById('login-overlay').style.display = 'none';
-
-                    if (typeof updateLogoutButton === 'function') updateLogoutButton(res.username);
-
-                    if (typeof applyPermissions === 'function') applyPermissions(res.role, res.permissions);
-
                     let targetTab = 'tab-home';
-
                     if (window.location.hash && window.location.hash.startsWith('#tab-')) {
-
                         targetTab = window.location.hash.substring(1);
-
                     }
-
                     const tabBtn = document.querySelector(`.nav-tab[data-tab="${targetTab}"]`) || document.querySelector(`.nav-item[data-tab="${targetTab}"]`);
-
                     if (tabBtn) {
-
                         tabBtn.click();
-
                     } else {
-
                         document.querySelector('.nav-tab[data-tab="tab-home"]')?.click();
-
                     }
 
-                    if (res.role === 'Admin' && typeof loadAccounts === 'function') loadAccounts();
-
+                    if ((uRole === 'Admin' || uRole === 'admin') && typeof loadAccounts === 'function') {
+                        try { loadAccounts(); } catch(e) {}
+                    }
                 } else {
-
-                    errDiv.innerText = res.message || res.error || "Tài khoản hoặc mật khẩu không đúng!"; errDiv.style.display = "block";
-
-                    btn.innerText = "Đăng Nhập ➔"; btn.disabled = false;
-
+                    const msg = (res && (res.message || res.error)) ? (res.message || res.error) : "Tài khoản hoặc mật khẩu không chính xác!";
+                    if (errDiv) { errDiv.innerText = msg; errDiv.style.display = "block"; }
                 }
+            };
 
-            }).verifyLogin(user, pass);
+            const handleError = err => {
+                resetBtn();
+                const msg = (err && (err.message || err.error)) ? (err.message || err.error) : String(err || "Lỗi kết nối máy chủ đăng nhập!");
+                if (errDiv) { errDiv.innerText = msg; errDiv.style.display = "block"; }
+            };
 
-        }
+            if (window.google && window.google.script && window.google.script.run) {
+                window.google.script.run
+                    .withSuccessHandler(handleSuccess)
+                    .withFailureHandler(handleError)
+                    .verifyLogin(user, pass);
+            } else {
+                callApi('verifyLogin', [user, pass], handleSuccess, handleError);
+            }
+        };
 
 
 

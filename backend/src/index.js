@@ -1470,56 +1470,78 @@ async function handleApiAction(action, args, env, request, ctx) {
     // 📊 THỐNG KÊ THỦ THUẬT (PROCEDURE STATS)
     // ============================================================
     case "getThongKeThuThuat": {
-      const my = String(args[0] || "").trim(); // YYYY-MM
-      let ymdPrefix = my;
-      let dmySuffix = "";
-      if (my.includes("-")) {
-        const parts = my.split("-");
-        dmySuffix = "/" + parts[1] + "/" + parts[0];
-      } else if (my.includes("/")) {
-        const parts = my.split("/");
-        ymdPrefix = parts[1] + "-" + parts[0];
-        dmySuffix = "/" + parts[0] + "/" + parts[1];
-      }
+      try {
+        const my = String(args[0] || "").trim(); // YYYY-MM or MM/YYYY
+        let ymdPrefix = my;
+        let dmySuffix = "";
+        if (my.includes("-")) {
+          const parts = my.split("-");
+          dmySuffix = "/" + parts[1] + "/" + parts[0];
+        } else if (my.includes("/")) {
+          const parts = my.split("/");
+          ymdPrefix = parts[1] + "-" + parts[0];
+          dmySuffix = "/" + parts[0] + "/" + parts[1];
+        }
 
-      // Fetch procedures categories
-      const procRes = await db.prepare("SELECT name, loai_pttt FROM thu_thuat").all();
-      const procTypeMap = {};
-      (procRes.results || []).forEach(p => {
-        const typeStr = String(p.loai_pttt || "").toLowerCase();
-        if (typeStr.includes("1") || typeStr.includes("i")) procTypeMap[p.name] = "loai1";
-        else if (typeStr.includes("2") || typeStr.includes("ii")) procTypeMap[p.name] = "loai2";
-        else if (typeStr.includes("3") || typeStr.includes("iii")) procTypeMap[p.name] = "loai3";
-        else procTypeMap[p.name] = "khac";
-      });
+        // Fetch procedures categories safely using correct columns
+        const procTypeMap = {};
+        try {
+          const procRes = await db.prepare("SELECT ten_thu_thuat, phan_loai FROM thu_thuat").all();
+          (procRes.results || []).forEach(p => {
+            const name = p.ten_thu_thuat || "";
+            const typeStr = String(p.phan_loai || "").toLowerCase();
+            if (typeStr.includes("1") || typeStr.includes("i") || typeStr.includes("loại 1")) procTypeMap[name] = "loai1";
+            else if (typeStr.includes("2") || typeStr.includes("ii") || typeStr.includes("loại 2")) procTypeMap[name] = "loai2";
+            else if (typeStr.includes("3") || typeStr.includes("iii") || typeStr.includes("loại 3")) procTypeMap[name] = "loai3";
+            else procTypeMap[name] = "khac";
+          });
+        } catch (e) {
+          console.warn("Error reading thu_thuat in getThongKeThuThuat:", e);
+        }
 
-      // Query from lich_su and lich_trinh
-      const qHist = await db.prepare(
-        "SELECT staff_name, sub_staff_name, procedure_name FROM lich_su WHERE (date LIKE ? OR date LIKE ?)"
-      ).bind(ymdPrefix + "%", "%" + dmySuffix).all();
+        // Query from lich_su and lich_trinh safely
+        let histRows = [];
+        let schedRows = [];
+        try {
+          const qHist = await db.prepare(
+            "SELECT staff_name, sub_staff_name, procedure_name FROM lich_su WHERE (date LIKE ? OR date LIKE ?)"
+          ).bind(ymdPrefix + "%", "%" + dmySuffix).all();
+          histRows = qHist.results || [];
+        } catch (e) {
+          console.warn("Error querying lich_su:", e);
+        }
 
-      const qSched = await db.prepare(
-        "SELECT staff_name, sub_staff_name, procedure_name FROM lich_trinh WHERE (date LIKE ? OR date LIKE ?)"
-      ).bind(ymdPrefix + "%", "%" + dmySuffix).all();
+        try {
+          const qSched = await db.prepare(
+            "SELECT staff_name, sub_staff_name, procedure_name FROM lich_trinh WHERE (date LIKE ? OR date LIKE ?)"
+          ).bind(ymdPrefix + "%", "%" + dmySuffix).all();
+          schedRows = qSched.results || [];
+        } catch (e) {
+          console.warn("Error querying lich_trinh:", e);
+        }
 
-      const combined = [...(qHist.results || []), ...(qSched.results || [])];
-      const stats = {};
+        const combined = [...histRows, ...schedRows];
+        const stats = {};
 
-      combined.forEach(r => {
-        const staffList = [r.staff_name, r.sub_staff_name].filter(Boolean);
-        const procName = r.procedure_name || "";
-        const procCat = procTypeMap[procName] || "khac";
+        combined.forEach(r => {
+          const staffList = [r.staff_name, r.sub_staff_name].filter(Boolean);
+          const procName = r.procedure_name || "";
+          const procCat = procTypeMap[procName] || "khac";
 
-        staffList.forEach(staff => {
-          const sName = String(staff).trim();
-          if (!sName) return;
-          if (!stats[sName]) stats[sName] = { loai1: 0, loai2: 0, loai3: 0, khac: 0, total: 0 };
-          stats[sName][procCat] = (stats[sName][procCat] || 0) + 1;
-          stats[sName].total = (stats[sName].total || 0) + 1;
+          staffList.forEach(staff => {
+            const sName = String(staff).trim();
+            if (!sName) return;
+            if (!stats[sName]) stats[sName] = { loai1: 0, loai2: 0, loai3: 0, khac: 0, total: 0 };
+            stats[sName][procCat] = (stats[sName][procCat] || 0) + 1;
+            stats[sName].total = (stats[sName].total || 0) + 1;
+          });
         });
-      });
 
-      return success(stats);
+        return success(stats);
+      } catch (err) {
+        console.error("getThongKeThuThuat error:", err);
+        return success({});
+      }
     }
 
     // ============================================================

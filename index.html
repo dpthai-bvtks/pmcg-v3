@@ -73,6 +73,15 @@
     <script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
     <!-- CSS Custom -->
     <link rel="stylesheet" href="css/style.css?v=3.1.8">
+    <!-- PWA & Mobile Web App Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="T.I.M.E.S">
+    <!-- CSS Mobile & Tablet Responsive -->
+    <link rel="stylesheet" href="css/mobile.css?v=3.1.8">
+
     <!-- JS Thư viện kéo thả nội bộ -->
     <script src="js/sortable.min.js?v=3.1.8"></script>
     <!-- Chart.js for Thống Kê & ExcelJS -->
@@ -81,6 +90,82 @@
 </head>
 
 <body>
+
+    <!-- MOBILE HEADER BAR (Hiện khi màn hình <= 960px) -->
+    <header class="mobile-header-bar" id="mobile-header-bar">
+        <div class="mobile-header-left">
+            <img src="logo-chuan-chinh.png?v=3.1.8" alt="Logo" class="mobile-header-logo">
+            <div>
+                <div class="mobile-header-title">T.I.M.E.S System</div>
+                <div class="mobile-header-subtitle" id="mobile-header-date">Khoa YHCT - PHCN</div>
+            </div>
+        </div>
+        <div class="mobile-header-right">
+            <span class="mobile-status-pill" id="mobile-status-pill">
+                <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#22c55e;"></span> Online
+            </span>
+            <button class="mobile-header-btn" onclick="openHdsdModal()" title="Hướng dẫn sử dụng">📖</button>
+            <button class="mobile-header-btn" onclick="toggleMobileDrawer()" title="Danh mục mở rộng">☰</button>
+        </div>
+    </header>
+
+    <!-- MOBILE BOTTOM NAVIGATION (Hiện khi màn hình <= 960px) -->
+    <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+        <button class="mobile-nav-item active" data-tab="tab-home" onclick="switchMobileNav('tab-home', this)">
+            <span class="mobile-nav-icon">📊</span>
+            <span class="mobile-nav-label">Tổng Quan</span>
+        </button>
+        <button class="mobile-nav-item" data-tab="tab-schedule" onclick="switchMobileNav('tab-schedule', this)">
+            <span class="mobile-nav-icon">📅</span>
+            <span class="mobile-nav-label">Xếp Lịch</span>
+        </button>
+        <button class="mobile-nav-item" data-tab="tab-patients" onclick="switchMobileNav('tab-patients', this)">
+            <span class="mobile-nav-icon">👥</span>
+            <span class="mobile-nav-label">Bệnh Nhân</span>
+        </button>
+        <button class="mobile-nav-item" data-tab="tab-chamcong" onclick="switchMobileNav('tab-chamcong', this)">
+            <span class="mobile-nav-icon">⏱️</span>
+            <span class="mobile-nav-label">Chấm Công</span>
+        </button>
+        <button class="mobile-nav-item" onclick="toggleMobileDrawer()">
+            <span class="mobile-nav-icon">☰</span>
+            <span class="mobile-nav-label">Khác</span>
+        </button>
+    </nav>
+
+    <!-- MOBILE DRAWER MENU -->
+    <div class="mobile-drawer-overlay" id="mobile-drawer-overlay" onclick="toggleMobileDrawer(false)"></div>
+    <div class="mobile-drawer" id="mobile-drawer">
+        <div class="mobile-drawer-header">
+            <div class="mobile-drawer-title">📌 Danh Mục Chức Năng</div>
+            <button class="mobile-drawer-close" onclick="toggleMobileDrawer(false)">✕</button>
+        </div>
+        <div class="mobile-drawer-body">
+            <button class="mobile-drawer-item" onclick="openTabFromDrawer('tab-home')"><span class="item-icon">🏠</span> Trang Chủ / Tổng Quan</button>
+            <button class="mobile-drawer-item" onclick="openTabFromDrawer('tab-schedule')"><span class="item-icon">📅</span> Lịch Trình Điều Trị</button>
+            <button class="mobile-drawer-item" onclick="openTabFromDrawer('tab-patients')"><span class="item-icon">👥</span> Danh Sách Bệnh Nhân</button>
+            <button class="mobile-drawer-item" onclick="openTabFromDrawer('tab-chamcong')"><span class="item-icon">⏱️</span> Bảng Chấm Công</button>
+            <button class="mobile-drawer-item" onclick="openTabFromDrawer('tab-thongke')"><span class="item-icon">📈</span> Thống Kê & Báo Cáo</button>
+            
+            <div class="mobile-drawer-divider"></div>
+            
+            <button class="mobile-drawer-item" onclick="openTabFromDrawer('tab-staff')"><span class="item-icon">👨‍⚕️</span> Quản Lý Nhân Sự</button>
+            <button class="mobile-drawer-item" onclick="openTabFromDrawer('tab-procedures')"><span class="item-icon">⚡</span> Danh Mục Thủ Thuật</button>
+            <button class="mobile-drawer-item" onclick="openTabFromDrawer('tab-rooms')"><span class="item-icon">🏥</span> Danh Sách Phòng</button>
+            <button class="mobile-drawer-item" onclick="openTabFromDrawer('tab-machines')"><span class="item-icon">🩺</span> Máy Móc Thiết Bị</button>
+            <button class="mobile-drawer-item" onclick="openTabFromDrawer('tab-busy')"><span class="item-icon">⏳</span> Giờ Bận & Ra Viện</button>
+            <button class="mobile-drawer-item" onclick="openTabFromDrawer('tab-settings')"><span class="item-icon">⚙️</span> Cài Đặt Hệ Thống</button>
+            
+            <div class="mobile-drawer-divider"></div>
+            
+            <button class="mobile-drawer-item" onclick="openDocLookupModal(); toggleMobileDrawer(false);"><span class="item-icon">📚</span> Tra Cứu Văn Bản & BHXH</button>
+            <button class="mobile-drawer-item" onclick="openHdsdModal(); toggleMobileDrawer(false);"><span class="item-icon">📖</span> Hướng Dẫn Sử Dụng</button>
+        </div>
+    </div>
+
+    <!-- MOBILE FAB BUTTON: THÊM BỆNH NHÂN NHANH -->
+    <button class="mobile-fab-btn" id="mobile-fab-btn" onclick="openAddPatientModal()" title="Thêm Bệnh Nhân Mới">➕</button>
+
 
 
 
@@ -3265,6 +3350,18 @@
     <script src="js/init.js?v=3.1.8"></script>
     <script src="js/sync.js?v=3.1.8"></script>
     <script src="js/thongke.js?v=3.1.8"></script>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js?v=3.1.8')
+                .then(reg => console.log('[PWA] Service Worker đăng ký thành công! Scope:', reg.scope))
+                .catch(err => console.warn('[PWA] Service Worker đăng ký thất bại:', err));
+        });
+    }
+    </script>
+
 </body>
 
 </html>

@@ -10054,3 +10054,79 @@ window.saveDocListToServer = function() {
         callApi('saveDocuments', [window.cachedDocuments], handleSuccess, handleFailure);
     }
 };
+
+
+// ============================================================
+// 📱 MOBILE & TABLET NAVIGATION CONTROLLER (v3.1.8)
+// ============================================================
+
+window.switchMobileNav = function(tabId, el) {
+    if (el) {
+        document.querySelectorAll('.mobile-nav-item').forEach(btn => btn.classList.remove('active'));
+        el.classList.add('active');
+    }
+    const desktopTabBtn = document.querySelector(`.nav-tab[data-tab="${tabId}"]`);
+    if (desktopTabBtn) {
+        desktopTabBtn.click();
+    } else {
+        window.location.hash = '#' + tabId;
+    }
+    window.toggleMobileDrawer(false);
+};
+
+window.toggleMobileDrawer = function(forceState) {
+    const drawer = document.getElementById('mobile-drawer');
+    const overlay = document.getElementById('mobile-drawer-overlay');
+    if (!drawer || !overlay) return;
+
+    const isActive = drawer.classList.contains('active');
+    const newState = (forceState !== undefined) ? forceState : !isActive;
+
+    if (newState) {
+        drawer.classList.add('active');
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    } else {
+        drawer.classList.remove('active');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+};
+
+window.openTabFromDrawer = function(tabId) {
+    window.toggleMobileDrawer(false);
+    const mobileBottomBtn = document.querySelector(`.mobile-nav-item[data-tab="${tabId}"]`);
+    if (mobileBottomBtn) {
+        document.querySelectorAll('.mobile-nav-item').forEach(btn => btn.classList.remove('active'));
+        mobileBottomBtn.classList.add('active');
+    } else {
+        document.querySelectorAll('.mobile-nav-item').forEach(btn => btn.classList.remove('active'));
+    }
+    const desktopTabBtn = document.querySelector(`.nav-tab[data-tab="${tabId}"]`);
+    if (desktopTabBtn) {
+        desktopTabBtn.click();
+    } else {
+        window.location.hash = '#' + tabId;
+    }
+};
+
+window.openAddPatientModal = function() {
+    window.switchMobileNav('tab-patients', document.querySelector('.mobile-nav-item[data-tab="tab-patients"]'));
+    setTimeout(() => {
+        const nameInput = document.getElementById('pat-name');
+        if (nameInput) {
+            nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            nameInput.focus();
+        }
+    }, 200);
+};
+
+// Sync Mobile Bottom Nav with Hash Changes
+window.addEventListener('hashchange', () => {
+    const currentTab = (window.location.hash || '#tab-home').substring(1);
+    const matchingMobileBtn = document.querySelector(`.mobile-nav-item[data-tab="${currentTab}"]`);
+    if (matchingMobileBtn) {
+        document.querySelectorAll('.mobile-nav-item').forEach(btn => btn.classList.remove('active'));
+        matchingMobileBtn.classList.add('active');
+    }
+});

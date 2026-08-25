@@ -4,41 +4,69 @@
  */
 
 /* ==========================================================================
-   1. ROOT VARIABLES & MOBILE BASE RESET
+   1. ROOT VARIABLES
    ========================================================================== */
 :root {
-  --mobile-bottom-nav-height: 64px;
-  --mobile-header-height: 56px;
+  --mobile-bottom-nav-height: 62px;
+  --mobile-header-height: 54px;
   --mobile-safe-bottom: env(safe-area-inset-bottom, 0px);
   --mobile-safe-top: env(safe-area-inset-top, 0px);
   --mobile-touch-target: 44px;
   --mobile-primary: #0f766e;
   --mobile-primary-hover: #115e59;
-  --mobile-primary-light: #ccfbf1;
-  --mobile-card-bg: #ffffff;
-  --mobile-card-border: #e2e8f0;
-  --mobile-text-main: #0f172a;
-  --mobile-text-muted: #64748b;
 }
 
 /* ==========================================================================
    2. GLOBAL MOBILE ADAPTATIONS (@media max-width: 960px)
    ========================================================================== */
 @media screen and (max-width: 960px) {
-  /* Cho phép kéo cuộn mượt mà có quán tính trên iOS Safari */
+  /* Ẩn hoàn toàn Desktop Sidebar và Tooltip */
+  aside.sidebar,
+  .sidebar,
+  .sidebar-menu,
+  #sidebar-tooltip {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* Reset Container và Main Wrapper */
+  .container,
+  .container.collapsed-sidebar {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .main-wrapper {
+    margin: 0 !important;
+    padding: 10px 10px calc(var(--mobile-bottom-nav-height) + var(--mobile-safe-bottom) + 20px) 10px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: auto !important;
+  }
+
+  /* Cho phép cuộn mượt mà có quán tính trên iOS Safari */
   html, body {
     -webkit-overflow-scrolling: touch;
     touch-action: manipulation;
-    overscroll-behavior-y: contain;
+    overflow-x: hidden !important;
+    width: 100% !important;
   }
 
-  /* Padding đáy để không bị thanh Bottom Nav che nội dung */
   body {
-    padding-bottom: calc(var(--mobile-bottom-nav-height) + var(--mobile-safe-bottom) + 20px) !important;
+    padding-bottom: calc(var(--mobile-bottom-nav-height) + var(--mobile-safe-bottom) + 15px) !important;
   }
 
-  /* Ẩn Header cồng kềnh của Desktop, thay bằng Header di động tinh gọn */
-  .header-main-desktop {
+  /* Header Desktop ẩn đi, hiện Header di động */
+  .header-main-desktop,
+  .header,
+  .top-bar-desktop {
     display: none !important;
   }
 
@@ -46,35 +74,99 @@
     display: flex !important;
   }
 
-  /* Ẩn thanh tab ngang desktop trên mobile */
-  .desktop-nav-tabs {
-    display: none !important;
-  }
-
-  /* Hiển thị thanh Bottom Navigation Bar */
   .mobile-bottom-nav {
     display: flex !important;
   }
 
-  /* Container nội dung */
-  .main-content-wrapper {
-    padding: 10px !important;
+  .mobile-fab-btn {
+    display: flex !important;
+  }
+
+  /* Chuyển layout 2 cột Split-Layout thành 1 cột dọc (Form nằm trên, Bảng nằm dưới) */
+  .split-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 15px !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Form nhập liệu mở rộng 100% chiều rộng, cuộn tự nhiên */
+  .sidebar-form {
     width: 100% !important;
     max-width: 100% !important;
-    margin: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    margin: 0 0 15px 0 !important;
+    padding: 14px !important;
+    border-radius: 12px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
   }
 
-  /* Form & Controls di động: Tối thiểu 44px */
-  button, input, select, textarea, .btn, .tab-btn {
+  .sidebar-form > div {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* Bảng dữ liệu tự động cho phép cuộn ngang (Horizontal Scroll) */
+  .main-table,
+  .table-container,
+  .table-responsive-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: block !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: 12px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+    background: #ffffff !important;
+    margin-bottom: 20px !important;
+  }
+
+  /* Đảm bảo bảng không bị bóp méo cột */
+  .main-table table,
+  .data-table,
+  #schedule-table,
+  #patients-table,
+  #procedures-table,
+  #staff-table,
+  #rooms-table,
+  #machines-table,
+  #busy-table,
+  #chamcong-table,
+  #thongke-table,
+  #doc-lookup-table {
+    min-width: 650px !important;
+    width: 100% !important;
+  }
+
+  /* Tiêu đề Tab tinh gọn */
+  .tab-header-title {
+    font-size: 16px !important;
+    padding: 8px 12px !important;
+    margin-bottom: 12px !important;
+    border-radius: 8px !important;
+  }
+
+  /* Nhóm nút điều khiển co giãn responsive */
+  .action-bar,
+  .filter-bar,
+  .button-group {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  .action-bar > *,
+  .filter-bar > * {
+    flex: 1 1 auto !important;
+  }
+
+  /* Form controls chuẩn Touch Target */
+  button, input, select, textarea, .btn {
     min-height: var(--mobile-touch-target);
     font-size: 14px !important;
-  }
-
-  /* Thẻ Card bo góc mềm mại */
-  .card, .table-container, .box-content {
-    border-radius: 12px !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
-    margin-bottom: 12px !important;
   }
 }
 
@@ -104,8 +196,8 @@
 }
 
 .mobile-header-logo {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
   background: #ffffff;
   padding: 2px;
@@ -113,7 +205,7 @@
 }
 
 .mobile-header-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: -0.2px;
   line-height: 1.2;
@@ -147,13 +239,13 @@
   background: rgba(255, 255, 255, 0.18);
   border: none;
   color: #ffffff;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 15px;
   cursor: pointer;
 }
 
@@ -193,7 +285,7 @@
   color: #64748b;
   font-size: 11px;
   font-weight: 600;
-  gap: 4px;
+  gap: 3px;
   cursor: pointer;
   transition: all 0.15s ease-in-out;
   user-select: none;
@@ -201,7 +293,7 @@
 }
 
 .mobile-nav-item .mobile-nav-icon {
-  font-size: 20px;
+  font-size: 19px;
   line-height: 1;
   transition: transform 0.15s ease;
 }
@@ -211,7 +303,7 @@
 }
 
 .mobile-nav-item.active .mobile-nav-icon {
-  transform: scale(1.15);
+  transform: scale(1.12);
   color: #0f766e;
 }
 
@@ -257,7 +349,7 @@
 }
 
 .mobile-drawer-header {
-  padding: 18px 16px;
+  padding: 16px 14px;
   background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
   color: #ffffff;
   display: flex;
@@ -266,7 +358,7 @@
 }
 
 .mobile-drawer-title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
 }
 
@@ -274,21 +366,21 @@
   background: none;
   border: none;
   color: #ffffff;
-  font-size: 20px;
+  font-size: 18px;
   cursor: pointer;
 }
 
 .mobile-drawer-body {
   flex: 1;
   overflow-y: auto;
-  padding: 12px 0;
+  padding: 10px 0;
 }
 
 .mobile-drawer-item {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 20px;
+  gap: 12px;
+  padding: 12px 18px;
   color: #334155;
   font-size: 14px;
   font-weight: 600;
@@ -306,15 +398,15 @@
 }
 
 .mobile-drawer-item .item-icon {
-  font-size: 18px;
-  width: 24px;
+  font-size: 17px;
+  width: 22px;
   text-align: center;
 }
 
 .mobile-drawer-divider {
   height: 1px;
   background: #e2e8f0;
-  margin: 8px 0;
+  margin: 6px 0;
 }
 
 /* ==========================================================================
@@ -323,16 +415,16 @@
 .mobile-fab-btn {
   display: none;
   position: fixed;
-  right: 18px;
-  bottom: calc(var(--mobile-bottom-nav-height) + var(--mobile-safe-bottom) + 14px);
-  width: 52px;
-  height: 52px;
+  right: 16px;
+  bottom: calc(var(--mobile-bottom-nav-height) + var(--mobile-safe-bottom) + 12px);
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
   color: #ffffff;
   box-shadow: 0 4px 14px rgba(15, 118, 110, 0.4);
   border: none;
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   align-items: center;
   justify-content: center;
@@ -346,211 +438,17 @@
   box-shadow: 0 2px 8px rgba(15, 118, 110, 0.3);
 }
 
-@media screen and (max-width: 960px) {
-  .mobile-fab-btn {
-    display: flex !important;
-  }
-}
-
 /* ==========================================================================
-   7. TIMELINE / CARD VIEW FOR SCHEDULE ON MOBILE
-   ========================================================================== */
-.schedule-view-switcher {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  background: #f1f5f9;
-  padding: 4px;
-  border-radius: 10px;
-}
-
-.schedule-view-btn {
-  flex: 1;
-  padding: 8px 12px;
-  border: none;
-  background: transparent;
-  font-size: 13px;
-  font-weight: 600;
-  color: #64748b;
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: all 0.15s ease;
-}
-
-.schedule-view-btn.active {
-  background: #ffffff;
-  color: #0f766e;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-}
-
-/* Timeline Cards Container */
-.mobile-schedule-timeline {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.timeline-card {
-  background: #ffffff;
-  border-radius: 14px;
-  border: 1px solid #e2e8f0;
-  padding: 14px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-  position: relative;
-  transition: transform 0.15s, box-shadow 0.15s;
-}
-
-.timeline-card:active {
-  transform: translateY(1px);
-}
-
-.timeline-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-  padding-bottom: 8px;
-  border-bottom: 1px dashed #e2e8f0;
-}
-
-.timeline-time-badge {
-  font-size: 13px;
-  font-weight: 700;
-  color: #0f766e;
-  background: #ccfbf1;
-  padding: 4px 10px;
-  border-radius: 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.timeline-patient-name {
-  font-size: 16px;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.timeline-patient-dob {
-  font-size: 13px;
-  color: #64748b;
-  font-weight: 500;
-}
-
-.timeline-card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 13px;
-}
-
-.timeline-proc-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.timeline-proc-tag {
-  font-size: 11px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 700;
-  background: #e0f2fe;
-  color: #0369a1;
-}
-
-.timeline-proc-tag.loai1 { background: #fee2e2; color: #b91c1c; }
-.timeline-proc-tag.loai2 { background: #fef3c7; color: #b45309; }
-.timeline-proc-tag.loai3 { background: #dcfce7; color: #15803d; }
-
-.timeline-location-row {
-  display: flex;
-  gap: 12px;
-  color: #475569;
-}
-
-.timeline-card-footer {
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1px solid #f1f5f9;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.timeline-staff-info {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #0f766e;
-}
-
-/* ==========================================================================
-   8. PATIENT CARD VIEW ON MOBILE
-   ========================================================================== */
-.mobile-patient-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.mobile-pat-card {
-  background: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.mobile-pat-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.mobile-pat-name {
-  font-size: 15px;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.mobile-pat-actions {
-  display: flex;
-  gap: 6px;
-}
-
-/* ==========================================================================
-   9. STICKY HORIZONTAL TABLE SCROLL FOR CHAM CONG & THONG KE
+   7. STICKY HORIZONTAL TABLE SCROLL FOR CHAM CONG & THONG KE
    ========================================================================== */
 @media screen and (max-width: 960px) {
-  .table-responsive-wrapper {
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    border-radius: 10px;
-    border: 1px solid #e2e8f0;
-    max-width: 100%;
-  }
-
-  /* Cố định cột 1 (STT) và cột 2 (Họ Tên Nhân Viên) */
   #chamcong-table th:first-child,
   #chamcong-table td:first-child,
   #thongke-table th:first-child,
   #thongke-table td:first-child {
     position: sticky !important;
     left: 0 !important;
-    z-index: 10 !important;
+    z-index: 5 !important;
     background: #f8fafc !important;
   }
 
@@ -560,39 +458,8 @@
   #thongke-table td:nth-child(2) {
     position: sticky !important;
     left: 45px !important;
-    z-index: 10 !important;
+    z-index: 5 !important;
     background: #ffffff !important;
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
-  }
-}
-
-/* ==========================================================================
-   10. BOTTOM SHEET MODAL STYLING FOR MOBILE
-   ========================================================================== */
-@media screen and (max-width: 600px) {
-  .custom-modal-overlay,
-  .modal-overlay,
-  .swal2-container {
-    align-items: flex-end !important;
-    padding: 0 !important;
-  }
-
-  .custom-modal-box,
-  .modal-dialog,
-  .modal-content,
-  .swal2-popup {
-    width: 100% !important;
-    max-width: 100% !important;
-    border-radius: 20px 20px 0 0 !important;
-    max-height: 85vh !important;
-    overflow-y: auto !important;
-    margin: 0 !important;
-    animation: slideUpMobile 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    padding-bottom: calc(var(--mobile-safe-bottom) + 16px) !important;
-  }
-
-  @keyframes slideUpMobile {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
   }
 }

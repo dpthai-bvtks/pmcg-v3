@@ -270,7 +270,7 @@
         }
 
         // Auto load when opening Admin Tab
-        const originalSwitchAdminSection = switchAdminSection;
+        const originalSwitchAdminSection = window.switchAdminSection || function(s, b) {};
         window.switchAdminSection = function(sectionId, btn) {
             originalSwitchAdminSection(sectionId, btn);
             if (sectionId === 'admin-sec-employees') {

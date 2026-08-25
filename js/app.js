@@ -7307,7 +7307,7 @@ window.renderSttOrderControl = function (type, i, total) {
         // ============================================================
         // UI - CHUYỂN TAB ADMIN
         // ============================================================
-        function switchAdminSection(sectionId, btn) {
+        window.switchAdminSection = function switchAdminSection(sectionId, btn) {
             document.querySelectorAll('.admin-section').forEach(sec => sec.style.display = 'none');
             document.getElementById(sectionId).style.display = 'flex';
 
@@ -9295,8 +9295,8 @@ window.checkBackupReminder = function() {
     if (typeof window.onBackupScheduleUIChange === 'function') window.onBackupScheduleUIChange();
     if (typeof window.loadGoogleDriveSettingsUI === 'function') window.loadGoogleDriveSettingsUI();
 
-    if (period === 'none') return;
-
+    if (period === 'none') return;;
+};
 
 async function setSavedDirHandle(handle) {
     const db = await getBackupIDB();
@@ -9611,7 +9611,7 @@ window.openDocLookupModal = function() {
     
     // Check if user is logged in admin to enable Admin button
     const btnAdmin = document.getElementById('btn-admin-manage-docs');
-    const isLoggedAdmin = (window.currentUserRole === 'Admin' || window.currentUserRole === 'admin' || (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'Admin'));
+    const isLoggedAdmin = Boolean(window.currentUserRole === 'Admin' || window.currentUserRole === 'admin' || (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'Admin'));
     if (btnAdmin) {
         btnAdmin.style.display = isLoggedAdmin ? 'inline-flex' : 'none';
     }

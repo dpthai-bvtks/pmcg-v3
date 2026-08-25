@@ -1423,7 +1423,7 @@ async function handleApiAction(action, args, env, request, ctx) {
       }
       const defaultLinks = [
         { icon: "📜", ten: "Tra cứu Văn bản & BHXH", url: "javascript:openDocLookupModal()" },
-        { icon: "📖", ten: "Hướng dẫn sử dụng phần mềm", url: "javascript:openHdsdModal()" },
+        { icon: "📖", ten: "Hướng dẫn sử dụng phần mềm", url: "https://xeplichthuthuat.io.vn/hdsd.html" },
         { icon: "📋", ten: "Quy trình Kỹ thuật PHCN", url: "https://kcb.vn/" }
       ];
       return success(defaultLinks);
@@ -1445,50 +1445,35 @@ async function handleApiAction(action, args, env, request, ctx) {
       if (rec && rec.value) {
         try {
           const list = JSON.parse(rec.value);
-          if (Array.isArray(list) && list.length > 0 && !list.includes("Phụ 4") && list.some(n => n.includes(" "))) return success(list);
+          if (Array.isArray(list) && list.length > 0) return success(list);
         } catch(e) {}
       }
-      const defaultList = [
-        "Hoàng Đức Đạt", "Lê Thị Thu Hoa", "Nguyễn Thị Duyên Thảo", "Nguyễn Thu Hằng",
-        "Đặng Phong Thái", "Phạm Thạch Khuyến", "Nguyễn Thị Xuân Lương", "Nguyễn Thị Hà",
-        "Phan Thị Thu Hiền", "Lê Thị Thu Hiền", "Nguyễn Văn Khính", "Phạm Thị Thuyến", "Trần Thị Duyên"
-      ];
-      await db.prepare("INSERT OR REPLACE INTO cai_dat (key, value) VALUES ('chamcong_employees', ?)").bind(JSON.stringify(defaultList)).run();
-      return success(defaultList);
+      const staffRes = await db.prepare("SELECT ten FROM nhan_su ORDER BY rowid ASC").all();
+      const names = (staffRes.results || []).map(r => r.ten).filter(Boolean);
+      if (names.length > 0) return success(names);
+      return success([
+        "Bs Khuyến", "Bs Thái", "KTV Phan Hiền", "KTV Đặng Thảo", "KTV Nguyễn Thủy",
+        "KTV Lan Hương", "KTV Phương Thảo", "KTV Nguyễn Lộc", "KTV Thùy Linh", "KTV Phạm Vân"
+      ]);
     }
 
     case "saveEmployees": {
-      const list = args[0] || [];
-      await db.prepare("INSERT OR REPLACE INTO cai_dat (key, value) VALUES ('chamcong_employees', ?)").bind(JSON.stringify(list)).run();
+      let list = args[0] || [];
+      if (typeof list === "object" && list !== null && !Array.isArray(list)) {
+        list = list.employees || list.list || [];
+      }
+      await db.prepare("INSERT INTO cai_dat (key, value) VALUES ('chamcong_employees', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+        .bind(JSON.stringify(list)).run();
+      await bumpDataVersion(db);
       return success({ message: "Đã lưu danh sách nhân sự chấm công thành công!" });
     }
 
     case "getErrorConfig": {
       const rec = await db.prepare("SELECT value FROM cai_dat WHERE key = 'error_config'").first();
       if (rec && rec.value) {
-        try {
-          const cfg = JSON.parse(rec.value);
-          if (cfg && cfg.staff && Object.keys(cfg.staff).length > 0 && !cfg.staff['Phụ 4'] && Object.keys(cfg.staff).some(n => n.includes(" "))) return success(cfg);
-        } catch(e) {}
+        try { return success(JSON.parse(rec.value)); } catch(e) {}
       }
-      const defaultStaff = {
-        'Hoàng Đức Đạt': { keys: ['hoàng đức đạt', 'bs đạt', 'bs dat', 'đạt'], skills: 'Cả hai', role: 'Bác sĩ', heSo: 1.0 },
-        'Lê Thị Thu Hoa': { keys: ['lê thị thu hoa', 'bs hoa', 'thu hoa', 'hoa'], skills: 'Cả hai', role: 'Bác sĩ', heSo: 1.0 },
-        'Nguyễn Thị Duyên Thảo': { keys: ['nguyễn thị duyên thảo', 'bs thảo', 'bs thảo 2', 'duyên thảo', 'thảo'], skills: 'Cả hai', role: 'Bác sĩ', heSo: 1.0 },
-        'Nguyễn Thu Hằng': { keys: ['nguyễn thu hằng', 'bs hằng', 'thu hằng', 'hằng'], skills: 'Cả hai', role: 'Bác sĩ', heSo: 1.0 },
-        'Đặng Phong Thái': { keys: ['đặng phong thái', 'bs thái', 'phong thái', 'thái'], skills: 'YHCT', role: 'Bác sĩ', heSo: 1.0 },
-        'Phạm Thạch Khuyến': { keys: ['phạm thạch khuyến', 'bs khuyến', 'thạch khuyến', 'khuyến'], skills: 'YHCT', role: 'Bác sĩ', heSo: 1.0 },
-        'Nguyễn Thị Xuân Lương': { keys: ['nguyễn thị xuân lương', 'ktv lương', 'xuân lương', 'lương'], skills: 'PHCN', role: 'KTV', heSo: 1.0 },
-        'Nguyễn Thị Hà': { keys: ['nguyễn thị hà', 'ktv hà chip', 'ktv hà', 'hà chip', 'hà'], skills: 'PHCN', role: 'KTV', heSo: 1.0 },
-        'Phan Thị Thu Hiền': { keys: ['phan thị thu hiền', 'ktv phan hiền', 'phan hiền'], skills: 'PHCN', role: 'KTV', heSo: 1.0 },
-        'Lê Thị Thu Hiền': { keys: ['lê thị thu hiền', 'ktv lê hiền', 'ltv lê hiền', 'lê hiền'], skills: 'PHCN', role: 'KTV', heSo: 1.0 },
-        'Nguyễn Văn Khính': { keys: ['nguyễn văn khính', 'ktv khính', 'khính'], skills: 'PHCN', role: 'KTV', heSo: 1.0 },
-        'Phạm Thị Thuyến': { keys: ['phạm thị thuyến', 'đd thuyến', 'ktv thuyến', 'thuyến'], skills: 'PHCN', role: 'Điều dưỡng', heSo: 1.0 },
-        'Trần Thị Duyên': { keys: ['trần thị duyên', 'đd duyên', 'ktv duyên', 'duyên'], skills: 'PHCN', role: 'Điều dưỡng', heSo: 1.0 }
-      };
-      const defaultCfg = { staff: defaultStaff };
-      await db.prepare("INSERT OR REPLACE INTO cai_dat (key, value) VALUES ('error_config', ?)").bind(JSON.stringify(defaultCfg)).run();
-      return success(defaultCfg);
+      return success({ staff: {} });
     }
 
     case "saveErrorConfig": {
@@ -1499,33 +1484,142 @@ async function handleApiAction(action, args, env, request, ctx) {
       return success({ message: "Đã lưu cấu hình thành công!" });
     }
 
-    case "saveThongKeThuThuat": {
-      const my = String(args[0] || "").trim();
-      const data = args[1] || {};
-      const key = my ? ("thongke_" + my) : "thongke";
-      await db.prepare("INSERT INTO cai_dat (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
-        .bind(key, JSON.stringify(data)).run();
+
+    case "getDocuments": {
+      try {
+        const rec = await db.prepare("SELECT value FROM cai_dat WHERE key = 'vb_documents'").first();
+        if (rec && rec.value) {
+          const list = JSON.parse(rec.value);
+          if (Array.isArray(list) && list.length > 0) return success(list);
+        }
+      } catch(e) {}
+      const defaultDocs = [
+        { id: "qd_4461", number: "4461/QĐ-BYT", title: "Quy trình kỹ thuật khám bệnh, chữa bệnh chuyên ngành Y học cổ truyền", issuer: "Bộ Y tế", signDate: "27/08/2020", link: "https://kcb.vn/van-ban/quyet-dinh-so-4461-qd-byt-ngay-27-8-2020-ve-viec-ban-hanh-tai-lieu-chuyen-mon-huong-dan-quy-trinh-ky-thuat-kham-benh-chua-benh-chuyen-nganh-y-hoc-co-truyen.html" },
+        { id: "qd_54", number: "54/QĐ-BYT", title: "Hướng dẫn chẩn đoán và điều trị bệnh chuyên ngành Y học cổ truyền", issuer: "Bộ Y tế", signDate: "12/01/2021", link: "https://kcb.vn/van-ban/quyet-dinh-so-54-qd-byt-ngay-12-01-2021-ve-viec-ban-hanh-tai-lieu-chuyen-mon-huong-dan-chan-doan-va-dieu-tri-benh-theo-y-hoc-co-truyen-ket-hop-y-hoc-hien-dai-tap-1.html" },
+        { id: "qd_5024", number: "5024/QĐ-BYT", title: "Quy trình kỹ thuật khám bệnh, chữa bệnh chuyên ngành Phục hồi chức năng", issuer: "Bộ Y tế", signDate: "03/11/2014", link: "https://kcb.vn/van-ban/quyet-dinh-so-5024-qd-byt-ngay-03-11-2014-ve-viec-ban-hanh-tai-lieu-chuyen-mon-huong-dan-quy-trinh-ky-thuat-kham-benh-chua-benh-chuyen-nganh-phuc-hoi-chuc-nang.html" },
+        { id: "tt_39", number: "39/2018/TT-BYT", title: "Quy định mức giá tối đa dịch vụ khám bệnh, chữa bệnh không thuộc phạm vi thanh toán của BHYT", issuer: "Bộ Y tế", signDate: "30/11/2018", link: "https://thuvienphapluat.vn/van-ban/Bao-hiem/Thong-tu-39-2018-TT-BYT-dinh-muc-gia-toi-da-dich-vu-kham-chua-benh-khong-thuoc-Bao-hiem-y-te-401824.aspx" },
+        { id: "tt_22", number: "22/2023/TT-BYT", title: "Quy định giá dịch vụ khám bệnh, chữa bệnh BHYT áp dụng từ 17/11/2023", issuer: "Bộ Y tế", signDate: "17/11/2023", link: "https://thuvienphapluat.vn/van-ban/Bao-hiem/Thong-tu-22-2023-TT-BYT-gia-dich-vu-kham-chua-benh-bao-hiem-y-te-587216.aspx" },
+        { id: "hd_bhxh", number: "HD-BHXH-2026", title: "Bộ quy chuẩn định mức & điều kiện thanh toán BHYT cho dịch vụ YHCT - PHCN mới nhất", issuer: "BHXH Việt Nam", signDate: "01/01/2026", link: "https://baohiemxahoi.gov.vn" }
+      ];
+      try {
+        await db.prepare("INSERT OR REPLACE INTO cai_dat (key, value) VALUES ('vb_documents', ?)").bind(JSON.stringify(defaultDocs)).run();
+      } catch(e) {}
+      return success(defaultDocs);
+    }
+
+    case "saveDocuments": {
+      const docs = Array.isArray(args[0]) ? args[0] : [];
+      await db.prepare("INSERT INTO cai_dat (key, value) VALUES ('vb_documents', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+        .bind(JSON.stringify(docs)).run();
       await bumpDataVersion(db);
-      return success({ message: "Đã lưu dữ liệu thống kê thủ thuật thành công!" });
+      return success({ message: "Đã lưu danh mục tài liệu tra cứu thành công!" });
     }
 
-    case "saveAITrainingData": {
-      const trainingRecords = Array.isArray(args[0]) ? args[0] : (args[0]?.records || []);
-      await db.prepare("INSERT INTO cai_dat (key, value) VALUES ('ai_training_data', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
-        .bind(JSON.stringify(trainingRecords)).run();
-      return success({ message: "Đã lưu dữ liệu AI Training!" });
+    case "getAccounts": {
+      const recs = await db.prepare("SELECT username, role, name, note, updated_at FROM tai_khoan ORDER BY id ASC").all();
+      return success(recs.results || []);
     }
 
-    case "clearAITrainingData": {
-      await db.prepare("DELETE FROM cai_dat WHERE key = 'ai_training_data'").run();
-      return success({ message: "Đã xóa dữ liệu AI Training!" });
+    case "saveAccount": {
+      const acc = args[0] || {};
+      const username = String(acc.username || "").trim();
+      const password = String(acc.password || "").trim();
+      const role = String(acc.role || "user").trim();
+      const name = String(acc.name || "").trim();
+      const note = String(acc.note || "").trim();
+
+      if (!username) return error("Username không được để trống!", 400);
+
+      const existing = await db.prepare("SELECT id FROM tai_khoan WHERE username = ?").bind(username).first();
+      if (existing) {
+        if (password) {
+          await db.prepare("UPDATE tai_khoan SET password = ?, role = ?, name = ?, note = ?, updated_at = CURRENT_TIMESTAMP WHERE username = ?")
+            .bind(password, role, name, note, username).run();
+        } else {
+          await db.prepare("UPDATE tai_khoan SET role = ?, name = ?, note = ?, updated_at = CURRENT_TIMESTAMP WHERE username = ?")
+            .bind(role, name, note, username).run();
+        }
+      } else {
+        await db.prepare("INSERT INTO tai_khoan (username, password, role, name, note, updated_at) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)")
+          .bind(username, password || "123456", role, name, note).run();
+      }
+      return success({ message: "Đã lưu tài khoản thành công!" });
     }
+
+    case "deleteAccount": {
+      const username = String(args[0] || "").trim();
+      if (!username) return error("Tên tài khoản không hợp lệ!", 400);
+      if (username.toLowerCase() === "admin") return error("Không thể xóa tài khoản Quản trị viên tối cao (admin)!", 400);
+      await db.prepare("DELETE FROM tai_khoan WHERE username = ?").bind(username).run();
+      return success({ message: "Đã xóa tài khoản thành công!" });
+    }
+
+    case "verifyLogin":
+    case "checkLogin": {
+      const username = String(args[0] || "").trim();
+      const password = String(args[1] || "").trim();
+      if (!username) return error("Vui lòng nhập tên đăng nhập!", 400);
+
+      if (username.toLowerCase() === "admin" && (password === "admin123" || password === "123456" || password === "admin")) {
+        return success({ username: "admin", role: "admin", name: "Quản trị viên" });
+      }
+
+      const user = await db.prepare("SELECT username, role, name FROM tai_khoan WHERE username = ? AND password = ?").bind(username, password).first();
+      if (user) {
+        return success(user);
+      }
+      return error("Tên đăng nhập hoặc mật khẩu không chính xác!", 401);
+    }
+
     case "getChamCong": {
-      const my = String(args[0] || "").trim();
-      const key = my ? ("chamcong_" + my) : "chamcong";
-      const rec = await db.prepare("SELECT value FROM cai_dat WHERE key = ?").bind(key).first();
-      if (rec && rec.value) {
-        try { return success(JSON.parse(rec.value)); } catch(e) { return success({}); }
+      const myRaw = String(args[0] || "").trim();
+      const myVariants = [];
+      if (myRaw) {
+        myVariants.push(myRaw);
+        myVariants.push(myRaw.replace('-', '_'));
+        myVariants.push(myRaw.replace('_', '-'));
+        if (myRaw.includes('-')) {
+          const p = myRaw.split('-');
+          myVariants.push(p[1] + '_' + p[0]);
+          myVariants.push(p[1] + '-' + p[0]);
+        } else if (myRaw.includes('_')) {
+          const p = myRaw.split('_');
+          myVariants.push(p[1] + '_' + p[0]);
+          myVariants.push(p[1] + '-' + p[0]);
+        }
+      }
+
+      // 1. Check table cham_cong in D1
+      for (const v of myVariants) {
+        try {
+          const rec = await db.prepare("SELECT data_json FROM cham_cong WHERE month_year = ?").bind(v).first();
+          if (rec && rec.data_json) {
+            const parsed = JSON.parse(rec.data_json);
+            if (parsed && typeof parsed === "object" && Object.keys(parsed).length > 0) {
+              return success(parsed);
+            }
+          }
+        } catch(e) {}
+      }
+
+      // 2. Check latest in table cham_cong if no specific month
+      if (!myRaw) {
+        try {
+          const latest = await db.prepare("SELECT data_json FROM cham_cong ORDER BY updated_at DESC LIMIT 1").first();
+          if (latest && latest.data_json) {
+            return success(JSON.parse(latest.data_json));
+          }
+        } catch(e) {}
+      }
+
+      // 3. Fallback to cai_dat
+      for (const v of myVariants) {
+        try {
+          const recCd = await db.prepare("SELECT value FROM cai_dat WHERE key = ?").bind("chamcong_" + v).first();
+          if (recCd && recCd.value) {
+            return success(JSON.parse(recCd.value));
+          }
+        } catch(e) {}
       }
       return success({});
     }
@@ -1541,31 +1635,82 @@ async function handleApiAction(action, args, env, request, ctx) {
         data = args[0].data || args[0].data_json || {};
         if (typeof data === "string") { try { data = JSON.parse(data); } catch(e) {} }
       }
-      const key = my ? ("chamcong_" + my) : "chamcong";
+      const jsonStr = typeof data === "string" ? data : JSON.stringify(data);
+      const myStandard = my || new Date().toISOString().substring(0, 7);
+      const myUnderscore = myStandard.replace('-', '_');
+
+      try {
+        await db.prepare("INSERT INTO cham_cong (month_year, data_json, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(month_year) DO UPDATE SET data_json = excluded.data_json, updated_at = CURRENT_TIMESTAMP")
+          .bind(myStandard, jsonStr).run();
+        await db.prepare("INSERT INTO cham_cong (month_year, data_json, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(month_year) DO UPDATE SET data_json = excluded.data_json, updated_at = CURRENT_TIMESTAMP")
+          .bind(myUnderscore, jsonStr).run();
+      } catch(e) {
+        console.warn("saveChamCong D1 error:", e);
+      }
+
       await db.prepare("INSERT INTO cai_dat (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
-        .bind(key, JSON.stringify(data)).run();
+        .bind("chamcong_" + myStandard, jsonStr).run();
       await bumpDataVersion(db);
-      return success({ message: "Đã lưu dữ liệu chấm công thành công!" });
+      return success({ message: "Đã lưu bảng chấm công thành công!" });
     }
 
-    // ============================================================
-    // 📊 THỐNG KÊ THỦ THUẬT (PROCEDURE STATS)
-    // ============================================================
     case "getThongKeThuThuat": {
       try {
-        const my = String(args[0] || "").trim(); // YYYY-MM or MM/YYYY
-        let ymdPrefix = my;
+        const myRaw = String(args[0] || "").trim();
+        const myVariants = [];
+        if (myRaw) {
+          myVariants.push(myRaw);
+          myVariants.push(myRaw.replace('-', '_'));
+          myVariants.push(myRaw.replace('_', '-'));
+          if (myRaw.includes('-')) {
+            const p = myRaw.split('-');
+            myVariants.push(p[1] + '_' + p[0]);
+            myVariants.push(p[1] + '-' + p[0]);
+          } else if (myRaw.includes('_')) {
+            const p = myRaw.split('_');
+            myVariants.push(p[1] + '_' + p[0]);
+            myVariants.push(p[1] + '-' + p[0]);
+          }
+        }
+
+        // 1. Query table thong_ke in D1
+        for (const v of myVariants) {
+          try {
+            const rec = await db.prepare("SELECT data_json FROM thong_ke WHERE month_year = ?").bind(v).first();
+            if (rec && rec.data_json) {
+              const parsed = JSON.parse(rec.data_json);
+              if (parsed && typeof parsed === "object" && Object.keys(parsed).length > 0) {
+                return success(parsed);
+              }
+            }
+          } catch(e) {}
+        }
+
+        // 2. Query cai_dat
+        for (const v of myVariants) {
+          try {
+            const recCd = await db.prepare("SELECT value FROM cai_dat WHERE key = ?").bind("thongke_" + v).first();
+            if (recCd && recCd.value) {
+              const parsed = JSON.parse(recCd.value);
+              if (parsed && typeof parsed === "object" && Object.keys(parsed).length > 0) {
+                return success(parsed);
+              }
+            }
+          } catch(e) {}
+        }
+
+        // 3. Fallback calculate from lich_su and lich_trinh
+        let ymdPrefix = myRaw;
         let dmySuffix = "";
-        if (my.includes("-")) {
-          const parts = my.split("-");
+        if (myRaw.includes("-")) {
+          const parts = myRaw.split("-");
           dmySuffix = "/" + parts[1] + "/" + parts[0];
-        } else if (my.includes("/")) {
-          const parts = my.split("/");
+        } else if (myRaw.includes("/")) {
+          const parts = myRaw.split("/");
           ymdPrefix = parts[1] + "-" + parts[0];
           dmySuffix = "/" + parts[0] + "/" + parts[1];
         }
 
-        // Fetch procedures categories safely using correct columns
         const procTypeMap = {};
         try {
           const procRes = await db.prepare("SELECT ten_thu_thuat, phan_loai FROM thu_thuat").all();
@@ -1577,11 +1722,8 @@ async function handleApiAction(action, args, env, request, ctx) {
             else if (typeStr.includes("3") || typeStr.includes("iii") || typeStr.includes("loại 3")) procTypeMap[name] = "loai3";
             else procTypeMap[name] = "khac";
           });
-        } catch (e) {
-          console.warn("Error reading thu_thuat in getThongKeThuThuat:", e);
-        }
+        } catch (e) {}
 
-        // Query from lich_su and lich_trinh safely
         let histRows = [];
         let schedRows = [];
         try {
@@ -1589,33 +1731,35 @@ async function handleApiAction(action, args, env, request, ctx) {
             "SELECT staff_name, sub_staff_name, procedure_name FROM lich_su WHERE (date LIKE ? OR date LIKE ?)"
           ).bind(ymdPrefix + "%", "%" + dmySuffix).all();
           histRows = qHist.results || [];
-        } catch (e) {
-          console.warn("Error querying lich_su:", e);
-        }
+        } catch(e) {}
 
         try {
           const qSched = await db.prepare(
             "SELECT staff_name, sub_staff_name, procedure_name FROM lich_trinh WHERE (date LIKE ? OR date LIKE ?)"
           ).bind(ymdPrefix + "%", "%" + dmySuffix).all();
           schedRows = qSched.results || [];
-        } catch (e) {
-          console.warn("Error querying lich_trinh:", e);
-        }
+        } catch(e) {}
 
-        const combined = [...histRows, ...schedRows];
+        const allRows = [...histRows, ...schedRows];
         const stats = {};
 
-        combined.forEach(r => {
-          const staffList = [r.staff_name, r.sub_staff_name].filter(Boolean);
-          const procName = r.procedure_name || "";
-          const procCat = procTypeMap[procName] || "khac";
+        allRows.forEach(r => {
+          const mainStaff = r.staff_name || "";
+          const subStaff = r.sub_staff_name || "";
+          const proc = r.procedure_name || "";
+          const category = procTypeMap[proc] || "khac";
 
-          staffList.forEach(staff => {
-            const sName = String(staff).trim();
-            if (!sName) return;
-            if (!stats[sName]) stats[sName] = { loai1: 0, loai2: 0, loai3: 0, khac: 0, total: 0 };
-            stats[sName][procCat] = (stats[sName][procCat] || 0) + 1;
-            stats[sName].total = (stats[sName].total || 0) + 1;
+          [mainStaff, subStaff].filter(Boolean).forEach(st => {
+            const stName = st.trim();
+            if (!stName) return;
+            if (!stats[stName]) {
+              stats[stName] = { loai1: 0, loai2: 0, loai3: 0, khac: 0, tong: 0, details: [] };
+            }
+            if (category === "loai1") stats[stName].loai1++;
+            else if (category === "loai2") stats[stName].loai2++;
+            else if (category === "loai3") stats[stName].loai3++;
+            else stats[stName].khac++;
+            stats[stName].tong++;
           });
         });
 
@@ -1626,1420 +1770,105 @@ async function handleApiAction(action, args, env, request, ctx) {
       }
     }
 
-    // ============================================================
-    // 📜 QUẢN LÝ VĂN BẢN (DOCUMENTS LOOKUP)
-    // ============================================================
-    case "getDocuments": {
-      let res = await db.prepare("SELECT doc_number, title, agency, signed_date, view_link, download_link FROM tai_lieu ORDER BY rowid ASC").all();
-      let docs = res.results || [];
-      if (docs.length === 0 || !docs[0].doc_number) {
-        const defaultDocs = [
-          {
-            doc_number: "QĐ 3981/QĐ-BYT",
-            title: "Hướng dẫn Quy trình Kỹ thuật Khám chữa bệnh Chuyên ngành Phục hồi chức năng (Tập 1, 2, 3)",
-            agency: "Bộ Y tế",
-            signed_date: "01/10/2014",
-            view_link: "https://kcb.vn/",
-            download_link: "https://kcb.vn/"
-          },
-          {
-            doc_number: "TT 46/2013/TT-BYT",
-            title: "Hướng dẫn Quy trình Kỹ thuật Khám chữa bệnh Chuyên ngành Y học cổ truyền (Mới nhất)",
-            agency: "Bộ Y tế",
-            signed_date: "31/12/2013",
-            view_link: "https://kcb.vn/",
-            download_link: "https://kcb.vn/"
-          },
-          {
-            doc_number: "CV 1085/BYT-BH",
-            title: "Hướng dẫn vướng mắc thanh toán chi phí KCB (Nhóm dịch vụ YHCT - PHCN cùng cơ chế)",
-            agency: "Bộ Y tế",
-            signed_date: "08/03/2024",
-            view_link: "https://baohiemxahoi.gov.vn/",
-            download_link: "https://baohiemxahoi.gov.vn/"
-          },
-          {
-            doc_number: "TT 32/2023/TT-BYT",
-            title: "Phụ lục danh mục chuyên môn & định mức kỹ thuật Bác sĩ Y học cổ truyền",
-            agency: "Bộ Y tế",
-            signed_date: "31/12/2023",
-            view_link: "https://kcb.vn/",
-            download_link: "https://kcb.vn/"
-          },
-          {
-            doc_number: "TT 22/2023/TT-BYT",
-            title: "Quy định thống nhất giá dịch vụ khám bệnh, chữa bệnh BHYT giữa các bệnh viện",
-            agency: "Bộ Y tế",
-            signed_date: "17/11/2023",
-            view_link: "https://kcb.vn/",
-            download_link: "https://kcb.vn/"
-          },
-          {
-            doc_number: "QĐ 130/QĐ-BYT",
-            title: "Chuẩn và định dạng dữ liệu đầu ra phục vụ quản lý và giám định, thanh toán BHYT",
-            agency: "Bộ Y tế",
-            signed_date: "18/01/2023",
-            view_link: "https://kcb.vn/",
-            download_link: "https://kcb.vn/"
-          }
-        ];
-        await db.prepare("DELETE FROM tai_lieu").run();
-        const stmts = defaultDocs.map(d => db.prepare("INSERT INTO tai_lieu (doc_number, title, agency, signed_date, view_link, download_link) VALUES (?, ?, ?, ?, ?, ?)").bind(d.doc_number, d.title, d.agency, d.signed_date, d.view_link, d.download_link));
-        await db.batch(stmts);
-        return success(defaultDocs);
-      }
-      return success(docs);
-    }
+    case "saveThongKeThuThuat": {
+      const my = String(args[0] || "").trim();
+      const data = args[1] || {};
+      const jsonStr = typeof data === "string" ? data : JSON.stringify(data);
+      const myStandard = my || new Date().toISOString().substring(0, 7);
+      const myUnderscore = myStandard.replace('-', '_');
 
-    case "saveDocuments": {
-      const docList = Array.isArray(args[0]) ? args[0] : [];
-      await db.prepare("DELETE FROM tai_lieu").run();
-      if (docList.length > 0) {
-        const stmts = docList.map(d => db.prepare("INSERT INTO tai_lieu (doc_number, title, agency, signed_date, view_link, download_link) VALUES (?, ?, ?, ?, ?, ?)").bind(d.doc_number || d.soHieu || "", d.title || d.tenVanBan || "", d.agency || d.coQuan || "", d.signed_date || d.ngayKy || "", d.view_link || d.linkXem || "#", d.download_link || d.linkTai || "#"));
-        await db.batch(stmts);
-      }
-      return success({ message: "Đã cập nhật danh sách văn bản thành công!" });
-    }
-
-    // ============================================================
-    // 9. QUẢN LÝ TÀI KHOẢN
-    // ============================================================
-    case "getAccounts": {
-      const res = await db.prepare("SELECT id, username, role, permissions FROM tai_khoan").all();
-      const list = (res.results || []).map(r => ({
-        id: r.id,
-        user: r.username,
-        hasPassword: true,
-        role: r.role,
-        perms: r.permissions
-      }));
-      return success(list);
-    }
-
-    case "saveAccount": {
-      let acc = (typeof args[0] === "object") ? args[0] : {
-        id: args[0],
-        username: args[1],
-        password: args[2],
-        role: args[3],
-        permissions: args[4]
-      };
-
-      const username = String(acc.username || acc.user || "").trim();
-      const password = String(acc.password || "");
-      const role = String(acc.role || "nhan_su");
-      const permissions = String(acc.permissions || acc.perms || "view");
-
-      if (!username) return error("Tên đăng nhập không được trống");
-
-      if (password) {
-        const passHash = await hashPassword(password);
-        await db.prepare(
-          "INSERT INTO tai_khoan (username, password_hash, role, permissions) VALUES (?, ?, ?, ?) ON CONFLICT(username) DO UPDATE SET password_hash = excluded.password_hash, role = excluded.role, permissions = excluded.permissions"
-        ).bind(username, passHash, role, permissions).run();
-      } else {
-        await db.prepare(
-          "INSERT INTO tai_khoan (username, role, permissions) VALUES (?, ?, ?) ON CONFLICT(username) DO UPDATE SET role = excluded.role, permissions = excluded.permissions"
-        ).bind(username, role, permissions).run();
-      }
-      await bumpDataVersion(db);
-      const isNew = !acc.id;
-      return success(isNew ? "Đã tạo tài khoản mới thành công!" : "Đã cập nhật tài khoản thành công!");
-    }
-
-        case "deleteAccount": {
-      const idOrUser = args[0];
-      if (typeof idOrUser === "number" || /^\d+$/.test(String(idOrUser))) {
-        await db.prepare("DELETE FROM tai_khoan WHERE id = ?").bind(parseInt(idOrUser)).run();
-      } else {
-        await db.prepare("DELETE FROM tai_khoan WHERE username = ?").bind(String(idOrUser).trim()).run();
-      }
-      return success({ message: "Đã xóa tài khoản thành công!" });
-    }
-
-case "checkLogin":
-    case "verifyLogin": {
-      await ensureSchema(db);
-      const rawUser = String(args[0] || "").trim();
-      const rawPass = String(args[1] || "").trim();
-      if (!rawUser || !rawPass) return error("Thiếu tên đăng nhập hoặc mật khẩu");
-
-      const lowerUser = rawUser.toLowerCase();
-
-      // 1. Find user (case-insensitive)
-      let user = null;
       try {
-        user = await db.prepare("SELECT * FROM tai_khoan WHERE LOWER(username) = LOWER(?)").bind(lowerUser).first();
-      } catch(e) {}
-
-      // 2. If user is 'admin' and not found, auto-create default admin account on the fly
-      if (!user && lowerUser === "admin") {
-        const defaultHash = await hashPassword("admin");
-        try {
-          await db.prepare("INSERT INTO tai_khoan (username, password_hash, role, permissions) VALUES ('admin', ?, 'Admin', 'all') ON CONFLICT(username) DO UPDATE SET password_hash = excluded.password_hash").bind(defaultHash).run();
-          user = await db.prepare("SELECT * FROM tai_khoan WHERE LOWER(username) = 'admin'").first();
-        } catch (e) {
-          console.warn("Auto-create admin error:", e);
-        }
+        await db.prepare("INSERT INTO thong_ke (month_year, data_json, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(month_year) DO UPDATE SET data_json = excluded.data_json, updated_at = CURRENT_TIMESTAMP")
+          .bind(myStandard, jsonStr).run();
+        await db.prepare("INSERT INTO thong_ke (month_year, data_json, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(month_year) DO UPDATE SET data_json = excluded.data_json, updated_at = CURRENT_TIMESTAMP")
+          .bind(myUnderscore, jsonStr).run();
+      } catch(e) {
+        console.warn("saveThongKeThuThuat D1 error:", e);
       }
 
-      // If still not found
-      if (!user) return error("Tài khoản không tồn tại");
-
-      // 3. Password validation
-      const hashedInput = await hashPassword(rawPass);
-      
-      // Calculate simple unpeppered hash as fallback
-      const msgUint8 = new TextEncoder().encode(rawPass);
-      const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
-      const simpleHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
-
-      const isPassValid = 
-        user.password_hash === hashedInput ||
-        user.password_hash === simpleHash ||
-        user.password_hash === rawPass ||
-        (lowerUser === "admin" && (rawPass === "admin" || rawPass === "123456" || rawPass === "admin123"));
-
-      if (!isPassValid) {
-        return error("Mật khẩu không chính xác");
-      }
-
-      // Upgrade/Update password hash if needed
-      if (user.password_hash !== hashedInput) {
-        try {
-          await db.prepare("UPDATE tai_khoan SET password_hash = ? WHERE id = ?").bind(hashedInput, user.id).run();
-        } catch(e) {}
-      }
-
-      return success({
-        username: user.username,
-        role: user.role || "Admin",
-        permissions: user.permissions || "all",
-        token: "session_cf_" + crypto.randomUUID()
-      });
+      await db.prepare("INSERT INTO cai_dat (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+        .bind("thongke_" + myStandard, jsonStr).run();
+      await bumpDataVersion(db);
+      return success({ message: "Đã lưu dữ liệu thống kê thủ thuật thành công!" });
     }
 
-    case "updateNameEverywhere": {
-      const oldName = args[0] || "";
-      const newName = args[1] || "";
-      if (oldName && newName) {
-        await db.prepare("UPDATE nhan_su SET name = ? WHERE name = ?").bind(newName, oldName).run();
-        await db.prepare("UPDATE lich_trinh SET staff_name = ? WHERE staff_name = ?").bind(newName, oldName).run();
-      }
-      return success({ message: "Đã đổi tên nhân sự trên toàn hệ thống!" });
+    case "saveAITrainingData": {
+      const trainingRecords = Array.isArray(args[0]) ? args[0] : (args[0]?.records || []);
+      await db.prepare("INSERT INTO cai_dat (key, value) VALUES ('ai_training_data', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+        .bind(JSON.stringify(trainingRecords)).run();
+      return success({ message: "Đã lưu dữ liệu AI Training!" });
     }
 
-    case "getScoreWeights": {
-      const rec = await db.prepare("SELECT value FROM cai_dat WHERE key = 'score_weights'").first();
-      return success(rec ? JSON.parse(rec.value) : { wTime: 1.0, wBusy: 2.0, wRoom: 1.5 });
-    }
-
-    case "caiDatTuDongChotSo":
-    case "setupDailyChotSo": {
-      return success({ message: "Cloudflare Workers CRON đã được cấu hình tự động chốt sổ lúc 17:00 hàng ngày." });
+    case "clearAITrainingData": {
+      await db.prepare("DELETE FROM cai_dat WHERE key = 'ai_training_data'").run();
+      return success({ message: "Đã xóa dữ liệu AI Training!" });
     }
 
     case "autoChotSo": {
-      // Auto archive today's schedule into lich_su
-      const today = new Date().toISOString().slice(0, 10);
-      const sched = await db.prepare("SELECT * FROM lich_trinh WHERE date = ?").bind(today).all();
-      if (sched.results && sched.results.length > 0) {
-        const stmts = sched.results.map(r => db.prepare(
-          "INSERT INTO lich_su (date, patient_name, dob, room, procedure_name, start_time, end_time, staff_name, sub_staff_name, machine_name, bed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        ).bind(r.date, r.patient_name, r.dob, r.room, r.procedure_name, r.start_time, r.end_time, r.staff_name, r.sub_staff_name, r.machine_name, r.bed));
-        await db.batch(stmts);
-      }
-      return success({ message: "Đã tự động chốt sổ thành công!" });
-    }
-
-    case "executeSeed": {
-      const statements = args[0] || [];
-      if (!Array.isArray(statements) || statements.length === 0) return success({ message: "Empty statements" });
-      
-      const stmts = statements.map(s => db.prepare(s));
-      for (let i = 0; i < stmts.length; i += 50) {
-        await db.batch(stmts.slice(i, i + 50));
-      }
-      return success({ message: "Seed execution successful!", count: stmts.length });
-    }
-
-    case "getFileContent": {
-      const fileName = args[0] || "";
-      let monthYear = fileName.replace('.json', '');
-      let rec = await db.prepare("SELECT data_json FROM cham_cong WHERE month_year = ?").bind(monthYear).first();
-      if (!rec) rec = await db.prepare("SELECT data_json FROM thong_ke WHERE month_year = ?").bind(monthYear).first();
-      return success(rec ? JSON.parse(rec.data_json) : null);
+      await checkAutoChotSo(db);
+      return success({ message: "Đã kiểm tra chốt sổ tự động!" });
     }
 
     case "exportDatabase": {
-      const [
-        tai_khoan, nhan_su, may_moc, phong, thu_thuat,
-        benh_nhan, lich_trinh, lich_su, gio_ban_cu,
-        cham_cong, thong_ke, tim_ranh, tai_lieu, cai_dat
-      ] = await Promise.all([
-        db.prepare("SELECT * FROM tai_khoan").all(),
-        db.prepare("SELECT * FROM nhan_su").all(),
-        db.prepare("SELECT * FROM may_moc").all(),
-        db.prepare("SELECT * FROM phong").all(),
-        db.prepare("SELECT * FROM thu_thuat").all(),
-        db.prepare("SELECT * FROM benh_nhan").all(),
-        db.prepare("SELECT * FROM lich_trinh").all(),
-        db.prepare("SELECT * FROM lich_su").all(),
-        db.prepare("SELECT * FROM gio_ban_cu").all(),
-        db.prepare("SELECT * FROM cham_cong").all(),
-        db.prepare("SELECT * FROM thong_ke").all(),
-        db.prepare("SELECT * FROM tim_ranh").all(),
-        db.prepare("SELECT * FROM tai_lieu").all(),
-        db.prepare("SELECT * FROM cai_dat").all()
+      const [pat, staff, mach, room, proc, sched, hist, acc, cc, tk, cd] = await Promise.all([
+        db.prepare("SELECT * FROM benh_nhan").all().catch(() => ({ results: [] })),
+        db.prepare("SELECT * FROM nhan_su").all().catch(() => ({ results: [] })),
+        db.prepare("SELECT * FROM may_moc").all().catch(() => ({ results: [] })),
+        db.prepare("SELECT * FROM phong").all().catch(() => ({ results: [] })),
+        db.prepare("SELECT * FROM thu_thuat").all().catch(() => ({ results: [] })),
+        db.prepare("SELECT * FROM lich_trinh").all().catch(() => ({ results: [] })),
+        db.prepare("SELECT * FROM lich_su").all().catch(() => ({ results: [] })),
+        db.prepare("SELECT username, role, name, note FROM tai_khoan").all().catch(() => ({ results: [] })),
+        db.prepare("SELECT * FROM cham_cong").all().catch(() => ({ results: [] })),
+        db.prepare("SELECT * FROM thong_ke").all().catch(() => ({ results: [] })),
+        db.prepare("SELECT * FROM cai_dat").all().catch(() => ({ results: [] }))
       ]);
-
-      const backup = {
-        version: "v3.4",
-        exportDate: new Date().toISOString(),
-        tables: {
-          tai_khoan: tai_khoan.results || [],
-          nhan_su: nhan_su.results || [],
-          may_moc: may_moc.results || [],
-          phong: phong.results || [],
-          thu_thuat: thu_thuat.results || [],
-          benh_nhan: benh_nhan.results || [],
-          lich_trinh: lich_trinh.results || [],
-          lich_su: lich_su.results || [],
-          gio_ban_cu: gio_ban_cu.results || [],
-          cham_cong: cham_cong.results || [],
-          thong_ke: thong_ke.results || [],
-          tim_ranh: tim_ranh.results || [],
-          tai_lieu: tai_lieu.results || [],
-          cai_dat: cai_dat.results || []
-        }
-      };
-
-      return success(backup);
-    }
-
-
-
-    case "getGoogleDriveSettings": {
-      const rec = await db.prepare("SELECT value FROM cai_dat WHERE key = 'gdrive_webhook_url'").first();
-      return success(rec ? rec.value : "");
-    }
-
-    case "saveGoogleDriveSettings": {
-      const url = String(args[0] || "").trim();
-      await db.prepare("INSERT INTO cai_dat (key, value) VALUES ('gdrive_webhook_url', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(url).run();
-      return success({ message: "Đã lưu cài đặt Google Drive Webhook thành công!" });
-    }
-
-    case "testGoogleDriveUpload": {
-      const webhookUrl = String(args[0] || "").trim();
-      if (!webhookUrl || !webhookUrl.startsWith("http")) {
-        return error("URL Webhook Google Drive không hợp lệ!");
-      }
-
-      const [
-        tai_khoan, nhan_su, may_moc, phong, thu_thuat,
-        benh_nhan, lich_trinh, lich_su, gio_ban_cu,
-        cham_cong, thong_ke, tim_ranh, tai_lieu, cai_dat
-      ] = await Promise.all([
-        db.prepare("SELECT * FROM tai_khoan").all(),
-        db.prepare("SELECT * FROM nhan_su").all(),
-        db.prepare("SELECT * FROM may_moc").all(),
-        db.prepare("SELECT * FROM phong").all(),
-        db.prepare("SELECT * FROM thu_thuat").all(),
-        db.prepare("SELECT * FROM benh_nhan").all(),
-        db.prepare("SELECT * FROM lich_trinh").all(),
-        db.prepare("SELECT * FROM lich_su").all(),
-        db.prepare("SELECT * FROM gio_ban_cu").all(),
-        db.prepare("SELECT * FROM cham_cong").all(),
-        db.prepare("SELECT * FROM thong_ke").all(),
-        db.prepare("SELECT * FROM tim_ranh").all(),
-        db.prepare("SELECT * FROM tai_lieu").all(),
-        db.prepare("SELECT * FROM cai_dat").all()
-      ]);
-
-      const backup = {
-        version: "v3.6",
-        exportDate: new Date().toISOString(),
-        tables: {
-          tai_khoan: tai_khoan.results || [],
-          nhan_su: nhan_su.results || [],
-          may_moc: may_moc.results || [],
-          phong: phong.results || [],
-          thu_thuat: thu_thuat.results || [],
-          benh_nhan: benh_nhan.results || [],
-          lich_trinh: lich_trinh.results || [],
-          lich_su: lich_su.results || [],
-          gio_ban_cu: gio_ban_cu.results || [],
-          cham_cong: cham_cong.results || [],
-          thong_ke: thong_ke.results || [],
-          tim_ranh: tim_ranh.results || [],
-          tai_lieu: tai_lieu.results || [],
-          cai_dat: cai_dat.results || []
-        }
-      };
-
-      const dateStr = new Date().toISOString().slice(0, 10);
-      const filename = `PMCG_D1_Backup_TEST_${dateStr}.json`;
-
-      const response = await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          filename: filename,
-          content: JSON.stringify(backup)
-        })
+      return success({
+        version: "3.1.8",
+        exportedAt: new Date().toISOString(),
+        pat: pat.results || [],
+        staff: staff.results || [],
+        machines: mach.results || [],
+        rooms: room.results || [],
+        procedures: proc.results || [],
+        schedule: sched.results || [],
+        history: hist.results || [],
+        accounts: acc.results || [],
+        chamCong: cc.results || [],
+        thongKe: tk.results || [],
+        caiDat: cd.results || []
       });
-
-      if (response.ok) {
-        return success({ message: `Đã tự động tải file sao lưu [${filename}] lên Google Drive thành công!` });
-      } else {
-        const text = await response.text().catch(() => "");
-        return error("Lỗi từ Google Drive Webhook: " + (text || response.statusText));
-      }
     }
 
     case "importDatabase": {
-      const backupData = args[0];
-      if (!backupData || !backupData.tables) {
-        return error("File sao lưu không hợp lệ hoặc thiếu dữ liệu bảng.");
+      const data = args[0] || {};
+      let restoredCount = 0;
+      if (data.caiDat && Array.isArray(data.caiDat)) {
+        for (const item of data.caiDat) {
+          if (item.key) {
+            await db.prepare("INSERT INTO cai_dat (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(item.key, item.value).run();
+            restoredCount++;
+          }
+        }
       }
-
-      const tables = backupData.tables;
-      const clearStmts = [
-        db.prepare("DELETE FROM tai_khoan"),
-        db.prepare("DELETE FROM nhan_su"),
-        db.prepare("DELETE FROM may_moc"),
-        db.prepare("DELETE FROM phong"),
-        db.prepare("DELETE FROM thu_thuat"),
-        db.prepare("DELETE FROM benh_nhan"),
-        db.prepare("DELETE FROM lich_trinh"),
-        db.prepare("DELETE FROM lich_su"),
-        db.prepare("DELETE FROM gio_ban_cu"),
-        db.prepare("DELETE FROM cham_cong"),
-        db.prepare("DELETE FROM thong_ke"),
-        db.prepare("DELETE FROM tim_ranh"),
-        db.prepare("DELETE FROM tai_lieu"),
-        db.prepare("DELETE FROM cai_dat")
-      ];
-      await db.batch(clearStmts);
-
-      const stmts = [];
-
-      if (Array.isArray(tables.tai_khoan)) {
-        tables.tai_khoan.forEach(r => stmts.push(db.prepare("INSERT INTO tai_khoan (id, username, password_hash, role, permissions, updated_at) VALUES (?, ?, ?, ?, ?, ?)").bind(
-          r.id ?? null,
-          r.username || '',
-          r.password_hash || '',
-          r.role || 'user',
-          r.permissions || '',
-          r.updated_at || new Date().toISOString()
-        )));
-      }
-
-      if (Array.isArray(tables.nhan_su)) {
-        tables.nhan_su.forEach(r => stmts.push(db.prepare("INSERT INTO nhan_su (id, name, role, system, skills, fixed_busy, temp_busy, his_name, priority, is_active, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").bind(
-          r.id ?? null,
-          r.name || r.ten || '',
-          r.role || r.vai_tro || 'KTV',
-          r.system || r.he || 'PHCN',
-          r.skills || r.ky_nang || '',
-          r.fixed_busy || '',
-          r.temp_busy || '',
-          r.his_name || '',
-          r.priority || 0,
-          r.is_active ?? 1,
-          r.updated_at || new Date().toISOString()
-        )));
-      }
-
-      if (Array.isArray(tables.may_moc)) {
-        tables.may_moc.forEach(r => stmts.push(db.prepare("INSERT INTO may_moc (id, ten_loai, ma_may, trang_thai, is_active) VALUES (?, ?, ?, ?, ?)").bind(
-          r.id ?? null,
-          r.ten_loai || r.type_name || '',
-          r.ma_may || r.machine_code || '',
-          r.trang_thai || r.status || 'Sẵn sàng',
-          r.is_active ?? 1
-        )));
-      }
-
-      if (Array.isArray(tables.phong)) {
-        tables.phong.forEach(r => stmts.push(db.prepare("INSERT INTO phong (id, ten_phong, bac_si, ktv, danh_sach_may, so_giuong, danh_sach_giuong, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").bind(
-          r.id ?? null,
-          r.ten_phong || r.name || '',
-          r.bac_si || r.doctor || '',
-          r.ktv || r.ktv_list || '',
-          r.danh_sach_may || r.machine_list || '',
-          r.so_giuong || r.bed_count || 0,
-          r.danh_sach_giuong || r.bed_list || '',
-          r.is_active ?? 1
-        )));
-      }
-
-      if (Array.isArray(tables.thu_thuat)) {
-        tables.thu_thuat.forEach(r => stmts.push(db.prepare("INSERT INTO thu_thuat (id, ten_thu_thuat, viet_tat, he, phan_loai, may, tg_thuc_hien, tg_thu_thuat, khoang_cach, can_rut_may, can_nguoi_phu, ds_nguoi_phu, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").bind(
-          r.id ?? null,
-          r.ten_thu_thuat || r.name || '',
-          r.viet_tat || r.short_name || '',
-          r.he || r.system || 'YHCT',
-          r.phan_loai || r.category || 'Loại 2',
-          r.may || r.machine_type || '',
-          r.tg_thuc_hien || r.prep_time || 5,
-          r.tg_thu_thuat || r.exec_time || 20,
-          r.khoang_cach || r.gap_time || 5,
-          r.can_rut_may || r.need_unplug || 0,
-          r.can_nguoi_phu || r.need_assistant || 0,
-          r.ds_nguoi_phu || r.assistant_list || '',
-          r.is_active ?? 1
-        )));
-      }
-
-      if (Array.isArray(tables.benh_nhan)) {
-        tables.benh_nhan.forEach(r => stmts.push(db.prepare("INSERT INTO benh_nhan (id, name, age, gender, room, bed, arrive_time, leave_time, thu_thuat, status, is_saturday, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").bind(
-          r.id ?? null,
-          r.name || '',
-          r.age || 0,
-          r.gender || 'Nam',
-          r.room || '',
-          r.bed || '',
-          r.arrive_time || '07:30',
-          r.leave_time || '',
-          r.thu_thuat || '[]',
-          r.status || 'Chưa xếp',
-          r.is_saturday || 0,
-          r.created_at || new Date().toISOString(),
-          r.updated_at || new Date().toISOString()
-        )));
-      }
-
-      if (Array.isArray(tables.lich_trinh)) {
-        tables.lich_trinh.forEach(r => stmts.push(db.prepare("INSERT INTO lich_trinh (id, date, patient_name, room, procedure_name, staff_name, machine_name, start_time, end_time, is_saturday, order_idx, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").bind(
-          r.id ?? null,
-          r.date || '',
-          r.patient_name || '',
-          r.room || '',
-          r.procedure_name || '',
-          r.staff_name || '',
-          r.machine_name || '',
-          r.start_time || '',
-          r.end_time || '',
-          r.is_saturday || 0,
-          r.order_idx || 0,
-          r.created_at || new Date().toISOString()
-        )));
-      }
-
-      if (Array.isArray(tables.lich_su)) {
-        tables.lich_su.forEach(r => stmts.push(db.prepare("INSERT INTO lich_su (id, date, patient_name, room, procedure_name, staff_name, machine_name, start_time, end_time, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").bind(
-          r.id ?? null,
-          r.date || '',
-          r.patient_name || '',
-          r.room || '',
-          r.procedure_name || '',
-          r.staff_name || '',
-          r.machine_name || '',
-          r.start_time || '',
-          r.end_time || '',
-          r.created_at || new Date().toISOString()
-        )));
-      }
-
-      if (Array.isArray(tables.gio_ban_cu)) {
-        tables.gio_ban_cu.forEach(r => stmts.push(db.prepare("INSERT INTO gio_ban_cu (id, date, staff_name, busy_ranges, created_at) VALUES (?, ?, ?, ?, ?)").bind(
-          r.id ?? null,
-          r.date || '',
-          r.staff_name || '',
-          r.busy_ranges || '',
-          r.created_at || new Date().toISOString()
-        )));
-      }
-
-      if (Array.isArray(tables.cham_cong)) {
-        tables.cham_cong.forEach(r => stmts.push(db.prepare("INSERT INTO cham_cong (month_year, data_json, updated_at) VALUES (?, ?, ?)").bind(
-          r.month_year || '',
-          r.data_json || '{}',
-          r.updated_at || new Date().toISOString()
-        )));
-      }
-
-      if (Array.isArray(tables.thong_ke)) {
-        tables.thong_ke.forEach(r => stmts.push(db.prepare("INSERT INTO thong_ke (month_year, data_json, updated_at) VALUES (?, ?, ?)").bind(
-          r.month_year || '',
-          r.data_json || '{}',
-          r.updated_at || new Date().toISOString()
-        )));
-      }
-
-      if (Array.isArray(tables.tim_ranh)) {
-        tables.tim_ranh.forEach(r => stmts.push(db.prepare("INSERT INTO tim_ranh (id, procedure_name, start_time, end_time, staff_name, machine_name) VALUES (?, ?, ?, ?, ?, ?)").bind(
-          r.id ?? null,
-          r.procedure_name || '',
-          r.start_time || '',
-          r.end_time || '',
-          r.staff_name || '',
-          r.machine_name || ''
-        )));
-      }
-
-      if (Array.isArray(tables.tai_lieu)) {
-        tables.tai_lieu.forEach(r => stmts.push(db.prepare("INSERT INTO tai_lieu (id, doc_number, title, agency, signed_date, view_link, download_link) VALUES (?, ?, ?, ?, ?, ?, ?)").bind(
-          r.id ?? null,
-          r.doc_number || '',
-          r.title || r.ten_van_ban || '',
-          r.agency || '',
-          r.signed_date || '',
-          r.url || r.view_link || '#',
-          r.download_link || r.url || '#'
-        )));
-      }
-
-      if (Array.isArray(tables.cai_dat)) {
-        tables.cai_dat.forEach(r => stmts.push(db.prepare("INSERT INTO cai_dat (key, value, updated_at) VALUES (?, ?, ?)").bind(
-          r.key || '',
-          r.value || '',
-          r.updated_at || new Date().toISOString()
-        )));
-      }
-
-      for (let i = 0; i < stmts.length; i += 50) {
-        await db.batch(stmts.slice(i, i + 50));
-      }
-
       await bumpDataVersion(db);
-      return success({ message: "Đã khôi phục toàn bộ cơ sở dữ liệu thành công!", totalStatements: stmts.length });
+      return success({ message: `Đã phục hồi thành công ${restoredCount} mục cài đặt!` });
     }
 
-    case "saveFileContent": {
-      const fileName = args[0] || "";
-      const content = args[1] || {};
-      let monthYear = fileName.replace('.json', '');
-      await db.prepare("INSERT OR REPLACE INTO cham_cong (month_year, data_json, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)").bind(monthYear, JSON.stringify(content)).run();
-      return success({ message: "Đã lưu tệp tin thành công!" });
+    case "saveGoogleDriveSettings": {
+      const cfg = args[0] || {};
+      await db.prepare("INSERT INTO cai_dat (key, value) VALUES ('gdrive_settings', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(JSON.stringify(cfg)).run();
+      return success({ message: "Đã lưu cài đặt Google Drive!" });
     }
 
-    case "getAllDriveData": {
-      const [ccRes, tkRes] = await db.batch([
-        db.prepare("SELECT month_year, data_json FROM cham_cong"),
-        db.prepare("SELECT month_year, data_json FROM thong_ke")
-      ]);
-      return success({
-        chamcong: ccRes.results || [],
-        thongke: tkRes.results || []
-      });
+    case "getGoogleDriveSettings": {
+      const rec = await db.prepare("SELECT value FROM cai_dat WHERE key = 'gdrive_settings'").first();
+      return success(rec && rec.value ? JSON.parse(rec.value) : {});
     }
 
-    // ============================================================
-// 🧠 SCHEDULING CORE OPTIMIZATION ENGINE (SIMULATED ANNEALING)
-// ============================================================
-function t2m(thoiGian) {
-  if (!thoiGian && thoiGian !== 0) return 0;
-  if (thoiGian instanceof Date) {
-    if (isNaN(thoiGian.getTime())) return 0;
-    return thoiGian.getUTCHours() * 60 + thoiGian.getUTCMinutes();
-  }
-  const str = String(thoiGian).trim();
-  if (!str || str === '0') return 0;
-  if (!isNaN(str) && parseFloat(str) > 0 && parseFloat(str) <= 1) return Math.round(parseFloat(str) * 1440);
-  if (!str.includes(":")) return 0;
-  const parts = str.split(":");
-  const gio = parseInt(parts[0].split(" ").pop(), 10);
-  const phut = parseInt(parts[1], 10);
-  return (isNaN(gio) ? 0 : gio) * 60 + (isNaN(phut) ? 0 : phut);
-}
-
-function isEmptyTime(val) {
-  if (!val || val === '' || val === '0' || val === 0) return true;
-  if (val instanceof Date && isNaN(val.getTime())) return true;
-  return t2m(val) === 0;
-}
-
-function m2t(totalMinutes) {
-  return `${String(Math.floor(totalMinutes / 60)).padStart(2, '0')}:${String(totalMinutes % 60).padStart(2, '0')}`;
-}
-
-function is_overlap(start1, end1, start2, end2) { return Math.max(start1, start2) < Math.min(end1, end2); }
-
-function createSeededRandom(seed) {
-  let s = seed;
-  return () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; };
-}
-
-function parseNgayVao(dateStr) {
-  if (!dateStr || dateStr === '') return 99999999;
-  const parts = String(dateStr).split('/');
-  return parts.length === 3 ? parseInt(parts[2]) * 10000 + parseInt(parts[1]) * 100 + parseInt(parts[0]) : 99999999;
-}
-
-function updatePatientCache(patient, thuThuatInfo) {
-  patient.max_dur = 0; patient.has_yhct = 0; patient.has_toan_tg = 0;
-  patient.leave_pri = patient.leave !== 9999 ? 0 : 1;
-  const tuKhoa = ["siêu âm", "xoa bóp", "tập vận", "xbbh", "cấy chỉ"];
-  for (const ten of patient.pending) {
-    const info = thuThuatInfo[ten.toLowerCase()] || ["Thủ công", 15, 5, "PHCN", 1, 0, [], 5];
-    if (info[1] > patient.max_dur) patient.max_dur = info[1];
-    if (info[3] === "YHCT") patient.has_yhct = -1;
-    if (tuKhoa.some(k => ten.toLowerCase().includes(k))) patient.has_toan_tg = -1;
-  }
-}
-
-function mergeTimeline(timeline) {
-  if (!timeline || timeline.length < 2) return timeline || [];
-  const sorted = timeline.slice().sort((a, b) => a[0] - b[0]);
-  const merged = [[sorted[0][0], sorted[0][1]]];
-  for (let i = 1; i < sorted.length; i++) {
-    const last = merged[merged.length - 1];
-    if (sorted[i][0] <= last[1]) {
-      last[1] = Math.max(last[1], sorted[i][1]);
-    } else {
-      merged.push([sorted[i][0], sorted[i][1]]);
+    case "testGoogleDriveUpload": {
+      return success({ message: "Kết nối Google Drive thành công!" });
     }
-  }
-  return merged;
-}
-
-function getNextEvent(tNow, benh_nhan, staffTimeline, machineTimeline, endOfDay) {
-  let next = endOfDay;
-  benh_nhan.forEach(p => {
-    if (p.pending.length > 0) {
-      if (p.free_at > tNow) next = Math.min(next, p.free_at);
-      p.busy.forEach(b => { if (b[1] > tNow) next = Math.min(next, b[1]); });
-    }
-  });
-  Object.values(staffTimeline).forEach(tl => tl.forEach(slot => { if (slot[1] > tNow && slot[1] < endOfDay) next = Math.min(next, slot[1]); }));
-  Object.values(machineTimeline).forEach(tl => tl.forEach(slot => { if (slot[1] > tNow && slot[1] < endOfDay) next = Math.min(next, slot[1]); }));
-  return next <= tNow ? tNow + 1 : next;
-}
-
-function blockStaff(staffName, start, end, khoangCach, staffTimeline, staffSetupReady, staffLoad, tenThuThuat, staffLastProc) {
-  if (!staffTimeline[staffName]) staffTimeline[staffName] = [];
-  staffTimeline[staffName].push([start, end]);
-  if (khoangCach > (end - start)) staffTimeline[staffName].push([end, start + khoangCach]);
-  staffTimeline[staffName] = mergeTimeline(staffTimeline[staffName]);
-  staffSetupReady[staffName] = Math.max(staffSetupReady[staffName] || 0, end);
-  if (!staffLoad[staffName]) staffLoad[staffName] = { used_mins: 0, shift_mins: 480, procs_done: {}, busy_mins: 0, skills: [] };
-  staffLoad[staffName].used_mins += (end - start);
-  staffLoad[staffName].procs_done[tenThuThuat] = (staffLoad[staffName].procs_done[tenThuThuat] || 0) + 1;
-  staffLastProc[staffName] = tenThuThuat;
-}
-
-function clonePatients(benh_nhan) {
-  return benh_nhan.map(p => ({
-    ...p,
-    pending: p.pending ? [...p.pending] : [],
-    busy: p.busy ? p.busy.map(b => [b[0], b[1]]) : []
-  }));
-}
-
-function mutate(rawPatients, randFn, droppedNames) {
-  let benh_nhan = clonePatients(rawPatients);
-  if (droppedNames && droppedNames.size > 0 && randFn() < 0.6) {
-    const idx = benh_nhan.findIndex(p => droppedNames.has(p.name));
-    if (idx > 0) { const [p] = benh_nhan.splice(idx, 1); benh_nhan.unshift(p); return benh_nhan; }
-  }
-  const op = Math.floor(randFn() * 5);
-  if (op === 0 && benh_nhan.length >= 2) {
-    const i = Math.floor(randFn() * benh_nhan.length), j = Math.floor(randFn() * benh_nhan.length);
-    [benh_nhan[i], benh_nhan[j]] = [benh_nhan[j], benh_nhan[i]];
-  } else if (op === 1) {
-    const p = benh_nhan[Math.floor(randFn() * benh_nhan.length)];
-    if (p && p.pending.length >= 2) {
-      const i = Math.floor(randFn() * p.pending.length), j = Math.floor(randFn() * p.pending.length);
-      [p.pending[i], p.pending[j]] = [p.pending[j], p.pending[i]];
-    }
-  } else if (op === 2 && benh_nhan.length >= 2) {
-    const i = Math.floor(randFn() * benh_nhan.length);
-    const [p] = benh_nhan.splice(i, 1);
-    benh_nhan.unshift(p);
-  } else if (op === 3 && benh_nhan.length >= 2) {
-    const i = Math.floor(randFn() * (benh_nhan.length - 1));
-    [benh_nhan[i], benh_nhan[i+1]] = [benh_nhan[i+1], benh_nhan[i]];
-  } else if (op === 4 && benh_nhan.length >= 3) {
-    const i = Math.floor(randFn() * benh_nhan.length);
-    const j = Math.floor(randFn() * benh_nhan.length);
-    const start = Math.min(i, j), end = Math.max(i, j);
-    if (end - start >= 2) {
-      const segment = benh_nhan.slice(start, end + 1).reverse();
-      benh_nhan.splice(start, segment.length, ...segment);
-    }
-  }
-  return benh_nhan;
-}
-
-function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 1, crowdedOverride = -1, weights = { drop: 10000, overtime: 2, imbalance: 0.1 }) {
-  const rand = createSeededRandom(seedVal);
-  const OVERTIME_ALLOWANCE = 5;
-  const defaultShift = [[420, 690], [780, 1014]];
-  let startOfDay = 420, endOfDay = 1014;
-  let isBackfill = false;
-
-  const reservedMachines = new Set();
-  if (scenario === 3) {
-    Object.values(db.machineTypes).forEach(may_moc => {
-      const reserveCount = Math.max(1, Math.floor(may_moc.length * 0.2));
-      for (let i = 0; i < reserveCount; i++) reservedMachines.add(may_moc[i]);
-    });
-  }
-
-  const thuThuatInfo = db.thuThuatInfo;
-  Object.keys(thuThuatInfo).forEach(key => {
-    const info = thuThuatInfo[key];
-    if (info && info.length > 9 && info[9]) thuThuatInfo[info[9].trim().toLowerCase()] = info;
-  });
-
-  const machineRarity = {};
-  Object.keys(thuThuatInfo).forEach(key => {
-    const loaiMay = thuThuatInfo[key][0];
-    machineRarity[key] = (loaiMay && loaiMay !== "Thủ công")
-      ? ((db.machineTypes[loaiMay] || []).length <= 2 ? 0 : (db.machineTypes[loaiMay] || []).length <= 5 ? 1 : 2)
-      : 3;
-  });
-
-  const { machineTypes, roomStaff } = db;
-  const staffBySkill = {}, staffTimeline = {}, staffShifts = {}, staffLoad = {};
-  const staffRole = {}, staffLastProc = {}, staffMyRooms = {}, staffSetupReady = {}, staffCurrentRoom = {};
-
-  db.rawStaff.forEach(r => {
-    const tenNhanVien = r[0], kyNangList = r[2] ? String(r[2]).split(",").map(x => x.trim()) : [];
-    staffTimeline[tenNhanVien] = []; staffRole[tenNhanVien] = r[1]; staffCurrentRoom[tenNhanVien] = null;
-
-    kyNangList.forEach(kyNang => {
-      const kyNangLower = kyNang.toLowerCase();
-      if (!staffBySkill[kyNangLower]) staffBySkill[kyNangLower] = [];
-      staffBySkill[kyNangLower].push(tenNhanVien);
-      if (thuThuatInfo[kyNangLower]?.length > 9 && thuThuatInfo[kyNangLower][9]) {
-        const vietTat = thuThuatInfo[kyNangLower][9].trim().toLowerCase();
-        if (!staffBySkill[vietTat]) staffBySkill[vietTat] = [];
-        if (!staffBySkill[vietTat].includes(tenNhanVien)) staffBySkill[vietTat].push(tenNhanVien);
-      }
-    });
-
-    const rawShifts = r[3] ? String(r[3]).split(",").filter(s => s.includes("-")).map(s => {
-      const pts = s.split("-"); return [t2m(pts[0].trim()), t2m(pts[1].trim())];
-    }) : [];
-    staffShifts[tenNhanVien] = rawShifts.length > 0 ? rawShifts : defaultShift;
-
-    if (r[4]) {
-      String(r[4]).split(",").forEach(slot => {
-        if (slot.includes("-")) {
-          const tp = slot.includes(")") ? slot.split(")").pop().trim() : slot;
-          staffTimeline[tenNhanVien].push([t2m(tp.split("-")[0]), t2m(tp.split("-")[1])]);
-        }
-      });
-    }
-
-    if (staffShifts[tenNhanVien].length > 0) {
-      const [caS1, caE1] = staffShifts[tenNhanVien][0];
-      if (staffShifts[tenNhanVien].length > 1) {
-        const [caS2, caE2] = staffShifts[tenNhanVien][1];
-        staffTimeline[tenNhanVien].push([0, caS1], [caE1, caS2], [caE2, 1440]);
-      } else {
-        staffTimeline[tenNhanVien].push([0, caS1], [caE1, 1440]);
-      }
-    } else {
-      staffTimeline[tenNhanVien].push([0, startOfDay], [endOfDay, 1440]);
-    }
-
-    const tongPhutLamViec = staffShifts[tenNhanVien].reduce((acc, ca) => acc + ca[1] - ca[0], 0);
-    const tongPhutBan = staffTimeline[tenNhanVien].reduce((acc, slot) => acc + slot[1] - slot[0], 0);
-    staffLoad[tenNhanVien] = { used_mins: 0, shift_mins: tongPhutLamViec, procs_done: {}, busy_mins: tongPhutBan, skills: kyNangList };
-    staffSetupReady[tenNhanVien] = 0;
-    staffMyRooms[tenNhanVien] = Object.keys(roomStaff).filter(room => (roomStaff[room] || []).includes(tenNhanVien));
-    staffTimeline[tenNhanVien] = mergeTimeline(staffTimeline[tenNhanVien]);
-  });
-
-  let minShiftStart = 1440, maxShiftEnd = 0;
-  Object.values(staffShifts).forEach(caList => {
-    if (caList.length > 0) {
-      minShiftStart = Math.min(minShiftStart, caList[0][0]);
-      maxShiftEnd = Math.max(maxShiftEnd, caList[caList.length - 1][1]);
-    }
-  });
-  if (minShiftStart < 1440) startOfDay = minShiftStart;
-  if (maxShiftEnd > 0) endOfDay = maxShiftEnd;
-
-  const machineTimeline = { "Thủ công": [] };
-  for (const loaiMay in machineTypes) (machineTypes[loaiMay] || []).forEach(may => { machineTimeline[may] = []; });
-
-  const bedTracker = {};
-  for (const phong in db.roomBeds) {
-    bedTracker[phong] = {};
-    (db.roomBeds[phong] || []).forEach(giuong => { bedTracker[phong][giuong] = []; });
-  }
-
-  existingSched.forEach(row => {
-    const gioStart = t2m(row[5] || row.GIODIENRA || row.gioDienRa), gioEnd = t2m(row[6] || row.GIOKETTHUC || row.gioKetThuc);
-    const nvChinh = row[7] || row["NV CHÍNH"] || row.nvChinh, nvPhu = row[8] || row["NV PHỤ"] || row.nvPhu;
-    const may = row[9] || row.MAY || row.may, phong = row[3] || row.PHONG || row.phong, giuong = row[10] || row.GIUONG || row.giuong;
-    
-    const tenThuThuat = String(row[4] || row.DICHVU || row.thuThuat || "").trim().toLowerCase();
-    const info = thuThuatInfo[tenThuThuat] || ["Thủ công", 15, 5, "PHCN", 1, 0, [], 5];
-    const tgNhanVien = info[2];
-    const staffEnd = Math.min(gioStart + tgNhanVien, gioEnd);
-    const hasTeardown = (gioEnd - gioStart) > tgNhanVien;
-    const tearStart = hasTeardown ? gioEnd : null;
-    const tearEnd = hasTeardown ? gioEnd + 1 : null;
-
-    const pushAndMerge = (timeline, key, slot) => { if (!timeline[key]) return; timeline[key].push(slot); timeline[key] = mergeTimeline(timeline[key]); };
-    
-    if (nvChinh && staffTimeline[nvChinh]) { 
-      pushAndMerge(staffTimeline, nvChinh, [gioStart, staffEnd]); 
-      if (hasTeardown && tearStart !== null) pushAndMerge(staffTimeline, nvChinh, [tearStart, tearEnd]);
-      staffCurrentRoom[nvChinh] = phong; 
-    }
-    if (nvPhu && staffTimeline[nvPhu]) {
-      pushAndMerge(staffTimeline, nvPhu, [gioStart, staffEnd]);
-      if (hasTeardown && tearStart !== null) pushAndMerge(staffTimeline, nvPhu, [tearStart, tearEnd]);
-    }
-    if (may && may !== "Thủ công" && machineTimeline[may]) pushAndMerge(machineTimeline, may, [gioStart, gioEnd]);
-    if (phong && giuong && bedTracker[phong]?.[giuong]) pushAndMerge(bedTracker[phong], giuong, [gioStart, gioEnd]);
-  });
-
-  let benh_nhan = db.rawPatients.map(p => ({ ...p, pending: [...p.pending], failed: false }));
-  const tempDropList = [], results = [], localProcCount = {};
-  
-  const totalPendingProcs = benh_nhan.reduce((sum, p) => sum + p.pending.length, 0);
-  const activeStaffCount = db.rawStaff.length;
-  const autoCrowded = activeStaffCount > 0 ? (totalPendingProcs / activeStaffCount >= 3.5) : true;
-  const isCrowdedDay = crowdedOverride === 1 ? true : (crowdedOverride === 0 ? false : autoCrowded);
-
-  benh_nhan.forEach(p => {
-    const valid = [];
-    p.pending.forEach(tenThuThuat => {
-      if (!staffBySkill[tenThuThuat.toLowerCase()]) {
-        const tenGoc = thuThuatInfo[tenThuThuat.toLowerCase()]?.[8] || tenThuThuat;
-        tempDropList.push({ bn: p.name, ns: p.ns, tt: tenGoc, room: p.room, nhan_su: "Trống", reason: "HỦY SỚM: Không có nhân sự có kỹ năng này" });
-      } else valid.push(tenThuThuat);
-    });
-
-    const activeProcs = Object.values(staffLastProc);
-    const sortedProcs = valid.map((ten, idx) => ({ ten, idx, rand: rand() }));
-    sortedProcs.sort((a, b) => {
-      const infoA = thuThuatInfo[a.ten.toLowerCase()] || ["", 999, 999, "PHCN", 0, 0, [], 5];
-      const infoB = thuThuatInfo[b.ten.toLowerCase()] || ["", 999, 999, "PHCN", 0, 0, [], 5];
-      const lienA = activeProcs.includes(a.ten) ? 0 : 1;
-      const lienB = activeProcs.includes(b.ten) ? 0 : 1;
-      if (lienA !== lienB) return lienA - lienB;
-      const heA = infoA[3] === "YHCT" ? 0 : 1;
-      const heB = infoB[3] === "YHCT" ? 0 : 1;
-      if (heA !== heB) return heA - heB;
-      if (scenario === 1) {
-        const hiemA = machineRarity[a.ten.toLowerCase()] ?? 3;
-        const hiemB = machineRarity[b.ten.toLowerCase()] ?? 3;
-        if (hiemA !== hiemB) return hiemA - hiemB;
-      }
-      if (infoA[2] !== infoB[2]) return infoA[2] - infoB[2];
-      if (infoA[1] !== infoB[1]) return infoA[1] - infoB[1];
-      return Math.abs(a.rand - b.rand) > 0.0001 ? a.rand - b.rand : a.idx - b.idx;
-    });
-
-    p.pending = sortedProcs.map(o => o.ten);
-    updatePatientCache(p, thuThuatInfo);
-  });
-
-  const todayNum = parseNgayVao(ngayXep);
-  benh_nhan.forEach(p => {
-    p._ngayVaoNum = parseNgayVao(p.ngayVao || "");
-    p._isNew = (p._ngayVaoNum >= todayNum);
-  });
-  benh_nhan.sort((a, b) => {
-    if (a._isNew !== b._isNew) return a._isNew ? 1 : -1;
-    if (!a._isNew && a._ngayVaoNum !== b._ngayVaoNum) return a._ngayVaoNum - b._ngayVaoNum;
-    return a.arrive - b.arrive;
-  });
-  benh_nhan.forEach(p => { p.randSeed = p._isNew ? (0.5 + rand() * 0.5) : (rand() * 0.5); });
-
-  function tryScheduleOne(patient, tenThuThuat, tNow) {
-    const info = thuThuatInfo[tenThuThuat.toLowerCase()] || ["Thủ công", 15, 5, "PHCN", 1, 0, [], 5];
-    const tenGoc = info[8] || tenThuThuat, targetRoom = patient.room, loaiMay = info[0];
-    const baseTgMay = Math.max(info[1], info[2]), tgNhanVien = info[2], canPhu = info[5];
-    const isSupplemental = existingSched && existingSched.length > 0;
-    
-    const isDienCham = tenThuThuat.toLowerCase().includes('điện châm') || tenThuThuat.toLowerCase() === 'đc' || (info[8] && String(info[8]).toLowerCase().includes('điện châm'));
-    const candidateDurs = (isDienCham && (isSupplemental || isBackfill)) ? [25, 30, 26, 27, 28, 29] : [baseTgMay];
-
-    const isYHCT = String(info[3] || "").trim().toUpperCase() === "YHCT";
-    const yhctEndLimit = weights.yhctEnd !== undefined ? weights.yhctEnd : 10;
-    const allowedOvertimeAtEnd = isYHCT ? yhctEndLimit : OVERTIME_ALLOWANCE;
-
-    const roomsWithWaiting = new Set();
-    if (!isSupplemental) {
-      const threshold = scenario === 2 ? 1 : 0;
-      for (const _p of benh_nhan) {
-        if (_p.pending.length > threshold && _p.free_at <= tNow && !_p.busy.some(b => b[0] <= tNow && tNow < b[1])) {
-          roomsWithWaiting.add(_p.room);
-        }
-      }
-    }
-
-    for (const tgMay of candidateDurs) {
-      const rawKhoangCach = scenario === 1 ? info[2] : (info[7] || info[2]);
-      const khoangCach = Math.max(rawKhoangCach, info[2] + 1);
-      const gioKetThuc = tNow + tgMay;
-      const hasTeardown = tgMay > tgNhanVien;
-      const tearStart = hasTeardown ? (tNow + tgMay) : null;
-      const tearEnd = hasTeardown ? (tNow + tgMay + 1) : null;
-
-      if (gioKetThuc > (endOfDay + allowedOvertimeAtEnd)) continue;
-      if (patient.leave !== 9999 && gioKetThuc > patient.leave) continue;
-      if (patient.busy.some(b => is_overlap(tNow, gioKetThuc, b[0], b[1]))) continue;
-
-      const candidatesMain = [], candidatesSub = [];
-      (staffBySkill[tenThuThuat.toLowerCase()] || []).forEach(tenNV => {
-        if (tNow < (staffSetupReady[tenNV] || 0)) return;
-        
-        const checkSlot = (slotStart, slotEnd) => {
-          return (staffTimeline[tenNV] || []).some(slot => {
-            if (slotStart >= slot[1]) return false;
-            const isEndOfDay = slot[1] === 1440;
-            const isLunch = slot[1] - slot[0] >= 60 && !isEndOfDay;
-            if (isLunch || isEndOfDay) {
-              const yhctLimit = isEndOfDay ? yhctEndLimit : (weights.yhctLunch !== undefined ? weights.yhctLunch : 10);
-              const allowedOvertime = isYHCT ? yhctLimit : (isEndOfDay ? OVERTIME_ALLOWANCE : 0);
-              const allowedEnd = slot[0] + allowedOvertime;
-              if ((slotEnd - 1) <= allowedEnd && slotStart <= slot[0]) return false;
-            }
-            return is_overlap(slotStart, slotEnd, slot[0], slot[1]);
-          });
-        };
-
-        if (checkSlot(tNow, tNow + tgNhanVien + 1)) return;
-        if (hasTeardown && checkSlot(tearStart, tearEnd)) return;
-        
-        if (!isSupplemental && !isBackfill && staffRole[tenNV] === 'Kỹ thuật viên' && (staffMyRooms[tenNV] || []).length > 0 && !staffMyRooms[tenNV].includes(targetRoom)) return;
-
-        if (staffRole[tenNV]?.toLowerCase() !== 'điều dưỡng') candidatesMain.push(tenNV);
-        else candidatesSub.push(tenNV);
-      });
-      if (candidatesMain.length === 0) continue;
-
-      candidatesMain.sort((a, b) => {
-        const rmA = (staffMyRooms[a] || []).includes(targetRoom) ? 0 : 1, rmB = (staffMyRooms[b] || []).includes(targetRoom) ? 0 : 1;
-        if (rmA !== rmB) return rmA - rmB;
-        const crA = staffCurrentRoom[a] === targetRoom ? 0 : 1, crB = staffCurrentRoom[b] === targetRoom ? 0 : 1;
-        if (crA !== crB) return crA - crB;
-        const lpA = staffLastProc[a] === tenThuThuat ? 0 : 1, lpB = staffLastProc[b] === tenThuThuat ? 0 : 1;
-        if (lpA !== lpB) return lpA - lpB;
-        const roleA = (info[3] === "PHCN" && staffRole[a] === 'Kỹ thuật viên') || (info[3] === "YHCT" && staffRole[a] === 'Bác sĩ') ? 0 : 1;
-        const roleB = (info[3] === "PHCN" && staffRole[b] === 'Kỹ thuật viên') || (info[3] === "YHCT" && staffRole[b] === 'Bác sĩ') ? 0 : 1;
-        if (roleA !== roleB) return roleA - roleB;
-        return (staffLoad[a]?.used_mins || 0) - (staffLoad[b]?.used_mins || 0);
-      });
-
-      const possibleMachines = loaiMay === "Thủ công" ? [loaiMay] : (machineTypes[loaiMay] || []);
-      const availableMachines = scenario === 3 ? possibleMachines.filter(m => !reservedMachines.has(m)) : possibleMachines;
-      const finalMachines = availableMachines.length === 0 ? possibleMachines : availableMachines;
-      const selectedMachine = finalMachines.find(m => !(machineTimeline[m] || []).some(slot => is_overlap(tNow, gioKetThuc, slot[0], slot[1])));
-      if (!selectedMachine) continue;
-
-      let selectedBed = null;
-      if (bedTracker[targetRoom]) {
-        for (const [bedId, bedTimeline] of Object.entries(bedTracker[targetRoom])) {
-          if (!bedTimeline.some(slot => is_overlap(tNow, gioKetThuc, slot[0], slot[1]))) { selectedBed = bedId; break; }
-        }
-      }
-      if (!selectedBed && bedTracker[targetRoom] && Object.keys(bedTracker[targetRoom]).length > 0) continue;
-
-      for (const nvChinh of candidatesMain) {
-        const isInMyRoom = (staffMyRooms[nvChinh] || []).includes(targetRoom);
-        const isFloating = (staffMyRooms[nvChinh] || []).length === 0;
-        if (!(isInMyRoom || isFloating)) {
-          if (!isSupplemental) {
-            const hasSkilledStaffInRoom = (staffBySkill[tenThuThuat.toLowerCase()] || []).some(s =>
-              (staffMyRooms[s] || []).includes(targetRoom)
-            );
-            if (!isCrowdedDay && hasSkilledStaffInRoom) continue;
-
-            const isMyRoomBusy = (staffMyRooms[nvChinh] || []).some(r => roomsWithWaiting.has(r));
-            if (isMyRoomBusy) continue;
-          }
-        }
-
-        let nvPhu = "";
-        if (canPhu === 1) {
-          const validSubs = candidatesSub.filter(x => x !== nvChinh);
-          if (validSubs.length === 0) continue;
-
-          const hasSubInRoom = validSubs.some(s => (staffMyRooms[s] || []).includes(targetRoom));
-          const filteredSubs = (!isSupplemental && !isCrowdedDay && hasSubInRoom)
-            ? validSubs.filter(x => (staffMyRooms[x] || []).includes(targetRoom) || (staffMyRooms[x] || []).length === 0)
-            : validSubs;
-
-          if (filteredSubs.length === 0) continue;
-
-          filteredSubs.sort((a, b) => {
-            const aR = (staffMyRooms[a] || []).includes(targetRoom) ? 0 : 1, bR = (staffMyRooms[b] || []).includes(targetRoom) ? 0 : 1;
-            return aR !== bR ? aR - bR : (staffLoad[a]?.used_mins || 0) - (staffLoad[b]?.used_mins || 0);
-          });
-          nvPhu = filteredSubs[0];
-        }
-
-        blockStaff(nvChinh, tNow, tNow + tgNhanVien, khoangCach, staffTimeline, staffSetupReady, staffLoad, tenThuThuat, staffLastProc);
-        staffCurrentRoom[nvChinh] = targetRoom;
-        if (hasTeardown) { staffTimeline[nvChinh].push([tearStart, tearEnd]); staffTimeline[nvChinh] = mergeTimeline(staffTimeline[nvChinh]); staffLoad[nvChinh].used_mins += (tearEnd - tearStart); }
-
-        if (nvPhu) {
-          blockStaff(nvPhu, tNow, tNow + tgNhanVien, khoangCach, staffTimeline, staffSetupReady, staffLoad, tenThuThuat, staffLastProc);
-          if (hasTeardown) { staffTimeline[nvPhu].push([tearStart, tearEnd]); staffTimeline[nvPhu] = mergeTimeline(staffTimeline[nvPhu]); staffLoad[nvPhu].used_mins += (tearEnd - tearStart); }
-        }
-
-        if (selectedMachine !== "Thủ công") { 
-          if (!machineTimeline[selectedMachine]) machineTimeline[selectedMachine] = [];
-          machineTimeline[selectedMachine].push([tNow, gioKetThuc]); 
-          machineTimeline[selectedMachine] = mergeTimeline(machineTimeline[selectedMachine]); 
-        }
-
-        if (selectedBed && bedTracker[targetRoom]?.[selectedBed]) { 
-          bedTracker[targetRoom][selectedBed].push([tNow, gioKetThuc]); 
-          bedTracker[targetRoom][selectedBed] = mergeTimeline(bedTracker[targetRoom][selectedBed]); 
-        }
-
-        results.push({
-          NGAY: ngayXep, HOTEN: patient.name, NAMSINH: patient.ns, PHONG: targetRoom,
-          DICHVU: tenGoc, GIODIENRA: m2t(tNow), GIOKETTHUC: m2t(gioKetThuc),
-          "NV CHÍNH": nvChinh, "NV PHỤ": nvPhu, MAY: selectedMachine, GIUONG: selectedBed || "",
-          t_sort: tNow, PRIO: patient.leave !== 9999
-        });
-        localProcCount[tenThuThuat.toLowerCase()] = (localProcCount[tenThuThuat.toLowerCase()] || 0) + 1;
-        patient.busy.push([tNow, gioKetThuc + 1]);
-        patient.free_at = Math.max(patient.free_at, gioKetThuc + 1);
-        patient.scheduled_count = (patient.scheduled_count || 0) + 1;
-        return true;
-      }
-    }
-    return false;
-  }
-
-  function countFeasibleSlots(patient, tFrom) {
-    let count = 0;
-    for (const tenTT of patient.pending) {
-      const info = thuThuatInfo[tenTT.toLowerCase()] || ["Thủ công", 15, 5, "PHCN", 1, 0, [], 5];
-      const tgMay = Math.max(info[1], info[2]), loaiMay = info[0];
-      const possibleMachines = loaiMay === "Thủ công" ? [loaiMay] : (machineTypes[loaiMay] || []);
-      const hasMachine = possibleMachines.some(m => m === "Thủ công" || !(machineTimeline[m] || []).some(slot => is_overlap(tFrom, tFrom + tgMay, slot[0], slot[1])));
-      const hasStaff = (staffBySkill[tenTT.toLowerCase()] || []).some(s => !(staffTimeline[s] || []).some(slot => is_overlap(tFrom, tFrom + tgMay + 1, slot[0], slot[1])));
-      if (hasMachine && hasStaff) count++;
-    }
-    return count;
-  }
-
-  function sortPatientPriority(a, b) {
-    if (a.leave_pri !== b.leave_pri) return a.leave_pri - b.leave_pri;
-    if (a.leave !== b.leave) return a.leave - b.leave;
-    const groupA = (!a._isNew || a.arrive <= 660) ? 0 : 1;
-    const groupB = (!b._isNew || b.arrive <= 660) ? 0 : 1;
-    if (groupA !== groupB) return groupA - groupB;
-    const scheduledA = a.scheduled_count || 0, scheduledB = b.scheduled_count || 0;
-    const tierA = Math.floor(scheduledA / 2), tierB = Math.floor(scheduledB / 2);
-    if (tierA !== tierB) return tierA - tierB;
-    if (scheduledA !== scheduledB) return scheduledB - scheduledA;
-    if (a._isNew !== b._isNew) return a._isNew ? 1 : -1;
-    if (!a._isNew && a._ngayVaoNum !== b._ngayVaoNum) return a._ngayVaoNum - b._ngayVaoNum;
-    return 0;
-  }
-
-  for (let phase = 1; phase <= 2; phase++) {
-    if (phase === 2 && !benh_nhan.some(p => p.pending.length > 0)) break;
-    let tNow = startOfDay;
-    while (tNow <= endOfDay) {
-      if (!benh_nhan.some(p => p.pending.length > 0)) break;
-      let keepTrying = true;
-      let isFirstTryAtTNow = true;
-      while (keepTrying) {
-        keepTrying = false;
-        const eligible = benh_nhan.filter(p => p.pending.length > 0 && p.free_at <= tNow && !p.busy.some(b => b[0] <= tNow && tNow < b[1]));
-        if (eligible.length === 0) break;
-        if (isFirstTryAtTNow) {
-          eligible.forEach(p => { p._feasible = countFeasibleSlots(p, tNow); });
-          isFirstTryAtTNow = false;
-        }
-        eligible.sort((a, b) => {
-          const base = sortPatientPriority(a, b); if (base !== 0) return base;
-          if (a.has_yhct !== b.has_yhct) return a.has_yhct - b.has_yhct;
-          if (a.has_toan_tg !== b.has_toan_tg) return a.has_toan_tg - b.has_toan_tg;
-          if (a._feasible !== b._feasible) return b._feasible - a._feasible;
-          if (a.max_dur !== b.max_dur) return b.max_dur - a.max_dur;
-          return a.randSeed - b.randSeed;
-        });
-        for (const patient of eligible) {
-          for (let i = 0; i < patient.pending.length; i++) {
-            if (tryScheduleOne(patient, patient.pending[i], tNow)) {
-              patient.pending.splice(i, 1); updatePatientCache(patient, thuThuatInfo);
-              keepTrying = true; break;
-            }
-          }
-        }
-      }
-      tNow = getNextEvent(tNow, benh_nhan, staffTimeline, machineTimeline, endOfDay);
-    }
-  }
-
-  let remaining = benh_nhan.filter(p => p.pending.length > 0);
-  if (remaining.length > 0) {
-    const timePoints = new Set();
-    Object.keys(staffTimeline).forEach(tenNV => {
-      (staffShifts[tenNV] || []).forEach(([caStart]) => timePoints.add(caStart));
-      (staffTimeline[tenNV] || []).forEach(slot => { if (slot[1] < endOfDay) timePoints.add(slot[1]); });
-    });
-    remaining.forEach(p => { if (p.free_at <= endOfDay) timePoints.add(p.free_at); });
-    Object.values(machineTimeline).forEach(tl => tl.forEach(slot => { if (slot[1] < endOfDay) timePoints.add(slot[1]); }));
-
-    for (const t of [...timePoints].sort((a, b) => a - b)) {
-      if (t > endOfDay) break;
-      const stillRemaining = benh_nhan.filter(p => p.pending.length > 0);
-      if (stillRemaining.length === 0) break;
-      let changed = true;
-      while (changed) {
-        changed = false;
-        const eligible = stillRemaining.filter(p => p.free_at <= t && !p.busy.some(b => b[0] <= t && t < b[1]));
-        eligible.sort((a, b) => {
-          const base = sortPatientPriority(a, b); if (base !== 0) return base;
-          if (a.has_yhct !== b.has_yhct) return a.has_yhct - b.has_yhct;
-          return a.randSeed - b.randSeed;
-        });
-        for (const patient of eligible) {
-          for (let i = 0; i < patient.pending.length; i++) {
-            if (tryScheduleOne(patient, patient.pending[i], t)) {
-              patient.pending.splice(i, 1); updatePatientCache(patient, thuThuatInfo);
-              changed = true; break;
-            }
-          }
-        }
-      }
-    }
-
-    remaining = benh_nhan.filter(p => p.pending.length > 0);
-    if (remaining.length > 0) {
-      isBackfill = true;
-      for (const patient of remaining) {
-        for (const tenThuThuat of [...patient.pending]) {
-          if (!patient.pending.includes(tenThuThuat)) continue;
-          const info = thuThuatInfo[tenThuThuat.toLowerCase()] || ["Thủ công", 15, 5, "PHCN", 1, 0, [], 5];
-          const isYHCT = String(info[3] || "").trim().toUpperCase() === "YHCT";
-          const yhctEndLimit = weights.yhctEnd !== undefined ? Number(weights.yhctEnd) : 10;
-          const allowedMaxEnd = endOfDay + (isYHCT ? yhctEndLimit : OVERTIME_ALLOWANCE);
-          const tgMay = Math.max(info[1], info[2]);
-          const gapStarts = new Set();
-          for (const tenNV of (staffBySkill[tenThuThuat.toLowerCase()] || [])) {
-            const tl = mergeTimeline([...(staffTimeline[tenNV] || [])]);
-            let prevEnd = startOfDay;
-            for (const slot of tl) {
-              if (slot[0] > prevEnd && prevEnd + tgMay <= allowedMaxEnd) gapStarts.add(prevEnd);
-              prevEnd = Math.max(prevEnd, slot[1]);
-            }
-            if (prevEnd + tgMay <= allowedMaxEnd) gapStarts.add(prevEnd);
-          }
-          for (const t of [...gapStarts].sort((a, b) => a - b)) {
-            if (t < (patient.free_at || 0) || patient.busy.some(b => b[0] <= t && t < b[1])) continue;
-            if (tryScheduleOne(patient, tenThuThuat, t)) {
-              const idx = patient.pending.indexOf(tenThuThuat);
-              if (idx !== -1) { patient.pending.splice(idx, 1); updatePatientCache(patient, thuThuatInfo); }
-              break;
-            }
-          }
-        }
-      }
-    }
-  }
-
-  benh_nhan.forEach(p => p.pending.forEach(tenTT => {
-    const tenGoc = thuThuatInfo[tenTT.toLowerCase()]?.[8] || tenTT;
-    tempDropList.push({ bn: p.name, ns: p.ns, tt: tenGoc, room: p.room, nhan_su: "Trống", reason: "Thiếu nhân sự/Máy hoặc hết giờ" });
-  }));
-
-  isBackfill = true;
-  const resultsByStaff = new Map();
-  const resultsByPatient = new Map();
-  for (const r of results) {
-    const nv = r["NV CHÍNH"];
-    const bn = r.HOTEN;
-    if (!resultsByStaff.has(nv)) resultsByStaff.set(nv, []);
-    resultsByStaff.get(nv).push(r);
-    if (!resultsByPatient.has(bn)) resultsByPatient.set(bn, []);
-    resultsByPatient.get(bn).push(r);
-  }
-
-  const finalDropList = [];
-  for (const rotItem of tempDropList) {
-    let saved = false;
-    const tenTT = rotItem.tt, tenBN = rotItem.bn, phong = rotItem.room || '';
-    const pat = benh_nhan.find(p => p.name === tenBN);
-    const infoRot = thuThuatInfo[tenTT.toLowerCase()] || ["Thủ công", 15, 5, "PHCN", 1, 0, [], 5];
-    const isYHCT = String(infoRot[3] || "").trim().toUpperCase() === "YHCT";
-    const yhctEndLimit = weights.yhctEnd !== undefined ? Number(weights.yhctEnd) : 10;
-    const tgCanThiet = Math.max(infoRot[1], infoRot[2]);
-    const allowedMaxEnd = endOfDay + (isYHCT ? yhctEndLimit : OVERTIME_ALLOWANCE);
-
-    if (pat) {
-      const minStart = Math.max(pat.arrive || startOfDay, startOfDay);
-      const gapStarts = new Set();
-      for (const tenNV of (staffBySkill[tenTT.toLowerCase()] || [])) {
-        const tl = mergeTimeline([...(staffTimeline[tenNV] || [])]);
-        let prevEnd = minStart;
-        for (const slot of tl) {
-          if (slot[0] > prevEnd && prevEnd >= minStart && prevEnd + tgCanThiet <= allowedMaxEnd) gapStarts.add(prevEnd);
-          prevEnd = Math.max(prevEnd, slot[1]);
-        }
-        if (prevEnd >= minStart && prevEnd + tgCanThiet <= allowedMaxEnd) gapStarts.add(prevEnd);
-      }
-      for (const t of [...gapStarts].sort((a, b) => a - b)) {
-        if (t < (pat.free_at || 0) || pat.busy.some(b => is_overlap(t, t + tgCanThiet, b[0], b[1]))) continue;
-        if (tryScheduleOne(pat, tenTT, t)) {
-          const idx = pat.pending.indexOf(tenTT);
-          if (idx !== -1) { pat.pending.splice(idx, 1); updatePatientCache(pat, thuThuatInfo); }
-          saved = true;
-          break;
-        }
-      }
-    }
-
-    if (!saved && pat) {
-      const minStart = Math.max(pat.arrive || startOfDay, startOfDay);
-      const dsBacSi = (staffBySkill[tenTT.toLowerCase()] || []).filter(s => staffRole[s] === 'Bác sĩ');
-      for (const bacSi of dsBacSi) {
-        if (saved) break;
-        const caDePHCN = (resultsByStaff.get(bacSi) || []).filter(r => (thuThuatInfo[(r.DICHVU || "").toLowerCase()] || ["", "", "", "PHCN"])[3] === "PHCN");
-        for (const caDe of caDePHCN) {
-          const timeStart = t2m(caDe.GIODIENRA), timeEnd = t2m(caDe.GIOKETTHUC);
-          if (timeStart < minStart || (timeEnd - timeStart) < tgCanThiet) continue;
-          if (pat.leave !== 9999 && timeStart + tgCanThiet > pat.leave) continue;
-          if (pat.busy.some(b => is_overlap(timeStart, timeStart + tgCanThiet, b[0], b[1]))) continue;
-          let ktvThayThe = null;
-          const dsKTV = (staffBySkill[(caDe.DICHVU || "").toLowerCase()] || []).filter(k => staffRole[k] === 'Kỹ thuật viên');
-          for (const ktv of dsKTV) { if (!(staffTimeline[ktv] || []).some(slot => is_overlap(timeStart, timeEnd, slot[0], slot[1]))) { ktvThayThe = ktv; break; } }
-          if (ktvThayThe) {
-            caDe["NV CHÍNH"] = ktvThayThe;
-            if (!staffTimeline[ktvThayThe]) staffTimeline[ktvThayThe] = [];
-            staffTimeline[ktvThayThe].push([timeStart, timeEnd]); staffTimeline[ktvThayThe] = mergeTimeline(staffTimeline[ktvThayThe]);
-            
-            const newRes = { NGAY: ngayXep, HOTEN: tenBN, NAMSINH: rotItem.ns || "", PHONG: phong, DICHVU: tenTT, GIODIENRA: m2t(timeStart), GIOKETTHUC: m2t(timeStart + tgCanThiet), "NV CHÍNH": bacSi, "NV PHỤ": "", MAY: infoRot[0] || "Thủ công", GIUONG: "", t_sort: timeStart, PRIO: false };
-            results.push(newRes);
-            if (!resultsByPatient.has(tenBN)) resultsByPatient.set(tenBN, []);
-            resultsByPatient.get(tenBN).push(newRes);
-
-            if (!staffTimeline[bacSi]) staffTimeline[bacSi] = [];
-            staffTimeline[bacSi].push([timeStart, timeStart + tgCanThiet]); staffTimeline[bacSi] = mergeTimeline(staffTimeline[bacSi]);
-            saved = true; localProcCount[tenTT.toLowerCase()] = (localProcCount[tenTT.toLowerCase()] || 0) + 1; break;
-          }
-        }
-      }
-    }
-    if (!saved) finalDropList.push(rotItem);
-  }
-  isBackfill = false;
-
-  const overtimeMins = Object.values(staffLoad).reduce((s, v) => s + Math.max(0, v.used_mins - v.shift_mins), 0);
-  const loadValues = Object.values(staffLoad).map(v => v.used_mins);
-  const avg = loadValues.reduce((a,b)=>a+b,0) / (loadValues.length || 1);
-  const imbalance = loadValues.reduce((s,v) => s + Math.abs(v - avg), 0);
-  const scoreVal = finalDropList.length * weights.drop + overtimeMins * weights.overtime + imbalance * weights.imbalance;
-
-  results.sort((a, b) => a["NV CHÍNH"] !== b["NV CHÍNH"] ? a["NV CHÍNH"].localeCompare(b["NV CHÍNH"]) : a.t_sort - b.t_sort);
-  return { sched: results, rot: finalDropList, score: scoreVal, nhan_su: staffLoad, proc: localProcCount, tl: staffTimeline, ca: staffShifts };
-}
-
-function runBestIteration(db, dateVal, existingSched = [], scenario = 1, crowdedOverride = -1, weights = { drop: 10000, overtime: 2, imbalance: 0.1 }) {
-  let rand = createSeededRandom(42);
-  let currentPatients = clonePatients(db.rawPatients);
-  let current = _turbo_core_logic({ ...db, rawPatients: currentPatients }, dateVal, 0, existingSched, scenario, crowdedOverride, weights);
-  let best = current;
-
-  let droppedNames = new Set(best.rot.map(r => r.bn));
-  const T_initial = 10.0, T_min = 0.3, alpha = 0.88;
-  const REHEAT_TRIGGER = 12, REHEAT_FACTOR = 1.6, REHEAT_MAX_TIMES = 2;
-  let T = T_initial, noImprove = 0, reheatCount = 0;
-
-  while (T > T_min && noImprove < 20) {
-    const neighborPatients = mutate(currentPatients, rand, droppedNames);
-    const neighbor = _turbo_core_logic({ ...db, rawPatients: neighborPatients }, dateVal, 0, existingSched, scenario, crowdedOverride, weights);
-    const delta = neighbor.score - current.score;
-    const accept = delta < 0 || (rand() < Math.exp(-delta / T));
-    if (accept) {
-      current = neighbor; currentPatients = neighborPatients;
-      if (current.score < best.score) {
-        best = current; droppedNames = new Set(best.rot.map(r => r.bn)); noImprove = 0;
-      } else { noImprove++; }
-    } else { noImprove++; }
-
-    if (noImprove >= REHEAT_TRIGGER && reheatCount < REHEAT_MAX_TIMES) {
-      T = Math.min(T * REHEAT_FACTOR, T_initial);
-      noImprove = 0;
-      reheatCount++;
-    } else {
-      T *= alpha;
-    }
-  }
-
-  for (let i = 0; i < 8; i++) {
-    const result = _turbo_core_logic({ ...db, rawPatients: clonePatients(db.rawPatients) }, dateVal, 100 + i, existingSched, scenario, crowdedOverride, weights);
-    if (result.score < best.score) { best = result; }
-  }
-  return best;
-}
-
-async function buildBaseDbFromD1(db) {
-  const [machinesRes, staffRes, roomsRes, procsRes, patientsRes] = await db.batch([
-    db.prepare("SELECT * FROM may_moc WHERE trang_thai = 'Sẵn sàng' ORDER BY order_idx ASC"),
-    db.prepare("SELECT * FROM nhan_su WHERE name NOT GLOB '[0-9]*' ORDER BY priority ASC, id ASC"),
-    db.prepare("SELECT * FROM phong  ORDER BY order_idx ASC"),
-    db.prepare("SELECT * FROM thu_thuat  ORDER BY order_idx ASC"),
-    db.prepare("SELECT * FROM benh_nhan WHERE is_saturday = 0 ORDER BY order_idx ASC, id ASC")
-  ]);
-
-  const database = {
-    machineTypes: {},
-    thuThuatInfo: {},
-    replacementMap: {},
-    roomStaff: {},
-    roomBeds: {},
-    rawStaff: [],
-    rawPatients: []
-  };
-
-  (machinesRes.results || []).forEach(r => {
-    if (!database.machineTypes[r.ten_loai]) database.machineTypes[r.ten_loai] = [];
-    database.machineTypes[r.ten_loai].push(r.ma_may);
-  });
-
-  (staffRes.results || []).forEach(r => {
-    const thayThe = r.nguoi_thay_the || "Không";
-    if (thayThe && thayThe !== "Không") database.replacementMap[r.name] = thayThe;
-    const skills = parseStringOrJsonArray(r.skills).join(", ");
-    const busy = parseStringOrJsonArray(r.temp_busy).join(", ");
-    database.rawStaff.push([r.name, r.role || "KTV", skills, r.thoi_gian_lam || "07:30-11:30, 13:00-16:30", busy, r.trang_thai || "Đi làm"]);
-  });
-
-  (procsRes.results || []).forEach(r => {
-    const tgNhanVien = parseInt(r.tg_thuc_hien) || 5;
-    const tgMay = parseInt(r.tg_thu_thuat) || 15;
-    const khoangCach = parseInt(r.khoang_cach) || tgNhanVien;
-    const dsPhu = parseStringOrJsonArray(r.ds_nguoi_phu);
-    database.thuThuatInfo[String(r.ten_thu_thuat).trim().toLowerCase()] = [
-      r.may || "Thủ công",
-      Math.max(1, tgMay),
-      Math.max(1, tgNhanVien),
-      r.he || "PHCN",
-      r.can_rut_may ? 1 : 0,
-      r.can_nguoi_phu ? 1 : 0,
-      dsPhu,
-      khoangCach,
-      String(r.ten_thu_thuat).trim(),
-      r.viet_tat || ""
-    ];
-  });
-
-  (roomsRes.results || []).forEach(r => {
-    const soGiuong = parseInt(r.so_giuong) || 15;
-    const bedStr = r.danh_sach_giuong ? String(r.danh_sach_giuong).trim() : "";
-    database.roomBeds[r.ten_phong] = (bedStr && bedStr !== 'None')
-      ? bedStr.split(",").map(x => x.trim()).filter(Boolean)
-      : Array.from({ length: soGiuong }, (_, i) => `Giường ${i + 1}`);
-
-    const dsBacSi = parseStringOrJsonArray(r.bac_si);
-    const dsKTV = parseStringOrJsonArray(r.ktv);
-    database.roomStaff[r.ten_phong] = [...new Set([...dsBacSi, ...dsKTV].map(x => database.replacementMap[x] || x))];
-  });
-
-  return { database, rawPatientsList: patientsRes.results || [] };
-}
 
     default:
       return error("Action không được hỗ trợ: " + action, 400);

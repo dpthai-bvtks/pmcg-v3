@@ -42,6 +42,66 @@
         let adminChamCongStaffConfig = { ...DEFAULT_CHAMCONG_STAFF };
         let editAdminEmployeeIndex = -1;
 
+        // ==========================================
+        // SMART RESOLVER & DATA NORMALIZATION
+        // ==========================================
+        function findStaffDataByKey(dataObj, empName) {
+            if (!dataObj || typeof dataObj !== 'object') return null;
+            if (dataObj[empName]) return dataObj[empName];
+
+            const staffConf = (adminChamCongStaffConfig && adminChamCongStaffConfig[empName]) || DEFAULT_CHAMCONG_STAFF[empName];
+            const keys = (staffConf && staffConf.keys) ? staffConf.keys : [empName.toLowerCase()];
+
+            for (const dKey of Object.keys(dataObj)) {
+                const lowerDKey = dKey.toLowerCase().trim();
+                if (lowerDKey === empName.toLowerCase().trim()) return dataObj[dKey];
+                for (const k of keys) {
+                    const lowerK = k.toLowerCase().trim();
+                    if (lowerDKey === lowerK || lowerDKey.includes(lowerK) || lowerK.includes(lowerDKey)) {
+                        return dataObj[dKey];
+                    }
+                }
+            }
+            return null;
+        }
+
+        function normalizeChamCongData(raw) {
+            const res = {};
+            if (!raw || typeof raw !== 'object') return res;
+            Object.assign(res, raw);
+
+            adminChamCongEmployees.forEach(emp => {
+                if (!res[emp] || Object.keys(res[emp]).length === 0) {
+                    const found = findStaffDataByKey(raw, emp);
+                    if (found && typeof found === 'object' && Object.keys(found).length > 0) {
+                        res[emp] = found;
+                    } else if (!res[emp]) {
+                        res[emp] = {};
+                    }
+                }
+            });
+            return res;
+        }
+
+        function normalizeThongKeData(raw) {
+            const res = {};
+            if (!raw || typeof raw !== 'object') return res;
+            Object.assign(res, raw);
+
+            adminChamCongEmployees.forEach(emp => {
+                if (!res[emp]) {
+                    const found = findStaffDataByKey(raw, emp);
+                    if (found) {
+                        res[emp] = found;
+                    } else {
+                        res[emp] = { loai1: 0, loai2: 0, loai3: 0, khac: 0, tong: 0, details: [] };
+                    }
+                }
+            });
+            return res;
+        }
+
+
         // Tự động nạp danh sách nhân sự từ cache khi khởi động
         try {
             const cachedEmp = JSON.parse(localStorage.getItem('med_chamcong_employees') || '[]');
@@ -321,13 +381,13 @@ function renderAdminChamCongTable() {
                 renderChamCongTable(); // Hiển thị ngay lập tức không để bảng trống trơn
                 
                 google.script.run.withSuccessHandler(res => {
+                    let raw = {};
                     if (res && res.status === 'success' && res.data) {
-                        chamCongData = res.data;
+                        raw = res.data;
                     } else if (res && typeof res === 'object' && !res.status) {
-                        chamCongData = res;
-                    } else {
-                        chamCongData = {};
+                        raw = res;
                     }
+                    chamCongData = normalizeChamCongData(raw);
                     renderChamCongTable();
                 }).withFailureHandler(err => {
                     console.error("Lỗi khi tải chấm công:", err);
@@ -663,19 +723,21 @@ function renderAdminChamCongTable() {
                 if (mode === 'current') {
                     const my = getChamCongMonthYear();
                     google.script.run.withSuccessHandler(resCC => {
-                        if (resCC && resCC.status === 'success' && resCC.data) chamCongData = resCC.data;
-                        else if (resCC && typeof resCC === 'object' && !resCC.status) chamCongData = resCC;
-                        else chamCongData = {};
+                        let rawCC = {};
+                        if (resCC && resCC.status === 'success' && resCC.data) rawCC = resCC.data;
+                        else if (resCC && typeof resCC === 'object' && !resCC.status) rawCC = resCC;
+                        chamCongData = normalizeChamCongData(rawCC);
 
                         google.script.run.withSuccessHandler(resTT => {
-                            if (resTT && resTT.status === 'success' && resTT.data) thongKeData = resTT.data;
-                            else if (resTT && typeof resTT === 'object' && !resTT.status) thongKeData = resTT;
-                            else thongKeData = {};
+                            let rawTT = {};
+                            if (resTT && resTT.status === 'success' && resTT.data) rawTT = resTT.data;
+                            else if (resTT && typeof resTT === 'object' && !resTT.status) rawTT = resTT;
+                            thongKeData = normalizeThongKeData(rawTT);
 
                             renderThongKeTable();
                         }).withFailureHandler(err => {
                             console.error(err);
-                            thongKeData = {};
+                            thongKeData = normalizeThongKeData({});
                             renderThongKeTable();
                         }).getThongKeThuThuat(my);
                     }).withFailureHandler(err => {
@@ -721,25 +783,50 @@ function renderAdminChamCongTable() {
 
         function fetchSingleMonthData(my) {
             return new Promise((resolve) => {
-                let monthRes = { chamcong: {}, thuthuat: {} };
+                let rawCC = {};
+                let rawTT = {};
                 google.script.run.withSuccessHandler(resCC => {
-                    if (resCC && resCC.status === 'success' && resCC.data) monthRes.chamcong = resCC.data;
-                    else if (resCC && typeof resCC === 'object' && !resCC.status) monthRes.chamcong = resCC;
+                    if (resCC && resCC.status === 'success' && resCC.data) rawCC = resCC.data;
+                    else if (resCC && typeof resCC === 'object' && !resCC.status) rawCC = resCC;
                     
                     google.script.run.withSuccessHandler(resTT => {
-                        if (resTT && resTT.status === 'success' && resTT.data) monthRes.thuthuat = resTT.data;
-                        else if (resTT && typeof resTT === 'object' && !resTT.status) monthRes.thuthuat = resTT;
-                        resolve({ month: my, data: monthRes });
+                        if (resTT && resTT.status === 'success' && resTT.data) rawTT = resTT.data;
+                        else if (resTT && typeof resTT === 'object' && !resTT.status) rawTT = resTT;
+                        resolve({ 
+                            month: my, 
+                            data: { 
+                                chamcong: normalizeChamCongData(rawCC), 
+                                thuthuat: normalizeThongKeData(rawTT) 
+                            } 
+                        });
                     }).withFailureHandler(() => {
-                        resolve({ month: my, data: monthRes });
+                        resolve({ 
+                            month: my, 
+                            data: { 
+                                chamcong: normalizeChamCongData(rawCC), 
+                                thuthuat: normalizeThongKeData({}) 
+                            } 
+                        });
                     }).getThongKeThuThuat(my);
                 }).withFailureHandler(() => {
                     google.script.run.withSuccessHandler(resTT => {
-                        if (resTT && resTT.status === 'success' && resTT.data) monthRes.thuthuat = resTT.data;
-                        else if (resTT && typeof resTT === 'object' && !resTT.status) monthRes.thuthuat = resTT;
-                        resolve({ month: my, data: monthRes });
+                        if (resTT && resTT.status === 'success' && resTT.data) rawTT = resTT.data;
+                        else if (resTT && typeof resTT === 'object' && !resTT.status) rawTT = resTT;
+                        resolve({ 
+                            month: my, 
+                            data: { 
+                                chamcong: normalizeChamCongData({}), 
+                                thuthuat: normalizeThongKeData(rawTT) 
+                            } 
+                        });
                     }).withFailureHandler(() => {
-                        resolve({ month: my, data: monthRes });
+                        resolve({ 
+                            month: my, 
+                            data: { 
+                                chamcong: normalizeChamCongData({}), 
+                                thuthuat: normalizeThongKeData({}) 
+                            } 
+                        });
                     }).getThongKeThuThuat(my);
                 }).getChamCong(my);
             });

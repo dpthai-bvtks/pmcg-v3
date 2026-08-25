@@ -98,18 +98,26 @@ window.doLogin = function () {
 
     if (typeof callApi === 'function') {
         callApi('verifyLogin', [user, pass], res => {
-            if (res && (res.username || res.success)) {
+            if (btn) { btn.innerText = 'Đăng Nhập ➔'; btn.disabled = false; }
+            if (res && (res.username || res.role || res.success)) {
+                const uName = res.username || user || 'admin';
+                const uRole = res.role || 'Admin';
+                const uPerms = res.permissions || 'all';
+
                 localStorage.setItem('meds_session', JSON.stringify({
-                    username: res.username,
-                    role: res.role,
-                    permissions: res.permissions,
-                    sessionId: res.sessionId
+                    username: uName,
+                    role: uRole,
+                    permissions: uPerms,
+                    sessionId: res.sessionId || res.token || ''
                 }));
 
                 const overlay = document.getElementById('login-overlay');
                 if (overlay) overlay.style.display = 'none';
-                if (typeof updateLogoutButton === 'function') updateLogoutButton(res.username);
-                if (typeof applyPermissions === 'function') applyPermissions(res.role, res.permissions);
+                if (typeof updateLogoutButton === 'function') updateLogoutButton(uName);
+                if (typeof applyPermissions === 'function') applyPermissions(uRole, uPerms);
+                if (typeof window.loadTimRanhDataFromServer === 'function') {
+                    try { window.loadTimRanhDataFromServer(); } catch(e) {}
+                }
 
                 let targetTab = 'tab-home';
                 if (window.location.hash && window.location.hash.startsWith('#tab-')) {
@@ -121,26 +129,27 @@ window.doLogin = function () {
                 } else {
                     document.querySelector('.nav-tab[data-tab="tab-home"]')?.click();
                 }
-                if (res.role === 'Admin' && typeof loadAccounts === 'function') loadAccounts();
+                if ((uRole === 'Admin' || uRole === 'admin') && typeof loadAccounts === 'function') {
+                    try { loadAccounts(); } catch(e) {}
+                }
             } else {
                 if (errDiv) {
-                    errDiv.innerText = 'Sai tài khoản hoặc mật khẩu!';
+                    errDiv.innerText = (res && (res.message || res.error)) ? (res.message || res.error) : 'Sai tài khoản hoặc mật khẩu!';
                     errDiv.style.display = 'block';
-                }
-                if (btn) {
-                    btn.innerText = 'Đăng Nhập ➔';
-                    btn.disabled = false;
                 }
             }
         }, err => {
+            if (btn) { btn.innerText = 'Đăng Nhập ➔'; btn.disabled = false; }
             if (errDiv) {
-                errDiv.innerText = 'Lỗi kết nối máy chủ Cloudflare: ' + err;
+                errDiv.innerText = (err && (err.message || err.error)) ? (err.message || err.error) : ('Lỗi kết nối máy chủ Cloudflare: ' + err);
                 errDiv.style.display = 'block';
             }
-            if (btn) {
-                btn.innerText = 'Đăng Nhập ➔';
-                btn.disabled = false;
-            }
         });
+    } else {
+        if (btn) { btn.innerText = 'Đăng Nhập ➔'; btn.disabled = false; }
+        if (errDiv) {
+            errDiv.innerText = 'Đang tải mã nguồn hệ thống, vui lòng thử lại sau giây lát...';
+            errDiv.style.display = 'block';
+        }
     }
 };

@@ -1387,13 +1387,43 @@ window.renderSttOrderControl = function (type, i, total) {
         }
 
         function getEntityIdx(cacheKey, inputId) {
-
             let val = document.getElementById(inputId)?.value;
-
             if (!val) return -1;
+            val = val.trim();
+
+            if (cacheKey === 'pat') {
+                const patList = dataCache.pat || [];
+                
+                // 1. Match format "Tên (NămSinh)" or "Tên - NămSinh"
+                const matchWithNs = val.match(/^(.*?)\s*[\(\-]\s*(\d{4}|\?)\s*(?:[\-\)].*)?$/);
+                if (matchWithNs) {
+                    const rawName = matchWithNs[1].trim();
+                    const rawNs = matchWithNs[2].trim();
+                    const exactMatch = patList.findIndex(item => 
+                        normalizeName(item.ten) === normalizeName(rawName) && 
+                        (rawNs === '?' || String(item.namSinh || '').trim() === rawNs)
+                    );
+                    if (exactMatch !== -1) return exactMatch;
+                }
+
+                // 2. If user clicked a row in busy/leave table, match lastSelectedPatIdx
+                if (typeof window.lastSelectedPatIdx === 'number' && window.lastSelectedPatIdx >= 0 && window.lastSelectedPatIdx < patList.length) {
+                    const selectedPat = patList[window.lastSelectedPatIdx];
+                    if (normalizeName(selectedPat.ten) === normalizeName(val) || val.startsWith(selectedPat.ten)) {
+                        return window.lastSelectedPatIdx;
+                    }
+                }
+
+                // 3. Match by normalizeName
+                const normVal = normalizeName(val);
+                const nameMatches = patList.map((item, idx) => ({ item, idx })).filter(({ item }) => normalizeName(item.ten) === normVal);
+                if (nameMatches.length > 0) {
+                    return nameMatches[0].idx;
+                }
+                return -1;
+            }
 
             return dataCache[cacheKey].findIndex(item => normalizeName(item.ten) === normalizeName(val));
-
         }
 
         function getBusyPatIdx() { return getEntityIdx('pat', 'busy-pat-input'); }
@@ -3112,10 +3142,30 @@ window.renderSttOrderControl = function (type, i, total) {
         }
 
         function renderPatientsTable_Original() {
-            const uniqueNames = [...new Set(dataCache.pat.map(p => p.ten))].filter(Boolean);
-            const optionsHtml = uniqueNames.map(name => `<option value="${name}">`).join('');
-            ['pat-name-suggestions', 'busy-pat-datalist', 'leave-pat-datalist'].forEach(id => {
-                const dl = document.getElementById(id); if (dl) dl.innerHTML = optionsHtml;
+            const nameCount = {};
+            (dataCache.pat || []).forEach(p => {
+                const name = String(p.ten || '').trim();
+                if (name) nameCount[name] = (nameCount[name] || 0) + 1;
+            });
+
+            const generalOptionsHtml = [...new Set((dataCache.pat || []).map(p => p.ten).filter(Boolean))].map(name => `<option value="${name}">`).join('');
+            const dlPat = document.getElementById('pat-name-suggestions');
+            if (dlPat) dlPat.innerHTML = generalOptionsHtml;
+
+            const distinctOptionsHtml = [...new Set((dataCache.pat || []).map(p => {
+                const name = String(p.ten || '').trim();
+                const ns = String(p.namSinh || '').trim();
+                const phong = String(p.phong || '').trim();
+                if (!name) return '';
+                if (nameCount[name] > 1 && ns) {
+                    return `<option value="${name} (${ns})">${name} (${ns}${phong ? ' - ' + phong : ''})</option>`;
+                }
+                return `<option value="${name}">${name}${ns ? ' (' + ns + ')' : ''}</option>`;
+            }).filter(Boolean))].join('');
+
+            ['busy-pat-datalist', 'leave-pat-datalist'].forEach(id => {
+                const dl = document.getElementById(id);
+                if (dl) dl.innerHTML = distinctOptionsHtml;
             });
             const statPat = document.getElementById('stat-patients');
             if (statPat) statPat.innerText = dataCache.pat.length;
@@ -3544,27 +3594,29 @@ window.renderSttOrderControl = function (type, i, total) {
             if (!tbody) return;
             let html = '';
             let stt = 1;
-            dataCache.pat.forEach(p => {
+            (dataCache.pat || []).forEach((p, idx) => {
                 if (!p.gioBan) return;
+                const escapedTen = escapeHtml(p.ten);
+                const ns = p.namSinh || '';
+                const phong = p.phong || '';
                 p.gioBan.split(',').map(s => s.trim()).filter(s => s).forEach(slot => {
-                    html += `<tr class="editable-row" onclick="editBusyPat('${p.ten}', '${slot}')">
+                    html += `<tr class="editable-row" onclick="editBusyPat('${p.ten}', '${ns}', '${slot}', ${idx})" title="Bấm để sửa/xóa">
                         <td align="center" style="font-weight: 600; color: #475569;">${stt++}</td>
-                        <td><strong>${p.ten}</strong></td>
-                        <td style="color:#d35400; font-weight:bold;">${formatSlotDisplay(slot)}</td>
+                        <td><strong>${escapedTen}</strong></td>
+                        <td align="center" style="color: #64748b;">${ns}</td>
+                        <td align="center" style="color: #64748b;">${phong}</td>
+                        <td align="center" style="color:#d35400; font-weight:bold;">${formatSlotDisplay(slot)}</td>
                     </tr>`;
                 });
             });
-            tbody.innerHTML = html || `<tr><td colspan="3" align="center" style="color:gray; padding:10px;">Chưa có bệnh nhân báo bận</td></tr>`;
+            tbody.innerHTML = html || `<tr><td colspan="5" align="center" style="color:gray; padding:10px;">Chưa có bệnh nhân bận</td></tr>`;
         }
 
-        function editBusyPat(ten, singleSlot) {
-
+        function editBusyPat(ten, namSinh, singleSlot, idx) {
             const inputName = document.getElementById('busy-pat-input');
-
             if (!inputName) return;
-
-            inputName.value = ten;
-
+            inputName.value = (namSinh && (dataCache.pat || []).filter(p => p.ten === ten).length > 1) ? `${ten} (${namSinh})` : ten;
+            window.lastSelectedPatIdx = (typeof idx === 'number') ? idx : -1;
             lastBusyContext = 'pat';
 
             if (singleSlot) {
@@ -3698,43 +3750,32 @@ window.renderSttOrderControl = function (type, i, total) {
         // ============================================================
 
         function renderLeavePat() {
-
             const tbody = document.getElementById('leave-pat-tbody');
-
             if (!tbody) return;
-
             let html = '', stt = 1;
-
-            dataCache.pat.forEach(p => {
-
+            (dataCache.pat || []).forEach((p, idx) => {
                 if (!p.gioRa) return;
-
-                html += `<tr class="editable-row" onclick="editLeavePat('${p.ten}', '${p.gioRa}')">
-
-            <td>${stt++}</td><td><strong>${p.ten}</strong></td>
-
-            <td style="color:#8e44ad; font-weight:bold;">${p.gioRa}</td>
-
-        </tr>`;
-
+                const escapedTen = escapeHtml(p.ten);
+                const ns = p.namSinh || '';
+                const phong = p.phong || '';
+                html += `<tr class="editable-row" onclick="editLeavePat('${p.ten}', '${ns}', '${p.gioRa}', ${idx})" title="Bấm để sửa/xóa">
+                    <td align="center" style="font-weight: 600; color: #475569;">${stt++}</td>
+                    <td><strong>${escapedTen}</strong></td>
+                    <td align="center" style="color: #64748b;">${ns}</td>
+                    <td align="center" style="color: #64748b;">${phong}</td>
+                    <td align="center" style="color:#8e44ad; font-weight:bold;">${p.gioRa}</td>
+                </tr>`;
             });
-
-            tbody.innerHTML = html || `<tr><td colspan="3" align="center" style="color:gray; padding:10px;">Chưa có bệnh nhân ra viện</td></tr>`;
-
+            tbody.innerHTML = html || `<tr><td colspan="5" align="center" style="color:gray; padding:10px;">Chưa có bệnh nhân ra viện</td></tr>`;
         }
 
-        function editLeavePat(ten, gioRa) {
-
+        function editLeavePat(ten, namSinh, gioRa, idx) {
             const inputName = document.getElementById('leave-pat-input');
-
             if (!inputName) return;
-
-            inputName.value = ten;
-
+            inputName.value = (namSinh && (dataCache.pat || []).filter(p => p.ten === ten).length > 1) ? `${ten} (${namSinh})` : ten;
+            window.lastSelectedPatIdx = (typeof idx === 'number') ? idx : -1;
             lastBusyContext = 'leave';
-
             document.getElementById('leave-pat-time').value = gioRa || '';
-
         }
 
         const savePatLeave = withLock(function () {
@@ -3751,9 +3792,16 @@ window.renderSttOrderControl = function (type, i, total) {
             // Cập nhật ngay trên currentScheduleData để In/Xuất Excel phản ánh đúng
             if (window.currentScheduleData) {
                 const patTenLower = String(p.ten || '').trim().toLowerCase();
+                const patNs = String(p.namSinh || '').trim();
                 window.currentScheduleData.forEach(row => {
-                    if (String(row.tenBN || '').trim().toLowerCase() === patTenLower) {
-                        row.__isDischarged = true;
+                    const rowTenLower = String(row.tenBN || '').trim().toLowerCase();
+                    const rowNs = String(row.namSinh || '').trim();
+                    if (rowTenLower === patTenLower) {
+                        if (patNs && rowNs) {
+                            if (rowNs === patNs) row.__isDischarged = true;
+                        } else {
+                            row.__isDischarged = true;
+                        }
                     }
                 });
             }
@@ -3783,7 +3831,24 @@ window.renderSttOrderControl = function (type, i, total) {
             const p = dataCache.pat[idx];
             if (!confirm("Hủy giờ ra viện của BN: " + p.ten + "?")) return;
 
-            p.gioRa = ''; renderPatientsTable(); document.getElementById('leave-pat-time').value = '';
+            p.gioRa = '';
+            if (window.currentScheduleData) {
+                const patTenLower = String(p.ten || '').trim().toLowerCase();
+                const patNs = String(p.namSinh || '').trim();
+                window.currentScheduleData.forEach(row => {
+                    const rowTenLower = String(row.tenBN || '').trim().toLowerCase();
+                    const rowNs = String(row.namSinh || '').trim();
+                    if (rowTenLower === patTenLower) {
+                        if (patNs && rowNs) {
+                            if (rowNs === patNs) row.__isDischarged = false;
+                        } else {
+                            row.__isDischarged = false;
+                        }
+                    }
+                });
+            }
+            renderPatientsTable();
+            document.getElementById('leave-pat-time').value = '';
             const leaveInput = document.getElementById('leave-pat-input');
             if (leaveInput) leaveInput.value = '';
 
@@ -4022,8 +4087,30 @@ window.renderSttOrderControl = function (type, i, total) {
             schedData.forEach(row => {
                 if (!row) return;
                 const tenBN = String(row.tenBN || '').trim().toLowerCase();
+                const namSinh = String(row.namSinh || '').trim();
+                const phong = String(row.phong || '').trim().toLowerCase();
                 if (!tenBN) { row.__isDischarged = false; return; }
-                const matched = patList.find(p => String(p.ten || '').trim().toLowerCase() === tenBN);
+
+                let matched = null;
+                // Ưu tiên khớp chính xác cả Tên, Năm sinh và Phòng
+                if (namSinh && phong) {
+                    matched = patList.find(p => 
+                        String(p.ten || '').trim().toLowerCase() === tenBN && 
+                        String(p.namSinh || '').trim() === namSinh && 
+                        String(p.phong || '').trim().toLowerCase() === phong
+                    );
+                }
+                // Khớp chính xác Tên và Năm sinh
+                if (!matched && namSinh) {
+                    matched = patList.find(p => 
+                        String(p.ten || '').trim().toLowerCase() === tenBN && 
+                        String(p.namSinh || '').trim() === namSinh
+                    );
+                }
+                // Fallback chỉ khớp Tên nếu không có năm sinh
+                if (!matched) {
+                    matched = patList.find(p => String(p.ten || '').trim().toLowerCase() === tenBN);
+                }
                 row.__isDischarged = !!(matched && matched.gioRa && String(matched.gioRa).trim() !== '');
             });
             return schedData;

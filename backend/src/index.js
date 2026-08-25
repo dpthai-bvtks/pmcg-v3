@@ -168,7 +168,11 @@ export default {
         return success({ message: "PM-XepLich v3 Cloudflare API is running perfectly!", timestamp: new Date().toISOString() });
       }
 
-      return await handleApiAction(action, args, env, request);
+      const res = await handleApiAction(action, args, env, request, ctx);
+      if (res && res.status === 200) {
+        dispatchBackgroundSync(action, args, env, ctx);
+      }
+      return res;
     } catch (err) {
       console.error("[Worker Error]:", err);
       return error("Lỗi máy chủ Worker: " + err.message, 500);
@@ -249,7 +253,45 @@ export default {
   }
 };
 
-async function handleApiAction(action, args, env, request) {
+function dispatchBackgroundSync(action, args, env, ctx) {
+  const MUTATION_ACTIONS = [
+    "addBenhNhan", "editBenhNhan", "deleteBenhNhan", "bulkUpdateBenhNhan",
+    "saveSchedule", "chotSo", "chuyenNgayMoi", "saveGioBan", "saveChamCong",
+    "addNhanSu", "editNhanSu", "deleteNhanSu",
+    "addMayMoc", "editMayMoc", "deleteMayMoc",
+    "addPhong", "editPhong", "deletePhong",
+    "addThuThuat", "editThuThuat", "deleteThuThuat",
+    "saveSystemSettings", "saveGeneralSettings"
+  ];
+
+  if (!MUTATION_ACTIONS.includes(action)) return;
+  if (!ctx || typeof ctx.waitUntil !== "function") return;
+
+  ctx.waitUntil((async () => {
+    try {
+      const db = env.DB;
+      if (!db) return;
+      const rec = await db.prepare("SELECT value FROM cai_dat WHERE key = 'gdrive_webhook_url'").first();
+      const webhookUrl = rec ? String(rec.value).trim() : "";
+      if (!webhookUrl || !webhookUrl.startsWith("http")) return;
+
+      await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: action,
+          args: args,
+          timestamp: new Date().toISOString()
+        })
+      });
+      console.log(`[Background Sync]: Successfully dispatched mutation '${action}' to Google Sheets webhook.`);
+    } catch (err) {
+      console.warn(`[Background Sync Error] '${action}':`, err);
+    }
+  })());
+}
+
+async function handleApiAction(action, args, env, request, ctx) {
   const db = env.DB;
   if (!db) {
     return error("Database D1 chưa được cấu hình hoặc binding DB bị thiếu.", 500);
@@ -1382,7 +1424,6 @@ async function handleApiAction(action, args, env, request) {
     }
 
     case "saveAccount": {
-      // Signature: (id, username, password, role, permissions) or (accountObj)
       let acc = (typeof args[0] === "object") ? args[0] : {
         id: args[0],
         username: args[1],
@@ -1411,18 +1452,6 @@ async function handleApiAction(action, args, env, request) {
       await bumpDataVersion(db);
       const isNew = !acc.id;
       return success(isNew ? "Đã tạo tài khoản mới thành công!" : "Đã cập nhật tài khoản thành công!");
-    }
-
-    case "deleteAccount": {
-      const id = args[0];
-      const numId = Number(id);
-      if (!isNaN(numId) && String(numId) === String(id)) {
-        await db.prepare("DELETE FROM tai_khoan WHERE id = ?").bind(numId).run();
-      } else {
-        await db.prepare("DELETE FROM tai_khoan WHERE username = ?").bind(String(id)).run();
-      }
-      await bumpDataVersion(db);
-      return success(true);
     }
 
     case "checkLogin":
@@ -1461,174 +1490,6 @@ async function handleApiAction(action, args, env, request) {
         token: "session_cf_" + crypto.randomUUID()
       });
     }
-
-    // ============================================================
-    // 10. CHẤM CÔNG & THỐNG KÊ (D1 SQL HIGH-SPEED)
-    // ============================================================
-        case "getChamCong": {
-      const keys = normalizeMonthKeys(args[0]);
-      const placeholders = keys.map(() => '?').join(',');
-      let rec = await db.prepare(`SELECT data_json FROM cham_cong WHERE month_year IN (${placeholders}) ORDER BY updated_at DESC LIMIT 1`).bind(...keys).first();
-      if (!rec) {
-        rec = await db.prepare("SELECT data_json FROM cham_cong ORDER BY month_year DESC LIMIT 1").first();
-      }
-      return success(rec ? JSON.parse(rec.data_json) : null);
-    }
-
-    case "saveChamCong": {
-      const monthYear = args[0] || "";
-      const data = args[1];
-      const jsonStr = typeof data === "string" ? data : JSON.stringify(data);
-      const keys = normalizeMonthKeys(monthYear);
-      for (const k of keys) {
-        await db.prepare("INSERT INTO cham_cong (month_year, data_json) VALUES (?, ?) ON CONFLICT(month_year) DO UPDATE SET data_json = excluded.data_json, updated_at = CURRENT_TIMESTAMP").bind(k, jsonStr).run();
-      }
-      await bumpDataVersion(db);
-      return success({ message: "Đã lưu bảng chấm công thành công!" });
-    }
-
-    case "getThongKeThuThuat": {
-      const keys = normalizeMonthKeys(args[0]);
-      const placeholders = keys.map(() => '?').join(',');
-      let rec = await db.prepare(`SELECT data_json FROM thong_ke WHERE month_year IN (${placeholders}) ORDER BY updated_at DESC LIMIT 1`).bind(...keys).first();
-      if (!rec) {
-        rec = await db.prepare("SELECT data_json FROM thong_ke ORDER BY month_year DESC LIMIT 1").first();
-      }
-      return success(rec ? JSON.parse(rec.data_json) : null);
-    }
-
-    case "saveThongKeThuThuat": {
-      const monthYear = args[0] || "";
-      const data = args[1];
-      const jsonStr = typeof data === "string" ? data : JSON.stringify(data);
-      const keys = normalizeMonthKeys(monthYear);
-      for (const k of keys) {
-        await db.prepare("INSERT INTO thong_ke (month_year, data_json) VALUES (?, ?) ON CONFLICT(month_year) DO UPDATE SET data_json = excluded.data_json, updated_at = CURRENT_TIMESTAMP").bind(k, jsonStr).run();
-      }
-      await bumpDataVersion(db);
-      return success({ message: "Đã lưu thống kê thủ thuật thành công!" });
-    }
-
-    case "layDanhSachLienKet":
-    case "getQuickLinks": {
-      const rec = await db.prepare("SELECT value FROM cai_dat WHERE key = 'quick_links'").first();
-      let links = [];
-      if (rec && rec.value) {
-        try { links = JSON.parse(rec.value); } catch(e) {}
-      }
-      return success(links);
-    }
-
-    case "saveQuickLinks": {
-      const links = args[0] || [];
-      const jsonStr = typeof links === "string" ? links : JSON.stringify(links);
-      await db.prepare("INSERT INTO cai_dat (key, value) VALUES ('quick_links', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP").bind(jsonStr).run();
-      await bumpDataVersion(db);
-      return success({ message: "Đã lưu danh sách liên kết nhanh thành công!" });
-    }
-
-    case "getEmployees": {
-      const rec = await db.prepare("SELECT value FROM cai_dat WHERE key = 'employees_config'").first();
-      if (rec && rec.value) {
-        try { return success(JSON.parse(rec.value)); } catch(e) {}
-      }
-      const staffRes = await db.prepare("SELECT name, role, system, his_name FROM nhan_su  ORDER BY priority ASC, name ASC").all();
-      const employees = (staffRes.results || []).map(s => ({
-        ten: s.name,
-        vaiTro: s.role,
-        quyen: s.system,
-        tenHis: s.his_name || "",
-        heSo: s.role === "Bác sĩ" ? 1.5 : (s.role === "Điều dưỡng" ? 1.0 : 1.2)
-      }));
-      return success(employees);
-    }
-
-    case "saveEmployees": {
-      const data = args[0];
-      const jsonStr = typeof data === "string" ? data : JSON.stringify(data);
-      await db.prepare("INSERT INTO cai_dat (key, value) VALUES ('employees_config', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(jsonStr).run();
-      return success(true);
-    }
-
-    case "getErrorConfig": {
-      const rec = await db.prepare("SELECT value FROM cai_dat WHERE key = 'error_config'").first();
-      return success(rec ? JSON.parse(rec.value) : null);
-    }
-
-    case "saveErrorConfig": {
-      const data = args[0];
-      const jsonStr = typeof data === "string" ? data : JSON.stringify(data);
-      await db.prepare("INSERT INTO cai_dat (key, value) VALUES ('error_config', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(jsonStr).run();
-      return success(true);
-    }
-
-    case "getMultipleMonthsData": {
-      const monthYears = args[0] || [];
-      const chamCongMap = {};
-      const thongKeMap = {};
-
-      if (Array.isArray(monthYears) && monthYears.length > 0) {
-        const statements = [];
-        monthYears.forEach(my => {
-          statements.push(db.prepare("SELECT month_year, data_json FROM cham_cong WHERE month_year = ?").bind(my));
-          statements.push(db.prepare("SELECT month_year, data_json FROM thong_ke WHERE month_year = ?").bind(my));
-        });
-
-        const batchResults = await db.batch(statements);
-        batchResults.forEach((res, idx) => {
-          const isChamCong = (idx % 2 === 0);
-          const row = res.results && res.results[0];
-          if (row) {
-            try {
-              const parsed = JSON.parse(row.data_json);
-              if (isChamCong) chamCongMap[row.month_year] = parsed;
-              else thongKeMap[row.month_year] = parsed;
-            } catch(e) {}
-          }
-        });
-      }
-
-      return success({ chamcong: chamCongMap, thongke: thongKeMap });
-    }
-
-    // ============================================================
-    // 11. AI TRAINING DATA
-    // ============================================================
-    case "migrateFromGoogle":
-
-    // ============================================================
-    // 9. TOÀN BỘ CÁC HÀM BỔ SUNG KHỚP 100% CODE.GS-V2.TXT
-    // ============================================================
-    case "getDocuments": {
-      const res = await db.prepare("SELECT doc_number, title, agency, signed_date, view_link, download_link FROM tai_lieu ORDER BY rowid ASC").all();
-      return success(res.results || []);
-    }
-
-    case "saveDocuments": {
-      const docs = args[0] || [];
-      await db.prepare("DELETE FROM tai_lieu").run();
-      const stmts = docs.map(d => db.prepare(
-        "INSERT INTO tai_lieu (doc_number, title, agency, signed_date, view_link, download_link) VALUES (?, ?, ?, ?, ?, ?)"
-      ).bind(d.soHieu || d.doc_number || "", d.tenVanBan || d.title || "", d.coQuan || d.agency || "", d.ngayKy || d.signed_date || "", d.linkXem || d.view_link || "", d.linkTai || d.download_link || ""));
-      for (let i = 0; i < stmts.length; i += 50) {
-        await db.batch(stmts.slice(i, i + 50));
-      }
-      return success({ message: "Đã lưu danh sách văn bản thành công!" });
-    }
-
-    case "saveTimRanhData": {
-      const slots = args[0] || [];
-      await db.prepare("DELETE FROM tim_ranh").run();
-      const stmts = slots.map(s => db.prepare(
-        "INSERT INTO tim_ranh (procedure_name, start_time, end_time, staff_name, machine_name) VALUES (?, ?, ?, ?, ?)"
-      ).bind(s.procedure_name || s.thuThuat || "", s.start_time || s.gioDienRa || "", s.end_time || s.gioKetThuc || "", s.staff_name || s.nvChinh || "", s.machine_name || s.may || ""));
-      for (let i = 0; i < stmts.length; i += 50) {
-        await db.batch(stmts.slice(i, i + 50));
-      }
-      return success({ message: "Đã lưu dữ liệu Tìm Rảnh thành công!" });
-    }
-
-
 
     case "updateNameEverywhere": {
       const oldName = args[0] || "";

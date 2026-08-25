@@ -54,9 +54,6 @@ function handleApiRequest(action, args) {
         return { status: 'success', data: 'Đã lưu lịch dự phòng vào Google Sheets' };
 
       case 'addBenhNhan':
-        addOrUpdateRow(ss, 'BenhNhan', args[0]);
-        return { status: 'success', data: 'Đã thêm bệnh nhân vào Google Sheets' };
-
       case 'editBenhNhan':
         addOrUpdateRow(ss, 'BenhNhan', args[0]);
         return { status: 'success', data: 'Đã cập nhật bệnh nhân trên Google Sheets' };
@@ -65,12 +62,64 @@ function handleApiRequest(action, args) {
         deleteRowByName(ss, 'BenhNhan', args[0]);
         return { status: 'success', data: 'Đã xóa bệnh nhân khỏi Google Sheets' };
 
+      case 'bulkUpdateBenhNhan':
+        if (Array.isArray(args[0])) {
+          for (var b = 0; b < args[0].length; b++) {
+            addOrUpdateRow(ss, 'BenhNhan', args[0][b]);
+          }
+        }
+        return { status: 'success', data: 'Đã cập nhật danh sách bệnh nhân' };
+
+      case 'saveGioBan':
+        addOrUpdateRow(ss, 'GioBanCu', { date: args[0], staff_name: args[1], busy_ranges: typeof args[2] === 'object' ? JSON.stringify(args[2]) : args[2] });
+        return { status: 'success', data: 'Đã lưu giờ bận vào Google Sheets' };
+
+      case 'chotSo':
+      case 'chuyenNgayMoi':
+        return { status: 'success', data: 'Đã chốt sổ' };
+
       case 'saveChamCong':
         addOrUpdateRow(ss, 'ChamCong', { month_year: args[0], data_json: typeof args[1] === 'object' ? JSON.stringify(args[1]) : args[1] });
         return { status: 'success', data: 'Đã lưu Chấm công' };
 
       case 'getChamCong':
         return { status: 'success', data: readSheetData(ss, 'ChamCong') };
+
+      case 'addNhanSu':
+      case 'editNhanSu':
+        addOrUpdateRow(ss, 'NhanSu', args[0]);
+        return { status: 'success', data: 'Đã cập nhật nhân sự' };
+
+      case 'deleteNhanSu':
+        deleteRowByName(ss, 'NhanSu', args[0]);
+        return { status: 'success', data: 'Đã xóa nhân sự' };
+
+      case 'addPhong':
+      case 'editPhong':
+        addOrUpdateRow(ss, 'Phong', args[0]);
+        return { status: 'success', data: 'Đã cập nhật phòng' };
+
+      case 'deletePhong':
+        deleteRowByName(ss, 'Phong', args[0]);
+        return { status: 'success', data: 'Đã xóa phòng' };
+
+      case 'addMayMoc':
+      case 'editMayMoc':
+        addOrUpdateRow(ss, 'MayMoc', args[0]);
+        return { status: 'success', data: 'Đã cập nhật máy móc' };
+
+      case 'deleteMayMoc':
+        deleteRowByName(ss, 'MayMoc', args[0]);
+        return { status: 'success', data: 'Đã xóa máy móc' };
+
+      case 'addThuThuat':
+      case 'editThuThuat':
+        addOrUpdateRow(ss, 'ThuThuat', args[0]);
+        return { status: 'success', data: 'Đã cập nhật thủ thuật' };
+
+      case 'deleteThuThuat':
+        deleteRowByName(ss, 'ThuThuat', args[0]);
+        return { status: 'success', data: 'Đã xóa thủ thuật' };
 
       case 'saveBootstrapBackup':
         saveAllBootstrapToSheets(ss, args[0]);

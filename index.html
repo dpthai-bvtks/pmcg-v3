@@ -13,7 +13,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>T.I.M.E.S. System - Hệ thống Xếp lịch Thủ thuật Y tế Tự động</title>
+    <title>T.I.M.E.S. System - Hệ thống Xếp lịch Thủ thuật YHCT - PHCN</title>
     <meta name="description"
         content="T.I.M.E.S. System là phần mềm xếp lịch thủ thuật y học cổ truyền và phục hồi chức năng tự động, tối ưu hóa công suất máy móc và nhân sự tại BVTKS CS2.">
     <link rel="canonical" href="https://xeplichthuthuat.io.vn/">
@@ -24,7 +24,7 @@
     <meta property="og:title" content="T.I.M.E.S. System - Hệ thống Xếp lịch Thủ thuật Y tế Tự động">
     <meta property="og:description"
         content="Phần mềm xếp lịch thủ thuật y học cổ truyền và phục hồi chức năng tự động, tối ưu hóa công suất máy móc và nhân sự tại BVTKS CS2.">
-    <meta property="og:image" content="https://xeplichthuthuat.io.vn/logo-chuan-chinh.png?v=3.1.7">
+    <meta property="og:image" content="https://xeplichthuthuat.io.vn/logo-chuan-chinh.png?v=3.1.8">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
@@ -32,7 +32,7 @@
     <meta property="twitter:title" content="T.I.M.E.S. System - Hệ thống Xếp lịch Thủ thuật Y tế Tự động">
     <meta property="twitter:description"
         content="Phần mềm xếp lịch thủ thuật y học cổ truyền và phục hồi chức năng tự động, tối ưu hóa công suất máy móc và nhân sự tại BVTKS CS2.">
-    <meta property="twitter:image" content="https://xeplichthuthuat.io.vn/logo-chuan-chinh.png?v=3.1.7">
+    <meta property="twitter:image" content="https://xeplichthuthuat.io.vn/logo-chuan-chinh.png?v=3.1.8">
 
     <!-- Schema Structured Data -->
     <script type="application/ld+json">
@@ -59,9 +59,9 @@
     }
     </script>
     <meta name="theme-color" content="#1e3d2b">
-    <link rel="icon" type="image/png" sizes="128x128" href="favicon-128.png?v=3.1.7">
+    <link rel="icon" type="image/png" sizes="128x128" href="favicon-128.png?v=3.1.8">
     <!-- Thêm icon cho iOS -->
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=3.1.7">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=3.1.8">
 
 
 
@@ -72,9 +72,9 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
     <!-- CSS Custom -->
-    <link rel="stylesheet" href="css/style.css?v=3.1.7">
+    <link rel="stylesheet" href="css/style.css?v=3.1.8">
     <!-- JS Thư viện kéo thả nội bộ -->
-    <script src="js/sortable.min.js?v=3.1.7"></script>
+    <script src="js/sortable.min.js?v=3.1.8"></script>
     <!-- Chart.js for Thống Kê & ExcelJS -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
@@ -92,7 +92,7 @@
 
             <div class="login-box">
 
-                <img src="logo-chuan-chinh.png?v=3.1.7" alt="Logo Bệnh viện Than - Khoáng sản"
+                <img src="logo-chuan-chinh.png?v=3.1.8" alt="Logo Bệnh viện Than - Khoáng sản"
                     style="width:100px; margin-bottom:15px;">
 
                 <h2 style="margin-bottom:20px; color:#2c3e50;">HỆ THỐNG XẾP LỊCH</h2>
@@ -184,7 +184,7 @@
 
                     <div class="banner-left">
 
-                        <img src="logo-chuan-chinh.png?v=3.1.7" alt="Logo" class="banner-logo"
+                        <img src="logo-chuan-chinh.png?v=3.1.8" alt="Logo" class="banner-logo"
                             onclick="document.querySelector('.nav-tab[data-tab=\'tab-home\']')?.click()"
                             title="Về trang chủ">
 
@@ -212,10 +212,20 @@
                                 <div id="clock-date">Thứ Hai, 01/01/2026</div>
                             </div>
                             <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px;">
-                                <div id="server-status-badge" class="status-badge status-primary" title="Bấm để xem/đổi máy chủ dự phòng" onclick="window.toggleEmergencyBackupMenu()" style="cursor: pointer; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; background: #27ae60; color: white; display: inline-block;">🟢 Cloudflare Main</div>
-                                <button onclick="window.OfflineSyncEngine?.exportEmergencyBackupData()" title="Xuất toàn bộ dữ liệu ra file JSON để sao lưu khẩn cấp" style="padding: 2px 6px; font-size: 11px; border-radius: 4px; border: 1px solid #16a085; background: #1abc9c; color: white; cursor: pointer;">⚡️ Xuất Dự Phòng</button>
-                                <button onclick="document.getElementById('emergency-import-input').click()" title="Nạp dữ liệu từ file sao lưu JSON khẩn cấp" style="padding: 2px 6px; font-size: 11px; border-radius: 4px; border: 1px solid #d35400; background: #e67e22; color: white; cursor: pointer;">📥 Nạp File</button>
-                                <input type="file" id="emergency-import-input" accept=".json" style="display: none;" onchange="window.OfflineSyncEngine?.importEmergencyBackupData(this)">
+                                <div id="server-status-badge" class="status-badge status-primary"
+                                    title="Bấm để xem/đổi máy chủ dự phòng" onclick="window.toggleEmergencyBackupMenu()"
+                                    style="cursor: pointer; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; background: #27ae60; color: white; display: inline-block;">
+                                    🟢 Cloudflare Main</div>
+                                <button onclick="window.OfflineSyncEngine?.exportEmergencyBackupData()"
+                                    title="Xuất toàn bộ dữ liệu ra file JSON để sao lưu khẩn cấp"
+                                    style="padding: 2px 6px; font-size: 11px; border-radius: 4px; border: 1px solid #16a085; background: #1abc9c; color: white; cursor: pointer;">⚡️
+                                    Xuất Dự Phòng</button>
+                                <button onclick="document.getElementById('emergency-import-input').click()"
+                                    title="Nạp dữ liệu từ file sao lưu JSON khẩn cấp"
+                                    style="padding: 2px 6px; font-size: 11px; border-radius: 4px; border: 1px solid #d35400; background: #e67e22; color: white; cursor: pointer;">📥
+                                    Nạp File</button>
+                                <input type="file" id="emergency-import-input" accept=".json" style="display: none;"
+                                    onchange="window.OfflineSyncEngine?.importEmergencyBackupData(this)">
 
                             </div>
 
@@ -996,11 +1006,12 @@
                                     <label>Ngày vào:</label>
                                     <div style="display: flex; gap: 8px; align-items: center;">
                                         <div style="flex: 1;">
-                                            <input type="text" id="pat-date-day" maxlength="2" placeholder="Ngày" 
-                                                class="login-input" style="margin-bottom:0; font-size:12px; text-align: center; height: 32px; padding: 6px;">
+                                            <input type="text" id="pat-date-day" maxlength="2" placeholder="Ngày"
+                                                class="login-input"
+                                                style="margin-bottom:0; font-size:12px; text-align: center; height: 32px; padding: 6px;">
                                         </div>
                                         <div style="flex: 2;">
-                                            <select id="pat-date-month-year" class="login-input" 
+                                            <select id="pat-date-month-year" class="login-input"
                                                 style="margin-bottom:0; font-size:12px; height: 32px; padding: 4px 8px; width: 100%; border: 1px solid #bdc3c7; border-radius: 4px; outline: none; background: #fff;"></select>
                                         </div>
                                     </div>
@@ -1033,10 +1044,11 @@
 
                                 </div>
 
-                                
+
                                 <div class="form-group">
                                     <label>Loại bệnh nhân:</label>
-                                    <select id="pat-loai-bn" onchange="togglePatSessionSelect()" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; outline: none;">
+                                    <select id="pat-loai-bn" onchange="togglePatSessionSelect()"
+                                        style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; outline: none;">
                                         <option value="NoiTru">Nội trú</option>
                                         <option value="NgoaiTru">Ngoại trú</option>
                                     </select>
@@ -1044,7 +1056,8 @@
 
                                 <div class="form-group" id="pat-session-group" style="display: none;">
                                     <label>Buổi điều trị ngoại trú:</label>
-                                    <select id="pat-buoi-dieu-tri" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; outline: none;">
+                                    <select id="pat-buoi-dieu-tri"
+                                        style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; outline: none;">
                                         <option value="TuDong">🔄 Tự động (hệ thống chọn)</option>
                                         <option value="Sang">☀️ Buổi Sáng (7:00 - 11:30)</option>
                                         <option value="Chieu">🌙 Buổi Chiều (13:00 - 16:54)</option>
@@ -1130,10 +1143,20 @@
                                     placeholder="Gõ tên, năm sinh, ngày vào hoặc phòng để tìm nhanh..."
                                     style="padding: 8px 12px; width: 320px; border: 1px solid #bdc3c7; border-radius: 4px; outline: none;"
                                     onkeyup="filterPatientTable()">
-                                <div class="patient-type-filters" style="display: flex; gap: 6px; margin-left: auto; align-items: center;">
-                                    <button type="button" id="btn-filter-all" class="btn-filter-pat-type active" onclick="setPatientTypeFilter('all')" style="padding: 8px 16px; border-radius: 4px; border: 1px solid #1e3d2b; background: #1e3d2b; color: white; font-weight: bold; cursor: pointer; transition: all 0.2s; font-size: 12px;">Tất cả</button>
-                                    <button type="button" id="btn-filter-noitru" class="btn-filter-pat-type" onclick="setPatientTypeFilter('NoiTru')" style="padding: 8px 16px; border-radius: 4px; border: 1px solid #cbd5e1; background: white; color: #475569; font-weight: bold; cursor: pointer; transition: all 0.2s; font-size: 12px;">Nội trú</button>
-                                    <button type="button" id="btn-filter-ngoaitru" class="btn-filter-pat-type" onclick="setPatientTypeFilter('NgoaiTru')" style="padding: 8px 16px; border-radius: 4px; border: 1px solid #cbd5e1; background: white; color: #475569; font-weight: bold; cursor: pointer; transition: all 0.2s; font-size: 12px;">Ngoại trú</button>
+                                <div class="patient-type-filters"
+                                    style="display: flex; gap: 6px; margin-left: auto; align-items: center;">
+                                    <button type="button" id="btn-filter-all" class="btn-filter-pat-type active"
+                                        onclick="setPatientTypeFilter('all')"
+                                        style="padding: 8px 16px; border-radius: 4px; border: 1px solid #1e3d2b; background: #1e3d2b; color: white; font-weight: bold; cursor: pointer; transition: all 0.2s; font-size: 12px;">Tất
+                                        cả</button>
+                                    <button type="button" id="btn-filter-noitru" class="btn-filter-pat-type"
+                                        onclick="setPatientTypeFilter('NoiTru')"
+                                        style="padding: 8px 16px; border-radius: 4px; border: 1px solid #cbd5e1; background: white; color: #475569; font-weight: bold; cursor: pointer; transition: all 0.2s; font-size: 12px;">Nội
+                                        trú</button>
+                                    <button type="button" id="btn-filter-ngoaitru" class="btn-filter-pat-type"
+                                        onclick="setPatientTypeFilter('NgoaiTru')"
+                                        style="padding: 8px 16px; border-radius: 4px; border: 1px solid #cbd5e1; background: white; color: #475569; font-weight: bold; cursor: pointer; transition: all 0.2s; font-size: 12px;">Ngoại
+                                        trú</button>
                                 </div>
 
                             </div>
@@ -2011,7 +2034,8 @@
                                         <label
                                             style="font-size:13px; font-weight:bold; color:#2c3e50; display:block; margin-bottom:10px;">⏰
                                             Giờ chốt sổ tự động (Hàng ngày):</label>
-                                        <input type="text" id="admin-chotso-time" placeholder="VD: 16:00" class="time-input"
+                                        <input type="text" id="admin-chotso-time" placeholder="VD: 16:00"
+                                            class="time-input"
                                             style="width:100%; padding:10px; border-radius:4px; border:1px solid #ccc; outline:none; font-size:14px; margin-bottom: 10px;">
 
                                         <label
@@ -2403,7 +2427,8 @@
                                             <ol style="margin: 10px 0 0 18px; padding: 0; line-height: 1.6;">
                                                 <li>Mở Google Drive -> Tạo Thư mục mới tên <b>"SaoLuu_PMCG"</b> -> Mở
                                                     thư mục -> Copy chuỗi ID trên thanh địa chỉ URL (Ví dụ ID:
-                                                    <code>1a2b3c4d5e...</code>).</li>
+                                                    <code>1a2b3c4d5e...</code>).
+                                                </li>
                                                 <li>Truy cập <a href="https://script.google.com" target="_blank"
                                                         style="color:#2563eb; font-weight:bold;">script.google.com</a>
                                                     -> New project -> Dán đoạn mã dưới đây:
@@ -2512,7 +2537,8 @@
                                                     <label
                                                         style="font-size: 13px; font-weight: 600; color: #334155;">Giờ
                                                         tự động sao lưu:</label>
-                                                    <input type="text" id="backup-reminder-time" value="17:00" placeholder="VD: 17:00" class="time-input"
+                                                    <input type="text" id="backup-reminder-time" value="17:00"
+                                                        placeholder="VD: 17:00" class="time-input"
                                                         onchange="onBackupScheduleUIChange()"
                                                         style="padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; width: 200px; text-align: center;">
                                                 </div>
@@ -2908,9 +2934,9 @@
 
                     <h4><span class="f-icon">⚙️</span> <span>THÔNG TIN HỆ THỐNG</span></h4>
 
-                    <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.1.7</span></p>
+                    <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.1.8</span></p>
 
-                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 20:45 24/08/2026</span></p>
+                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 09:39 25/08/2026</span></p>
 
                     <p><span class="f-icon">👨‍💻</span> <span>Thiết kế & Phát triển: <b>Bác sĩ Thái</b></span></p>
 
@@ -3173,8 +3199,317 @@
                     bỏ</button>
                 <button onclick="saveAdminEmployee()"
                     style="padding: 8px 15px; border: none; background: #27ae60; color: #fff; border-radius: 4px; cursor: pointer; font-weight: bold;">Lưu
+                    </label>
+
+                    <input type="text" id="modal-skip-procs" placeholder="VD: Thủy châm, TC, Điện xung..."
+                        style="width: 100%; padding: 10px; border: 1px solid #dcdde1; border-radius: 6px; font-size: 13px; box-sizing: border-box; outline: none; transition: 0.3s;"
+                        onfocus="this.style.borderColor='#e67e22'; this.style.boxShadow='0 0 5px rgba(230,126,34,0.3)';"
+                        onblur="this.style.borderColor='#dcdde1'; this.style.boxShadow='none';">
+
+                    <div style="font-size: 11px; color: #e67e22; margin-top: 6px; font-style: italic;">
+
+                        *Nhập tên hoặc viết tắt. Bỏ trống nếu muốn xếp bình thường cho tất cả.
+
+                    </div>
+
+            </div>
+
+
+
+            <button onclick="executeScheduling('opt_rare')"
+                style="width:100%; padding:15px; margin-bottom:12px; background:#1e3d2b; color:white; border:none; border-radius:8px; cursor:pointer; text-align:left;">
+
+                <b>🚀 Kịch bản 1: Tối ưu tối đa</b><br>
+
+                <small>Ưu tiên máy hiếm, khoảng cách tối thiểu. Phù hợp ngày thường.</small>
+
+            </button>
+
+
+
+            <button onclick="executeScheduling('balanced')"
+                style="width:100%; padding:15px; margin-bottom:12px; background:#2ecc71; color:white; border:none; border-radius:8px; cursor:pointer; text-align:left;">
+
+                <b>⚖️ Kịch bản 2: Cân bằng tải</b><br>
+
+                <small>Phân bổ đều nhân viên, linh hoạt phòng. Phù hợp ngày đông.</small>
+
+            </button>
+
+
+
+            <button onclick="executeScheduling('contingency')"
+                style="width:100%; padding:15px; margin-bottom:12px; background:#e67e22; color:white; border:none; border-radius:8px; cursor:pointer; text-align:left;">
+
+                <b>🛡️ Kịch bản 3: Dự phòng</b><br>
+
+                <small>Giữ lại 20% máy làm dự phòng. Phù hợp khi có sự cố máy.</small>
+
+            </button>
+
+
+
+            <button onclick="closeStrategyModal()"
+                style="width:100%; background:none; border:none; color:#999; cursor:pointer; margin-top:10px; font-weight:bold;">Đóng</button>
+
+        </div>
+
+    </div>
+
+    <div id="custom-success-popup"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:99999; align-items:center; justify-content:center; backdrop-filter: blur(3px);">
+
+        <div
+            style="background:#fff; padding:30px; border-radius:16px; text-align:center; box-shadow:0 15px 30px rgba(0,0,0,0.3); min-width:320px; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+
+            <div style="font-size:50px; margin-bottom:10px;">🎉</div>
+
+            <h3 style="color:#27ae60; margin-top:0; font-weight:900; font-size:22px;">ĐÃ XẾP LỊCH XONG!</h3>
+
+            <div id="custom-popup-content"
+                style="text-align:left; font-size:16px; line-height:1.8; margin:25px 0; color:#2c3e50; padding:15px; background:#f8f9fa; border-radius:10px; border:1px solid #e9ecef;">
+
+            </div>
+
+            <button onclick="document.getElementById('custom-success-popup').style.display='none'"
+                style="background:#27ae60; color:#fff; border:none; padding:12px 35px; font-size:16px; border-radius:8px; cursor:pointer; font-weight:bold; width:100%; box-shadow: 0 4px 6px rgba(39, 174, 96, 0.3); transition: all 0.2s;">
+
+                Xác nhận
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+
+    <div id="global-custom-alert"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999999; align-items:center; justify-content:center; backdrop-filter: blur(2px);">
+
+        <div
+            style="background:#fff; padding:25px; border-radius:12px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.2); min-width:300px; max-width:550px; animation: popIn 0.2s ease-out;">
+
+            <div id="gca-icon" style="font-size:45px; margin-bottom:10px;">💡</div>
+
+            <h3 id="gca-title" style="margin-top:0; font-size:20px; color:#333; font-weight:bold;">Thông báo</h3>
+
+            <div id="gca-message"
+                style="margin:15px 0; font-size:15px; color:#555; line-height:1.5; max-height:60vh; overflow-y:auto; padding:0 5px;">
+                Nội dung...</div>
+
+            <button onclick="document.getElementById('global-custom-alert').style.display='none'"
+                style="background:#3498db; color:#fff; border:none; padding:10px 30px; font-size:15px; border-radius:6px; cursor:pointer; font-weight:bold; width:100%;">Đã
+
+                hiểu</button>
+
+        </div>
+
+    </div>
+
+
+
+    <div id="custom-confirm-modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000000; align-items:center; justify-content:center; backdrop-filter: blur(2px);">
+
+        <div
+            style="background:#fff; padding:25px; border-radius:12px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.2); min-width:320px; max-width:550px; animation: popIn 0.2s ease-out;">
+
+            <div style="font-size:45px; margin-bottom:10px;">❓</div>
+
+            <h3 id="confirm-title" style="margin-top:0; font-size:20px; color:#2c3e50; font-weight:bold;">Xác nhận</h3>
+
+            <div id="confirm-message"
+                style="margin:15px 0; font-size:15px; color:#555; line-height:1.5; max-height:60vh; overflow-y:auto; padding:0 5px;">
+                Bạn có chắc
+
+                chắn muốn
+
+                thực hiện?</div>
+
+            <div style="display:flex; gap:10px; margin-top:20px;">
+
+                <button onclick="document.getElementById('custom-confirm-modal').style.display='none'"
+                    style="flex:1; background:#95a5a6; color:#fff; border:none; padding:10px; border-radius:6px; cursor:pointer; font-weight:bold;">Hủy
+
+                    bỏ</button>
+
+                <button id="confirm-ok-btn"
+                    style="flex:1; background:#8e44ad; color:#fff; border:none; padding:10px; border-radius:6px; cursor:pointer; font-weight:bold;">Đồng
+
+                    ý</button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- MODAL QUẢN LÝ NHÂN SỰ CHẤM CÔNG -->
+    <div id="modal-admin-employee"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+        <div
+            style="background: #fff; padding: 25px; border-radius: 8px; width: 450px; max-width: 90%; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+            <h3 id="modal-admin-emp-title" style="margin-top: 0; color: #2c3e50; font-size: 1.2rem;">Thêm Nhân Sự Mới
+            </h3>
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.95rem;">Tên Nhân Viên
+                    (Chuẩn)</label>
+                <input type="text" id="admin-emp-name"
+                    style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;"
+                    placeholder="VD: BS Đạt">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.95rem;">Chức
+                    Danh</label>
+                <select id="admin-emp-role"
+                    style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;">
+                    <option value="Bác sĩ">Bác sĩ</option>
+                    <option value="KTV">KTV</option>
+                    <option value="Điều dưỡng">Điều dưỡng</option>
+                    <option value="Khác">Khác</option>
+                </select>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.95rem;">Từ khóa nhận
+                    diện Excel (Cách nhau bởi dấu phẩy)</label>
+                <input type="text" id="admin-emp-keys"
+                    style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;"
+                    placeholder="VD: hoàng đức đạt, bs đạt">
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.95rem;">Hệ / Kỹ
+                    năng</label>
+                <select id="admin-emp-skills"
+                    style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;">
+                    <option value="Cả hai">Cả hai</option>
+                    <option value="YHCT">YHCT</option>
+                    <option value="PHCN">PHCN</option>
+                </select>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button onclick="closeAdminEmployeeModal()"
+                    style="padding: 8px 15px; border: 1px solid #ccc; background: #fff; border-radius: 4px; cursor: pointer;">Hủy
+                    bỏ</button>
+                <button onclick="saveAdminEmployee()"
+                    style="padding: 8px 15px; border: none; background: #27ae60; color: #fff; border-radius: 4px; cursor: pointer; font-weight: bold;">Lưu
                     Lại</button>
             </div>
+        </div>
+    </div>
+
+    <!-- MODAL: TRA CỨU VĂN BẢN & QUY ĐỊNH BHXH / Y TẾ -->
+    <div id="modal-doc-lookup"
+        style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 99999; justify-content: center; align-items: center; padding: 15px;">
+        <div
+            style="background: #ffffff; width: 100%; max-width: 960px; max-height: 90vh; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #cbd5e1;">
+
+            <!-- Header -->
+            <div
+                style="background: linear-gradient(135deg, #1e3a8a, #2563eb); padding: 16px 20px; color: #fff; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 22px;">📜</span>
+                    <div>
+                        <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: #fff;">TRA CỨU VĂN BẢN & QUY
+                            ĐỊNH BHXH / Y TẾ</h3>
+                        <p style="margin: 2px 0 0 0; font-size: 12px; opacity: 0.85;">Hệ thống tra cứu quy trình kỹ
+                            thuật, văn bản quy định BHYT & Y học cổ truyền - PHCN</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeDocLookupModal()"
+                    style="background: rgba(255,255,255,0.2); border: none; color: #fff; font-size: 18px; font-weight: bold; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: all 0.2s;">✕</button>
+            </div>
+
+            <!-- Filter & Search Toolbar -->
+            <div
+                style="background: #f8fafc; padding: 12px 20px; border-bottom: 1px solid #e2e8f0; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;">
+                <div style="display: flex; gap: 10px; flex: 1; min-width: 280px;">
+                    <div style="position: relative; flex: 1;">
+                        <input type="text" id="doc-lookup-search-input" onkeyup="filterDocLookupUI()"
+                            placeholder="🔎 Tìm theo số hiệu, tên văn bản, trích yếu, cơ quan..."
+                            style="width: 100%; padding: 9px 12px 9px 34px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; background: #fff;">
+                        <span
+                            style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 14px; color: #94a3b8;">🔍</span>
+                    </div>
+                    <select id="doc-lookup-agency-filter" onchange="filterDocLookupUI()"
+                        style="padding: 9px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; background: #fff; color: #334155; outline: none;">
+                        <option value="">-- Tất cả cơ quan --</option>
+                        <option value="Bộ Y tế">Bộ Y tế</option>
+                        <option value="BHXH Việt Nam">BHXH Việt Nam</option>
+                        <option value="Bệnh viện">Bệnh viện</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" id="btn-admin-manage-docs" onclick="toggleDocAdminMode()"
+                        style="padding: 8px 14px; background: #0284c7; color: #fff; border: none; border-radius: 6px; font-weight: 600; font-size: 12.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                        <span>⚙️</span> Quản lý văn bản (Admin)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Document Table Content -->
+            <div style="flex: 1; overflow-y: auto; padding: 15px 20px; background: #ffffff;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+                    <thead>
+                        <tr style="background: #f1f5f9; color: #334155; border-bottom: 2px solid #cbd5e1;">
+                            <th style="padding: 10px; width: 45px; text-align: center;">STT</th>
+                            <th style="padding: 10px; width: 150px;">Số Hiệu</th>
+                            <th style="padding: 10px;">Tên Văn Bản / Trích Yếu</th>
+                            <th style="padding: 10px; width: 140px;">Cơ Quan</th>
+                            <th style="padding: 10px; width: 100px; text-align: center;">Ngày Ký</th>
+                            <th style="padding: 10px; width: 130px; text-align: center;">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="doc-lookup-table-body">
+                        <tr>
+                            <td colspan="6" align="center" style="padding: 30px; color: #64748b;">⏳ Đang nạp danh sách
+                                văn bản...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Admin Add Form (Hidden by default) -->
+            <div id="doc-admin-editor-panel"
+                style="display: none; background: #f1f5f9; padding: 15px 20px; border-top: 1px solid #cbd5e1;">
+                <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #1e293b; font-weight: 700;">➕ Thêm / Chỉnh Sửa
+                    Văn Bản Mới</h4>
+                <div style="display: grid; grid-template-columns: 1.2fr 2fr 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+                    <input type="text" id="new-doc-number" placeholder="Số hiệu (VD: QĐ 3981/QĐ-BYT)"
+                        style="padding: 7px; border: 1px solid #ccc; border-radius: 4px; font-size: 12.5px;">
+                    <input type="text" id="new-doc-title" placeholder="Tên văn bản / Trích yếu nội dung"
+                        style="padding: 7px; border: 1px solid #ccc; border-radius: 4px; font-size: 12.5px;">
+                    <input type="text" id="new-doc-agency" placeholder="Cơ quan (VD: Bộ Y tế)"
+                        style="padding: 7px; border: 1px solid #ccc; border-radius: 4px; font-size: 12.5px;">
+                    <input type="text" id="new-doc-date" placeholder="Ngày ký (VD: 01/10/2023)"
+                        style="padding: 7px; border: 1px solid #ccc; border-radius: 4px; font-size: 12.5px;">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px;">
+                    <input type="text" id="new-doc-viewlink" placeholder="Link xem trực tuyến (https://...)"
+                        style="padding: 7px; border: 1px solid #ccc; border-radius: 4px; font-size: 12.5px;">
+                    <input type="text" id="new-doc-downlink" placeholder="Link tải về file PDF (https://...)"
+                        style="padding: 7px; border: 1px solid #ccc; border-radius: 4px; font-size: 12.5px;">
+                    <button type="button" onclick="addNewDocToListUI()"
+                        style="padding: 7px 16px; background: #16a085; color: #fff; border: none; border-radius: 4px; font-weight: 700; font-size: 12.5px; cursor: pointer;">Thêm
+                        Văn Bản</button>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div
+                style="background: #f8fafc; padding: 10px 20px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; color: #64748b;">
+                <span>Tổng cộng: <b id="doc-count-badge" style="color: #2563eb;">0</b> văn bản</span>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" id="btn-save-doc-admin" onclick="saveDocListToServer()"
+                        style="display: none; padding: 6px 14px; background: #059669; color: #fff; border: none; border-radius: 5px; font-weight: 700; font-size: 12px; cursor: pointer;">💾
+                        Lưu Thay Đổi Vào D1</button>
+                    <button type="button" onclick="closeDocLookupModal()"
+                        style="padding: 6px 14px; background: #64748b; color: #fff; border: none; border-radius: 5px; font-weight: 600; font-size: 12px; cursor: pointer;">Đóng</button>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -3182,12 +3517,10 @@
     <div id="sidebar-tooltip"></div>
 
     <!-- JavaScript Modules -->
-    <script src="js/offline-sync-engine.js?v=3.1.7"></script>
-    <script src="js/scheduler-engine.js?v=3.1.7"></script>
-    <script src="js/app.js?v=3.1.7"></script>
-        <script src="js/init.js?v=3.1.7"></script>
-    <script src="js/sync.js?v=3.1.7"></script>
-    <script src="js/thongke.js?v=3.1.7"></script>
+    <script src="js/offline-sync-engine.js?v=3.1.8"></script>
+    <script src="js/init.js?v=3.1.8"></script>
+    <script src="js/sync.js?v=3.1.8"></script>
+    <script src="js/thongke.js?v=3.1.8"></script>
 </body>
 
 </html>

@@ -764,3 +764,17 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   4. **Cập nhật liên kết nhanh Footer**:
      - Cập nhật cấu hình `quick_links` trên Cloudflare D1 Database và fallback `js/app.js`, mục "📖 Hướng dẫn sử dụng phần mềm" ở Footer chuyển sang mở trực tiếp trang web `huong-dan-su-dung.html`.
 - **File tạo mới & sửa đổi**: `HUONG_DAN_SU_DUNG.md`, `huong-dan-su-dung.html`, `hdsd.html`, `docs/images/*`, `index.html`, `js/app.js`, `PM-xeplich-v3.md` (v3.1.7).
+
+### Cập nhật 25/08/2026 (v3.1.8)
+- **Chuyển đổi "Tra cứu Văn bản & BHXH" chạy trực tiếp trên Cloudflare D1 & Cập nhật URL Hướng Dẫn Sử Dụng**:
+  1. **Chuyển đổi Tra cứu Văn bản & BHXH sang D1**:
+     - Thay thế hoàn toàn liên kết Google Apps Script cũ thành giao diện Modal tra cứu trực tiếp `#modal-doc-lookup` trên `v3-Cloudflare`.
+     - Tích hợp ô tìm kiếm linh hoạt, bộ lọc theo cơ quan (Bộ Y tế, BHXH Việt Nam, Bệnh viện), nút xem trực tuyến và nút tải file PDF.
+     - Tích hợp bộ công cụ Quản lý văn bản (Admin) giúp thêm, sửa, xóa và lưu danh sách văn bản vào bảng D1 `tai_lieu`.
+     - Backend Cloudflare Worker (`backend/src/index.js`) bổ sung API `getDocuments` và `saveDocuments` tự động seed văn bản quy định mặc định khi DB trống.
+  2. **Cập nhật URL Hướng Dẫn Sử Dụng (`https://xeplichthuthuat.io.vn/hdsd.html`)**:
+     - Cập nhật liên kết hướng dẫn sử dụng trong danh sách Liên Kết Nhanh sang URL rút gọn chính thức `https://xeplichthuthuat.io.vn/hdsd.html`.
+  3. **Đồng bộ phiên bản v3.1.8 & Thời gian cập nhật**:
+     - Đồng bộ toàn bộ tài nguyên `css` & `js` trên `index.html` sang phiên bản `v=3.1.8`.
+     - Cập nhật ngày giờ Footer: `09:39 25/08/2026`.
+- **File sửa đổi**: `index.html`, `js/app.js`, `backend/src/index.js`, `PM-xeplich-v3.md` (v3.1.8).

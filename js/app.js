@@ -344,6 +344,9 @@ window.showGlobalLoading = function (text) {
                 const url = prompt('Nhập URL Google Apps Script WebApp dự phòng (Dạng: https://script.google.com/macros/s/.../exec):');
                 if (url && url.trim()) {
                     localStorage.setItem('times_backup_api_url', url.trim());
+                    if (typeof callApi === 'function') {
+                        callApi('saveSystemSettings', ['gdrive_webhook_url', url.trim()]);
+                    }
                     alert('Đã lưu URL máy chủ dự phòng Google Apps Script!');
                 }
             } else if (choice === '4') {
@@ -9294,68 +9297,6 @@ window.checkBackupReminder = function() {
 
     if (period === 'none') return;
 
-    const now = new Date();
-    const currentDow = String(now.getDay()); // 0 = Sunday, 1 = Monday...
-    const currentDom = String(now.getDate());
-    const currentHourMin = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-
-    let isTimeToBackup = false;
-    if (period === 'daily') {
-        isTimeToBackup = (currentHourMin >= time);
-    } else if (period === 'weekly') {
-        isTimeToBackup = (currentDow === dow && currentHourMin >= time);
-    } else if (period === 'monthly') {
-        if (dom === 'last') {
-            const isLastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() === now.getDate();
-            isTimeToBackup = (isLastDay && currentHourMin >= time);
-        } else {
-            isTimeToBackup = (currentDom === dom && currentHourMin >= time);
-        }
-    }
-
-    const todayYMD = now.toISOString().slice(0, 10);
-    const lastDoneDate = localStorage.getItem('last_backup_done_date') || '';
-
-    if (isTimeToBackup && lastDoneDate !== todayYMD) {
-        localStorage.setItem('last_backup_done_date', todayYMD);
-        
-        callApi('exportDatabase', [], async data => {
-            if (data && data.tables) {
-                await window.autoSaveToLocalDir(data);
-            }
-        });
-
-        setTimeout(() => {
-            const toast = document.createElement('div');
-            toast.style.cssText = 'position:fixed; bottom:20px; right:20px; background:#1e293b; color:#fff; padding:16px 20px; border-radius:8px; z-index:99999; box-shadow:0 10px 25px rgba(0,0,0,0.3); font-size:13px; display:flex; align-items:center; gap:12px; border-left:4px solid #10b981;';
-            toast.innerHTML = `
-                <div>
-                    <strong style="display:block; color:#34d399; font-size:14px;">⏰ Đến lịch sao lưu dữ liệu (${time})</strong>
-                    <span>Hệ thống đã tự động sao lưu dữ liệu D1 theo lịch chọn!</span>
-                </div>
-                <button onclick="exportFullDatabaseBackup(); this.parentElement.remove();" style="padding:6px 14px; background:#059669; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">Tải về bản sao (.json)</button>
-                <span onclick="this.parentElement.remove();" style="cursor:pointer; color:#94a3b8; font-weight:bold; font-size:16px;">✕</span>
-            `;
-            document.body.appendChild(toast);
-        }, 2000);
-    }
-};
-
-// ============================================================
-// 📁 LƯU TỰ ĐỘNG THƯ MỤC MÁY TÍNH & GOOGLE DRIVE
-// ============================================================
-
-const BK_IDB_NAME = 'pmcg_backup_idb';
-const BK_STORE_NAME = 'backup_handles';
-
-function getBackupIDB() {
-    return new Promise((resolve, reject) => {
-        const req = indexedDB.open(BK_IDB_NAME, 1);
-        req.onupgradeneeded = e => e.target.result.createObjectStore(BK_STORE_NAME);
-        req.onsuccess = e => resolve(e.target.result);
-        req.onerror = e => reject(e);
-    });
-}
 
 async function setSavedDirHandle(handle) {
     const db = await getBackupIDB();
@@ -9471,14 +9412,20 @@ window.loadQuickLinks = function() {
     callApi('getQuickLinks', [], links => {
         const uls = document.querySelectorAll('.khu-vuc-lien-ket');
         if (uls.length) {
-            if (links && Array.isArray(links) && links.length) {
-                const htmlContent = links.map(item => 
-                    `<li><a href="${item.url || '#'}" target="_blank" rel="noopener"><span class="f-icon">${item.icon || '🔗'}</span> <span>${item.ten || item.name}</span></a></li>`
-                ).join('');
-                uls.forEach(ul => { ul.innerHTML = htmlContent; });
-            } else {
-                uls.forEach(ul => { ul.innerHTML = '<li><a href="#"><span class="f-icon">⚠️</span> Chưa có liên kết nào</a></li>'; });
-            }
+            let list = (links && Array.isArray(links) && links.length) ? links : [
+                { icon: "📜", ten: "Tra cứu Văn bản & BHXH", url: "javascript:openDocLookupModal()" },
+                { icon: "📖", ten: "Hướng dẫn sử dụng phần mềm", url: "https://xeplichthuthuat.io.vn/hdsd.html" },
+                { icon: "📋", ten: "Quy trình Kỹ thuật PHCN", url: "https://kcb.vn/" }
+            ];
+
+            const htmlContent = list.map(item => {
+                const isDocLookup = (item.url && (item.url.includes('tracuu') || item.url.includes('openDocLookupModal') || item.ten.includes('Tra cứu')));
+                if (isDocLookup) {
+                    return `<li><a href="javascript:void(0)" onclick="openDocLookupModal()"><span class="f-icon">${item.icon || '📜'}</span> <span>${item.ten || item.name}</span></a></li>`;
+                }
+                return `<li><a href="${item.url || '#'}" target="_blank" rel="noopener"><span class="f-icon">${item.icon || '🔗'}</span> <span>${item.ten || item.name}</span></a></li>`;
+            }).join('');
+            uls.forEach(ul => { ul.innerHTML = htmlContent; });
         }
         window.renderAdminQuickLinksUI(links);
     }, err => {
@@ -9649,3 +9596,174 @@ function populateMonthYearDropdown() {
     }
 }
 window.populateMonthYearDropdown = populateMonthYearDropdown;
+
+// ============================================================
+// 📜 QUẢN LÝ & TRA CỨU VĂN BẢN & BHXH (DOCUMENT LOOKUP SYSTEM)
+// ============================================================
+
+window.cachedDocuments = [];
+window.isDocAdminEditing = false;
+
+window.openDocLookupModal = function() {
+    const modal = document.getElementById('modal-doc-lookup');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    
+    // Check if user is logged in admin to enable Admin button
+    const btnAdmin = document.getElementById('btn-admin-manage-docs');
+    const isLoggedAdmin = (window.currentUserRole === 'Admin' || window.currentUserRole === 'admin' || (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'Admin'));
+    if (btnAdmin) {
+        btnAdmin.style.display = isLoggedAdmin ? 'inline-flex' : 'none';
+    }
+
+    window.fetchDocumentsFromServer();
+};
+
+window.closeDocLookupModal = function() {
+    const modal = document.getElementById('modal-doc-lookup');
+    if (modal) modal.style.display = 'none';
+};
+
+window.fetchDocumentsFromServer = function() {
+    const tbody = document.getElementById('doc-lookup-table-body');
+    if (tbody) tbody.innerHTML = `<tr><td colspan="6" align="center" style="padding: 30px; color: #64748b;">⏳ Đang tải danh sách văn bản từ D1...</td></tr>`;
+
+    callApi('getDocuments', [], function(res) {
+        window.cachedDocuments = (Array.isArray(res) ? res : []);
+        window.renderDocLookupTableUI(window.cachedDocuments);
+    }, function(err) {
+        console.warn("[DocLookup] Lỗi lấy văn bản:", err);
+        if (tbody) tbody.innerHTML = `<tr><td colspan="6" align="center" style="padding: 20px; color: #ef4444;">⚠️ Không thể tải danh sách văn bản từ máy chủ.</td></tr>`;
+    });
+};
+
+window.renderDocLookupTableUI = function(docs) {
+    const tbody = document.getElementById('doc-lookup-table-body');
+    const badge = document.getElementById('doc-count-badge');
+    if (!tbody) return;
+
+    if (badge) badge.innerText = docs.length;
+
+    if (!docs || docs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" align="center" style="padding: 30px; color: #94a3b8;">Không tìm thấy văn bản nào thỏa điều kiện.</td></tr>`;
+        return;
+    }
+
+    const htmlContent = docs.map((doc, idx) => {
+        const docNum = doc.doc_number || doc.soHieu || '';
+        const title = doc.title || doc.tenVanBan || '';
+        const agency = doc.agency || doc.coQuan || '';
+        const date = doc.signed_date || doc.ngayKy || '';
+        const viewLink = doc.view_link || doc.linkXem || '#';
+        const downLink = doc.download_link || doc.linkTai || '#';
+
+        const deleteBtnHtml = window.isDocAdminEditing ? 
+            `<button type="button" onclick="removeDocItemUI(${idx})" style="padding: 3px 8px; background: #ef4444; color: #fff; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; margin-left: 4px;">Xóa</button>` : '';
+
+        return `
+            <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                <td style="padding: 10px; text-align: center; color: #64748b; font-weight: 600;">${idx + 1}</td>
+                <td style="padding: 10px; font-weight: 700; color: #1e3a8a;">${docNum}</td>
+                <td style="padding: 10px; color: #1e293b; line-height: 1.4;">${title}</td>
+                <td style="padding: 10px; color: #475569;"><span style="background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 12px; font-size: 11.5px; font-weight: 600;">${agency}</span></td>
+                <td style="padding: 10px; text-align: center; color: #64748b;">${date}</td>
+                <td style="padding: 10px; text-align: center; white-space: nowrap;">
+                    <a href="${viewLink}" target="_blank" rel="noopener" style="padding: 4px 9px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 4px; font-size: 11.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 3px;">👁️ Xem</a>
+                    <a href="${downLink}" target="_blank" rel="noopener" style="padding: 4px 9px; background: #059669; color: #fff; text-decoration: none; border-radius: 4px; font-size: 11.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 3px; margin-left: 3px;">📥 Tải</a>
+                    ${deleteBtnHtml}
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    tbody.innerHTML = htmlContent;
+};
+
+window.filterDocLookupUI = function() {
+    const searchVal = (document.getElementById('doc-lookup-search-input')?.value || '').toLowerCase().trim();
+    const agencyVal = document.getElementById('doc-lookup-agency-filter')?.value || '';
+
+    const filtered = window.cachedDocuments.filter(doc => {
+        const docNum = (doc.doc_number || doc.soHieu || '').toLowerCase();
+        const title = (doc.title || doc.tenVanBan || '').toLowerCase();
+        const agency = doc.agency || doc.coQuan || '';
+
+        const matchSearch = !searchVal || docNum.includes(searchVal) || title.includes(searchVal) || agency.toLowerCase().includes(searchVal);
+        const matchAgency = !agencyVal || agency === agencyVal;
+
+        return matchSearch && matchAgency;
+    });
+
+    window.renderDocLookupTableUI(filtered);
+};
+
+window.toggleDocAdminMode = function() {
+    window.isDocAdminEditing = !window.isDocAdminEditing;
+    const panel = document.getElementById('doc-admin-editor-panel');
+    const btnSave = document.getElementById('btn-save-doc-admin');
+    const btnToggle = document.getElementById('btn-admin-manage-docs');
+
+    if (panel) panel.style.display = window.isDocAdminEditing ? 'block' : 'none';
+    if (btnSave) btnSave.style.display = window.isDocAdminEditing ? 'inline-block' : 'none';
+    if (btnToggle) {
+        btnToggle.style.background = window.isDocAdminEditing ? '#dc2626' : '#0284c7';
+        btnToggle.innerHTML = window.isDocAdminEditing ? '<span>✖</span> Thoát Quản Lý' : '<span>⚙️</span> Quản lý văn bản (Admin)';
+    }
+
+    window.renderDocLookupTableUI(window.cachedDocuments);
+};
+
+window.addNewDocToListUI = function() {
+    const numInput = document.getElementById('new-doc-number');
+    const titleInput = document.getElementById('new-doc-title');
+    const agencyInput = document.getElementById('new-doc-agency');
+    const dateInput = document.getElementById('new-doc-date');
+    const viewInput = document.getElementById('new-doc-viewlink');
+    const downInput = document.getElementById('new-doc-downlink');
+
+    const num = numInput?.value?.trim();
+    const title = titleInput?.value?.trim();
+    if (!num || !title) {
+        alert("Vui lòng nhập Số hiệu và Tên văn bản!");
+        return;
+    }
+
+    window.cachedDocuments.unshift({
+        doc_number: num,
+        title: title,
+        agency: agencyInput?.value?.trim() || "Bộ Y tế",
+        signed_date: dateInput?.value?.trim() || new Date().toLocaleDateString('vi-VN'),
+        view_link: viewInput?.value?.trim() || "https://kcb.vn/",
+        download_link: downInput?.value?.trim() || "https://baohiemxahoi.gov.vn/"
+    });
+
+    // Clear inputs
+    if (numInput) numInput.value = '';
+    if (titleInput) titleInput.value = '';
+    if (agencyInput) agencyInput.value = '';
+    if (dateInput) dateInput.value = '';
+    if (viewInput) viewInput.value = '';
+    if (downInput) downInput.value = '';
+
+    window.renderDocLookupTableUI(window.cachedDocuments);
+};
+
+window.removeDocItemUI = function(idx) {
+    if (confirm("Bạn có chắc chắn muốn xóa văn bản này khỏi danh sách?")) {
+        window.cachedDocuments.splice(idx, 1);
+        window.renderDocLookupTableUI(window.cachedDocuments);
+    }
+};
+
+window.saveDocListToServer = function() {
+    const btnSave = document.getElementById('btn-save-doc-admin');
+    if (btnSave) { btnSave.disabled = true; btnSave.innerText = "⏳ Đang lưu..."; }
+
+    callApi('saveDocuments', [window.cachedDocuments], function(res) {
+        if (btnSave) { btnSave.disabled = false; btnSave.innerText = "💾 Lưu Thay Đổi Vào D1"; }
+        alert(res?.message || "Đã lưu danh sách văn bản thành công!");
+    }, function(err) {
+        if (btnSave) { btnSave.disabled = false; btnSave.innerText = "💾 Lưu Thay Đổi Vào D1"; }
+        alert("Lỗi khi lưu danh sách văn bản: " + JSON.stringify(err));
+    });
+};

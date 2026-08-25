@@ -1409,6 +1409,151 @@ async function handleApiAction(action, args, env, request, ctx) {
     }
 
     // ============================================================
+    // 🔗 LIÊN KẾT NHANH (QUICK LINKS)
+    // ============================================================
+    case "getQuickLinks": {
+      const rec = await db.prepare("SELECT value FROM cai_dat WHERE key = 'quick_links'").first();
+      if (rec && rec.value) {
+        try {
+          const list = JSON.parse(rec.value);
+          if (Array.isArray(list) && list.length > 0) return success(list);
+        } catch(e) {}
+      }
+      const defaultLinks = [
+        { icon: "📜", ten: "Tra cứu Văn bản & BHXH", url: "javascript:openDocLookupModal()" },
+        { icon: "📖", ten: "Hướng dẫn sử dụng phần mềm", url: "https://xeplichthuthuat.io.vn/hdsd.html" },
+        { icon: "📋", ten: "Quy trình Kỹ thuật PHCN", url: "https://kcb.vn/" }
+      ];
+      return success(defaultLinks);
+    }
+
+    case "saveQuickLinks": {
+      const links = Array.isArray(args[0]) ? args[0] : (args[0]?.links || []);
+      await db.prepare("INSERT INTO cai_dat (key, value) VALUES ('quick_links', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+        .bind(JSON.stringify(links)).run();
+      await bumpDataVersion(db);
+      return success({ message: "Đã lưu danh sách liên kết thành công!" });
+    }
+
+    // ============================================================
+    // 📅 CHẤM CÔNG (CHAM CONG)
+    // ============================================================
+    case "getChamCong": {
+      const my = String(args[0] || "").trim();
+      const key = my ? ("chamcong_" + my) : "chamcong";
+      const rec = await db.prepare("SELECT value FROM cai_dat WHERE key = ?").bind(key).first();
+      if (rec && rec.value) {
+        try { return success(JSON.parse(rec.value)); } catch(e) { return success({}); }
+      }
+      return success({});
+    }
+
+    case "saveChamCong": {
+      let my = "";
+      let data = {};
+      if (typeof args[0] === "string") {
+        my = args[0].trim();
+        data = args[1] || {};
+      } else if (typeof args[0] === "object") {
+        my = String(args[0].month_year || args[0].my || "").trim();
+        data = args[0].data || args[0].data_json || {};
+        if (typeof data === "string") { try { data = JSON.parse(data); } catch(e) {} }
+      }
+      const key = my ? ("chamcong_" + my) : "chamcong";
+      await db.prepare("INSERT INTO cai_dat (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+        .bind(key, JSON.stringify(data)).run();
+      await bumpDataVersion(db);
+      return success({ message: "Đã lưu dữ liệu chấm công thành công!" });
+    }
+
+    // ============================================================
+    // 📊 THỐNG KÊ THỦ THUẬT (PROCEDURE STATS)
+    // ============================================================
+    case "getThongKeThuThuat": {
+      const my = String(args[0] || "").trim(); // YYYY-MM
+      let ymdPrefix = my;
+      let dmySuffix = "";
+      if (my.includes("-")) {
+        const parts = my.split("-");
+        dmySuffix = "/" + parts[1] + "/" + parts[0];
+      } else if (my.includes("/")) {
+        const parts = my.split("/");
+        ymdPrefix = parts[1] + "-" + parts[0];
+        dmySuffix = "/" + parts[0] + "/" + parts[1];
+      }
+
+      // Fetch procedures categories
+      const procRes = await db.prepare("SELECT name, loai_pttt FROM thu_thuat").all();
+      const procTypeMap = {};
+      (procRes.results || []).forEach(p => {
+        const typeStr = String(p.loai_pttt || "").toLowerCase();
+        if (typeStr.includes("1") || typeStr.includes("i")) procTypeMap[p.name] = "loai1";
+        else if (typeStr.includes("2") || typeStr.includes("ii")) procTypeMap[p.name] = "loai2";
+        else if (typeStr.includes("3") || typeStr.includes("iii")) procTypeMap[p.name] = "loai3";
+        else procTypeMap[p.name] = "khac";
+      });
+
+      // Query from lich_su and lich_trinh
+      const qHist = await db.prepare(
+        "SELECT staff_name, sub_staff_name, procedure_name FROM lich_su WHERE (date LIKE ? OR date LIKE ?)"
+      ).bind(ymdPrefix + "%", "%" + dmySuffix).all();
+
+      const qSched = await db.prepare(
+        "SELECT staff_name, sub_staff_name, procedure_name FROM lich_trinh WHERE (date LIKE ? OR date LIKE ?)"
+      ).bind(ymdPrefix + "%", "%" + dmySuffix).all();
+
+      const combined = [...(qHist.results || []), ...(qSched.results || [])];
+      const stats = {};
+
+      combined.forEach(r => {
+        const staffList = [r.staff_name, r.sub_staff_name].filter(Boolean);
+        const procName = r.procedure_name || "";
+        const procCat = procTypeMap[procName] || "khac";
+
+        staffList.forEach(staff => {
+          const sName = String(staff).trim();
+          if (!sName) return;
+          if (!stats[sName]) stats[sName] = { loai1: 0, loai2: 0, loai3: 0, khac: 0, total: 0 };
+          stats[sName][procCat] = (stats[sName][procCat] || 0) + 1;
+          stats[sName].total = (stats[sName].total || 0) + 1;
+        });
+      });
+
+      return success(stats);
+    }
+
+    // ============================================================
+    // 📜 QUẢN LÝ VĂN BẢN (DOCUMENTS LOOKUP)
+    // ============================================================
+    case "getDocuments": {
+      let res = await db.prepare("SELECT doc_number, title, agency, signed_date, view_link, download_link FROM tai_lieu ORDER BY rowid ASC").all();
+      let docs = res.results || [];
+      if (docs.length === 0) {
+        const defaultDocs = [
+          { doc_number: "QĐ 3981/QĐ-BYT", title: "Quy trình Kỹ thuật Khám chữa bệnh Chuyên ngành PHCN", agency: "Bộ Y tế", signed_date: "01/10/2014", view_link: "https://kcb.vn/", download_link: "https://kcb.vn/" },
+          { doc_number: "TT 46/2013/TT-BYT", title: "Quy trình Kỹ thuật Khám chữa bệnh Chuyên ngành YHCT", agency: "Bộ Y tế", signed_date: "31/12/2013", view_link: "https://kcb.vn/", download_link: "https://kcb.vn/" },
+          { doc_number: "QĐ 595/QĐ-BHXH", title: "Quy trình thu BHXH, BHYT, BHTN, BHTNLĐ-BNN", agency: "BHXH Việt Nam", signed_date: "14/04/2017", view_link: "https://baohiemxahoi.gov.vn/", download_link: "https://baohiemxahoi.gov.vn/" },
+          { doc_number: "TT 22/2023/TT-BYT", title: "Quy định thống nhất giá dịch vụ khám bệnh, chữa bệnh BHYT", agency: "Bộ Y tế", signed_date: "17/11/2023", view_link: "https://kcb.vn/", download_link: "https://kcb.vn/" },
+          { doc_number: "QĐ 130/QĐ-BYT", title: "Chuẩn dữ liệu đầu ra phục vụ quản lý và giám định BHYT", agency: "Bộ Y tế", signed_date: "18/01/2023", view_link: "https://kcb.vn/", download_link: "https://kcb.vn/" }
+        ];
+        const stmts = defaultDocs.map(d => db.prepare("INSERT INTO tai_lieu (doc_number, title, agency, signed_date, view_link, download_link) VALUES (?, ?, ?, ?, ?, ?)").bind(d.doc_number, d.title, d.agency, d.signed_date, d.view_link, d.download_link));
+        await db.batch(stmts);
+        return success(defaultDocs);
+      }
+      return success(docs);
+    }
+
+    case "saveDocuments": {
+      const docList = Array.isArray(args[0]) ? args[0] : [];
+      await db.prepare("DELETE FROM tai_lieu").run();
+      if (docList.length > 0) {
+        const stmts = docList.map(d => db.prepare("INSERT INTO tai_lieu (doc_number, title, agency, signed_date, view_link, download_link) VALUES (?, ?, ?, ?, ?, ?)").bind(d.doc_number || d.soHieu || "", d.title || d.tenVanBan || "", d.agency || d.coQuan || "", d.signed_date || d.ngayKy || "", d.view_link || d.linkXem || "#", d.download_link || d.linkTai || "#"));
+        await db.batch(stmts);
+      }
+      return success({ message: "Đã cập nhật danh sách văn bản thành công!" });
+    }
+
+    // ============================================================
     // 9. QUẢN LÝ TÀI KHOẢN
     // ============================================================
     case "getAccounts": {

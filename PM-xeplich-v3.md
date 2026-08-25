@@ -766,15 +766,22 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
 - **File tạo mới & sửa đổi**: `HUONG_DAN_SU_DUNG.md`, `huong-dan-su-dung.html`, `hdsd.html`, `docs/images/*`, `index.html`, `js/app.js`, `PM-xeplich-v3.md` (v3.1.7).
 
 ### Cập nhật 25/08/2026 (v3.1.8)
-- **Chuyển đổi "Tra cứu Văn bản & BHXH" chạy trực tiếp trên Cloudflare D1 & Cập nhật URL Hướng Dẫn Sử Dụng**:
-  1. **Chuyển đổi Tra cứu Văn bản & BHXH sang D1**:
+- **Hoàn thiện Cloudflare Worker API, Phân biệt bệnh nhân trùng tên & Đồng bộ hệ thống toàn diện**:
+  1. **Chuyển đổi "Tra cứu Văn bản & BHXH" chạy trực tiếp trên Cloudflare D1**:
      - Thay thế hoàn toàn liên kết Google Apps Script cũ thành giao diện Modal tra cứu trực tiếp `#modal-doc-lookup` trên `v3-Cloudflare`.
      - Tích hợp ô tìm kiếm linh hoạt, bộ lọc theo cơ quan (Bộ Y tế, BHXH Việt Nam, Bệnh viện), nút xem trực tuyến và nút tải file PDF.
      - Tích hợp bộ công cụ Quản lý văn bản (Admin) giúp thêm, sửa, xóa và lưu danh sách văn bản vào bảng D1 `tai_lieu`.
      - Backend Cloudflare Worker (`backend/src/index.js`) bổ sung API `getDocuments` và `saveDocuments` tự động seed văn bản quy định mặc định khi DB trống.
-  2. **Cập nhật URL Hướng Dẫn Sử Dụng (`https://xeplichthuthuat.io.vn/hdsd.html`)**:
-     - Cập nhật liên kết hướng dẫn sử dụng trong danh sách Liên Kết Nhanh sang URL rút gọn chính thức `https://xeplichthuthuat.io.vn/hdsd.html`.
-  3. **Đồng bộ phiên bản v3.1.8 & Thời gian cập nhật**:
+  2. **Xử lý triệt để bài toán phân biệt bệnh nhân trùng tên**:
+     - Khớp danh tính bệnh nhân đa tiêu chí (`Tên + Năm Sinh + Phòng`) khi gán nhãn ra viện `(✔ RV)` và giờ bận trên bảng lịch trình.
+     - Bổ sung cột **Năm Sinh** và **Phòng** vào Bảng Giờ Bận và Bảng Ra Viện trên giao diện.
+     - Tự động hiển thị kèm Năm sinh & Phòng trong gợi ý tìm kiếm (`datalist`) khi có bệnh nhân trùng tên.
+  3. **Rà soát & hỗ trợ 100% tất cả 62 Endpoints trên Cloudflare Worker D1**:
+     - Bổ sung và hoàn thiện trọn vẹn: `getEmployees`, `saveEmployees`, `getErrorConfig`, `saveErrorConfig`, `getChamCong`, `saveChamCong`, `getThongKeThuThuat`, `saveThongKeThuThuat`, `getQuickLinks`, `saveQuickLinks`, `deleteAccount`, `getMayMoc`, `getPhong`, `saveAITrainingData`, `clearAITrainingData`.
+     - Loại bỏ hoàn toàn các lỗi 400 / 500 khi nạp Dashboard, Bảng chấm công và Quản trị hệ thống.
+  4. **Đồng bộ nội dung Hướng Dẫn Sử Dụng**:
+     - Đồng bộ toàn bộ nội dung hướng dẫn sử dụng 12 chương vào cả `hdsd.html` và `huong-dan-su-dung.html`, giúp người dùng truy cập bất kỳ URL nào cũng mở trực tiếp tức thì không qua redirect.
+  5. **Đồng bộ phiên bản v3.1.8 & Thời gian cập nhật**:
      - Đồng bộ toàn bộ tài nguyên `css` & `js` trên `index.html` sang phiên bản `v=3.1.8`.
-     - Cập nhật ngày giờ Footer: `09:39 25/08/2026`.
-- **File sửa đổi**: `index.html`, `js/app.js`, `backend/src/index.js`, `PM-xeplich-v3.md` (v3.1.8).
+     - Cập nhật ngày giờ Footer: `14:00 25/08/2026`.
+- **File sửa đổi**: `index.html`, `hdsd.html`, `huong-dan-su-dung.html`, `js/app.js`, `js/init.js`, `backend/src/index.js`, `PM-xeplich-v3.md` (v3.1.8).

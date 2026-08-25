@@ -483,7 +483,8 @@ async function handleApiAction(action, args, env, request, ctx) {
     // ============================================================
     // 2. CRUD MÁY MÓC
     // ============================================================
-        case "getDanhSachMay": {
+        case "getMayMoc":
+    case "getDanhSachMay": {
       const res = await db.prepare("SELECT * FROM may_moc ORDER BY order_idx ASC, id ASC").all();
       const list = (res.results || []).map((m, i) => [i + 1, m.ten_loai, m.ma_may, m.trang_thai]);
       return success(list);
@@ -574,6 +575,7 @@ async function handleApiAction(action, args, env, request, ctx) {
       return success({ message: "Xóa thủ thuật thành công" });
     }
 
+    case "getPhong":
     case "getPhongThuThuat": {
       const res = await db.prepare("SELECT * FROM phong ORDER BY order_idx ASC, id ASC").all();
       return success((res.results || []).map(r => ({
@@ -1436,8 +1438,73 @@ async function handleApiAction(action, args, env, request, ctx) {
     }
 
     // ============================================================
-    // 📅 CHẤM CÔNG (CHAM CONG)
+    // 📅 CHẤM CÔNG (CHAM CONG) & NHÂN SỰ CHẤM CÔNG
     // ============================================================
+    case "getEmployees": {
+      const rec = await db.prepare("SELECT value FROM cai_dat WHERE key = 'chamcong_employees'").first();
+      if (rec && rec.value) {
+        try {
+          const list = JSON.parse(rec.value);
+          if (Array.isArray(list) && list.length > 0) return success(list);
+        } catch(e) {}
+      }
+      const staffRes = await db.prepare("SELECT ten FROM nhan_su ORDER BY rowid ASC").all();
+      const names = (staffRes.results || []).map(r => r.ten).filter(Boolean);
+      if (names.length > 0) return success(names);
+      return success([
+        "Bs Khuyến", "Bs Thái", "KTV Phan Hiền", "KTV Đặng Thảo", "KTV Nguyễn Thủy",
+        "KTV Lan Hương", "KTV Phương Thảo", "KTV Nguyễn Lộc", "KTV Thùy Linh", "KTV Phạm Vân"
+      ]);
+    }
+
+    case "saveEmployees": {
+      let list = args[0] || [];
+      if (typeof list === "object" && list !== null && !Array.isArray(list)) {
+        list = list.employees || list.list || [];
+      }
+      await db.prepare("INSERT INTO cai_dat (key, value) VALUES ('chamcong_employees', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+        .bind(JSON.stringify(list)).run();
+      await bumpDataVersion(db);
+      return success({ message: "Đã lưu danh sách nhân sự chấm công thành công!" });
+    }
+
+    case "getErrorConfig": {
+      const rec = await db.prepare("SELECT value FROM cai_dat WHERE key = 'error_config'").first();
+      if (rec && rec.value) {
+        try { return success(JSON.parse(rec.value)); } catch(e) {}
+      }
+      return success({ staff: {} });
+    }
+
+    case "saveErrorConfig": {
+      const config = args[0] || { staff: {} };
+      await db.prepare("INSERT INTO cai_dat (key, value) VALUES ('error_config', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+        .bind(JSON.stringify(config)).run();
+      await bumpDataVersion(db);
+      return success({ message: "Đã lưu cấu hình thành công!" });
+    }
+
+    case "saveThongKeThuThuat": {
+      const my = String(args[0] || "").trim();
+      const data = args[1] || {};
+      const key = my ? ("thongke_" + my) : "thongke";
+      await db.prepare("INSERT INTO cai_dat (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+        .bind(key, JSON.stringify(data)).run();
+      await bumpDataVersion(db);
+      return success({ message: "Đã lưu dữ liệu thống kê thủ thuật thành công!" });
+    }
+
+    case "saveAITrainingData": {
+      const trainingRecords = Array.isArray(args[0]) ? args[0] : (args[0]?.records || []);
+      await db.prepare("INSERT INTO cai_dat (key, value) VALUES ('ai_training_data', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+        .bind(JSON.stringify(trainingRecords)).run();
+      return success({ message: "Đã lưu dữ liệu AI Training!" });
+    }
+
+    case "clearAITrainingData": {
+      await db.prepare("DELETE FROM cai_dat WHERE key = 'ai_training_data'").run();
+      return success({ message: "Đã xóa dữ liệu AI Training!" });
+    }
     case "getChamCong": {
       const my = String(args[0] || "").trim();
       const key = my ? ("chamcong_" + my) : "chamcong";
@@ -1621,7 +1688,17 @@ async function handleApiAction(action, args, env, request, ctx) {
       return success(isNew ? "Đã tạo tài khoản mới thành công!" : "Đã cập nhật tài khoản thành công!");
     }
 
-    case "checkLogin":
+        case "deleteAccount": {
+      const idOrUser = args[0];
+      if (typeof idOrUser === "number" || /^\d+$/.test(String(idOrUser))) {
+        await db.prepare("DELETE FROM tai_khoan WHERE id = ?").bind(parseInt(idOrUser)).run();
+      } else {
+        await db.prepare("DELETE FROM tai_khoan WHERE username = ?").bind(String(idOrUser).trim()).run();
+      }
+      return success({ message: "Đã xóa tài khoản thành công!" });
+    }
+
+case "checkLogin":
     case "verifyLogin": {
       await ensureSchema(db);
       const rawUser = String(args[0] || "").trim();

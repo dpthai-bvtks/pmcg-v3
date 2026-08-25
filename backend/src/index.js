@@ -1617,14 +1617,58 @@ async function handleApiAction(action, args, env, request, ctx) {
     case "getDocuments": {
       let res = await db.prepare("SELECT doc_number, title, agency, signed_date, view_link, download_link FROM tai_lieu ORDER BY rowid ASC").all();
       let docs = res.results || [];
-      if (docs.length === 0) {
+      if (docs.length === 0 || !docs[0].doc_number) {
         const defaultDocs = [
-          { doc_number: "QĐ 3981/QĐ-BYT", title: "Quy trình Kỹ thuật Khám chữa bệnh Chuyên ngành PHCN", agency: "Bộ Y tế", signed_date: "01/10/2014", view_link: "https://kcb.vn/", download_link: "https://kcb.vn/" },
-          { doc_number: "TT 46/2013/TT-BYT", title: "Quy trình Kỹ thuật Khám chữa bệnh Chuyên ngành YHCT", agency: "Bộ Y tế", signed_date: "31/12/2013", view_link: "https://kcb.vn/", download_link: "https://kcb.vn/" },
-          { doc_number: "QĐ 595/QĐ-BHXH", title: "Quy trình thu BHXH, BHYT, BHTN, BHTNLĐ-BNN", agency: "BHXH Việt Nam", signed_date: "14/04/2017", view_link: "https://baohiemxahoi.gov.vn/", download_link: "https://baohiemxahoi.gov.vn/" },
-          { doc_number: "TT 22/2023/TT-BYT", title: "Quy định thống nhất giá dịch vụ khám bệnh, chữa bệnh BHYT", agency: "Bộ Y tế", signed_date: "17/11/2023", view_link: "https://kcb.vn/", download_link: "https://kcb.vn/" },
-          { doc_number: "QĐ 130/QĐ-BYT", title: "Chuẩn dữ liệu đầu ra phục vụ quản lý và giám định BHYT", agency: "Bộ Y tế", signed_date: "18/01/2023", view_link: "https://kcb.vn/", download_link: "https://kcb.vn/" }
+          {
+            doc_number: "QĐ 3981/QĐ-BYT",
+            title: "Hướng dẫn Quy trình Kỹ thuật Khám chữa bệnh Chuyên ngành Phục hồi chức năng (Tập 1, 2, 3)",
+            agency: "Bộ Y tế",
+            signed_date: "01/10/2014",
+            view_link: "https://kcb.vn/",
+            download_link: "https://kcb.vn/"
+          },
+          {
+            doc_number: "TT 46/2013/TT-BYT",
+            title: "Hướng dẫn Quy trình Kỹ thuật Khám chữa bệnh Chuyên ngành Y học cổ truyền (Mới nhất)",
+            agency: "Bộ Y tế",
+            signed_date: "31/12/2013",
+            view_link: "https://kcb.vn/",
+            download_link: "https://kcb.vn/"
+          },
+          {
+            doc_number: "CV 1085/BYT-BH",
+            title: "Hướng dẫn vướng mắc thanh toán chi phí KCB (Nhóm dịch vụ YHCT - PHCN cùng cơ chế)",
+            agency: "Bộ Y tế",
+            signed_date: "08/03/2024",
+            view_link: "https://baohiemxahoi.gov.vn/",
+            download_link: "https://baohiemxahoi.gov.vn/"
+          },
+          {
+            doc_number: "TT 32/2023/TT-BYT",
+            title: "Phụ lục danh mục chuyên môn & định mức kỹ thuật Bác sĩ Y học cổ truyền",
+            agency: "Bộ Y tế",
+            signed_date: "31/12/2023",
+            view_link: "https://kcb.vn/",
+            download_link: "https://kcb.vn/"
+          },
+          {
+            doc_number: "TT 22/2023/TT-BYT",
+            title: "Quy định thống nhất giá dịch vụ khám bệnh, chữa bệnh BHYT giữa các bệnh viện",
+            agency: "Bộ Y tế",
+            signed_date: "17/11/2023",
+            view_link: "https://kcb.vn/",
+            download_link: "https://kcb.vn/"
+          },
+          {
+            doc_number: "QĐ 130/QĐ-BYT",
+            title: "Chuẩn và định dạng dữ liệu đầu ra phục vụ quản lý và giám định, thanh toán BHYT",
+            agency: "Bộ Y tế",
+            signed_date: "18/01/2023",
+            view_link: "https://kcb.vn/",
+            download_link: "https://kcb.vn/"
+          }
         ];
+        await db.prepare("DELETE FROM tai_lieu").run();
         const stmts = defaultDocs.map(d => db.prepare("INSERT INTO tai_lieu (doc_number, title, agency, signed_date, view_link, download_link) VALUES (?, ?, ?, ?, ?, ?)").bind(d.doc_number, d.title, d.agency, d.signed_date, d.view_link, d.download_link));
         await db.batch(stmts);
         return success(defaultDocs);

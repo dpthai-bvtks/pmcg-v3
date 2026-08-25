@@ -1423,7 +1423,7 @@ async function handleApiAction(action, args, env, request, ctx) {
       }
       const defaultLinks = [
         { icon: "📜", ten: "Tra cứu Văn bản & BHXH", url: "javascript:openDocLookupModal()" },
-        { icon: "📖", ten: "Hướng dẫn sử dụng phần mềm", url: "https://xeplichthuthuat.io.vn/hdsd.html" },
+        { icon: "📖", ten: "Hướng dẫn sử dụng phần mềm", url: "javascript:openHdsdModal()" },
         { icon: "📋", ten: "Quy trình Kỹ thuật PHCN", url: "https://kcb.vn/" }
       ];
       return success(defaultLinks);
@@ -1448,9 +1448,13 @@ async function handleApiAction(action, args, env, request, ctx) {
           if (Array.isArray(list) && list.length > 0) return success(list);
         } catch(e) {}
       }
-      const staffRes = await db.prepare("SELECT ten FROM nhan_su ORDER BY rowid ASC").all();
-      const names = (staffRes.results || []).map(r => r.ten).filter(Boolean);
-      if (names.length > 0) return success(names);
+      try {
+        const staffRes = await db.prepare("SELECT name FROM nhan_su ORDER BY rowid ASC").all();
+        const names = (staffRes.results || []).map(r => r.name).filter(Boolean);
+        if (names.length > 0) return success(names);
+      } catch(e) {
+        console.warn("getEmployees error querying nhan_su:", e);
+      }
       return success([
         "Bs Khuyến", "Bs Thái", "KTV Phan Hiền", "KTV Đặng Thảo", "KTV Nguyễn Thủy",
         "KTV Lan Hương", "KTV Phương Thảo", "KTV Nguyễn Lộc", "KTV Thùy Linh", "KTV Phạm Vân"

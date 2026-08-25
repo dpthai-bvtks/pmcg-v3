@@ -9501,16 +9501,23 @@ window.loadQuickLinks = function() {
         if (uls.length) {
             let list = (links && Array.isArray(links) && links.length) ? links : [
                 { icon: "📜", ten: "Tra cứu Văn bản & BHXH", url: "javascript:openDocLookupModal()" },
-                { icon: "📖", ten: "Hướng dẫn sử dụng phần mềm", url: "https://xeplichthuthuat.io.vn/hdsd.html" },
+                { icon: "📖", ten: "Hướng dẫn sử dụng phần mềm", url: "javascript:openHdsdModal()" },
                 { icon: "📋", ten: "Quy trình Kỹ thuật PHCN", url: "https://kcb.vn/" }
             ];
 
             const htmlContent = list.map(item => {
-                const isDocLookup = (item.url && (item.url.includes('tracuu') || item.url.includes('openDocLookupModal') || item.ten.includes('Tra cứu')));
+                const itemTen = String(item.ten || item.name || '');
+                const itemUrl = String(item.url || '');
+                const isDocLookup = itemUrl.includes('tracuu') || itemUrl.includes('openDocLookupModal') || itemTen.includes('Tra cứu') || itemTen.includes('Văn bản');
+                const isHdsd = itemUrl.includes('hdsd') || itemUrl.includes('huong-dan') || itemUrl.includes('openHdsdModal') || itemTen.includes('Hướng dẫn') || itemTen.includes('HDSD');
+
                 if (isDocLookup) {
-                    return `<li><a href="javascript:void(0)" onclick="openDocLookupModal()"><span class="f-icon">${item.icon || '📜'}</span> <span>${item.ten || item.name}</span></a></li>`;
+                    return `<li><a href="javascript:void(0)" onclick="openDocLookupModal()"><span class="f-icon">${item.icon || '📜'}</span> <span>${itemTen}</span></a></li>`;
                 }
-                return `<li><a href="${item.url || '#'}" target="_blank" rel="noopener"><span class="f-icon">${item.icon || '🔗'}</span> <span>${item.ten || item.name}</span></a></li>`;
+                if (isHdsd) {
+                    return `<li><a href="javascript:void(0)" onclick="openHdsdModal()"><span class="f-icon">${item.icon || '📖'}</span> <span>${itemTen}</span></a></li>`;
+                }
+                return `<li><a href="${itemUrl || '#'}" target="_blank" rel="noopener"><span class="f-icon">${item.icon || '🔗'}</span> <span>${itemTen}</span></a></li>`;
             }).join('');
             uls.forEach(ul => { ul.innerHTML = htmlContent; });
         }

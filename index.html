@@ -784,7 +784,7 @@
                     <div class="split-layout">
 
                         <div class="sidebar-form"
-                            style="display: flex; flex-direction: column; overflow: hidden !important; height: calc(100vh - 210px); max-height: none !important; padding-bottom: 0;">
+                            class="sidebar-form-inner-wrapper">
                             <div style="flex: 1; overflow-y: auto; padding-right: 5px; padding-bottom: 15px;">
 
                                 <div class="form-group">
@@ -947,7 +947,7 @@
                     <div class="split-layout">
 
                         <div class="sidebar-form"
-                            style="display: flex; flex-direction: column; overflow: hidden !important; height: calc(100vh - 210px); max-height: none !important; padding-bottom: 0;">
+                            class="sidebar-form-inner-wrapper">
                             <div style="flex: 1; overflow-y: auto; padding-right: 5px; padding-bottom: 15px;">
 
                                 <div class="form-group"><label>Tên phòng:</label><input type="text" id="room-name"
@@ -1073,7 +1073,7 @@
                     <div class="split-layout">
 
                         <div class="sidebar-form"
-                            style="display: flex; flex-direction: column; overflow: hidden !important; height: calc(100vh - 210px); max-height: none !important; padding-bottom: 0;">
+                            class="sidebar-form-inner-wrapper">
                             <div style="flex: 1; overflow-y: auto; padding-right: 5px; padding-bottom: 15px;">
 
                                 <div class="form-group">
@@ -3046,6 +3046,22 @@
             <h3 style="color:#1e3d2b; text-align:center; margin-top:0;">CHỌN KỊCH BẢN XẾP LỊCH</h3>
             <p style="font-size:13px; color:#666; text-align:center; margin-bottom:15px;">Hệ thống sẽ tính toán đường
                 đi tối ưu theo từng mục tiêu.</p>
+
+            <div style="margin-bottom: 15px; text-align: left;">
+                <label style="display: block; font-weight: 700; font-size: 13px; color: #1e3d2b; margin-bottom: 6px;">
+                    👥 Tình trạng bệnh nhân trong ngày:
+                </label>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" id="btn-crowded-yes" onclick="setCrowdedMode(true)"
+                        style="flex: 1; padding: 10px 8px; border: 2px solid #bdc3c7; background: white; color: #555; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; transition: all 0.2s;">
+                        🔥 Ngày Đông (&gt;80 ca)
+                    </button>
+                    <button type="button" id="btn-crowded-no" onclick="setCrowdedMode(false)"
+                        style="flex: 1; padding: 10px 8px; border: 2px solid #bdc3c7; background: white; color: #555; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; transition: all 0.2s;">
+                        🌱 Ngày Vắng / Vừa
+                    </button>
+                </div>
+            </div>
 
             <div style="margin-bottom: 18px; text-align: left;">
                 <label style="display: block; font-weight: 700; font-size: 13px; color: #1e3d2b; margin-bottom: 6px;">

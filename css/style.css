@@ -1790,6 +1790,15 @@
 
 
 
+        .sidebar-form-inner-wrapper {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden !important;
+            height: calc(100vh - 210px);
+            max-height: none !important;
+            padding-bottom: 0;
+        }
+
         .main-table {
             flex: 1;
             overflow: auto !important;

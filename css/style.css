@@ -625,6 +625,11 @@
             overflow: hidden !important;
         }
 
+        /* Chỉ hiển thị footer ở 4 tab: Trang Chủ, Chấm Công, Thống Kê, Admin */
+        body:not(:has(#tab-home.active)):not(:has(#tab-chamcong.active)):not(:has(#tab-thongke.active)):not(:has(#tab-admin.active)) .main-footer {
+            display: none !important;
+        }
+
         /* Hiển thị footer trên tất cả các tab với layout an toàn không che khuất nội dung */
         .main-footer {
             margin-top: 20px !important;

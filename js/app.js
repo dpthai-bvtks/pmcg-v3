@@ -367,21 +367,32 @@ window.showGlobalLoading = function (text) {
                 }
             }
 
+            backupUrl = backupUrl.trim();
+            if (backupUrl.endsWith('/edit') || backupUrl.includes('/edit?') || backupUrl.includes('drive.google.com')) {
+                const fixUrl = prompt('URL bạn nhập có vẻ là link chỉnh sửa script hoặc link thư mục Drive, không phải link Web App kết thúc bằng /exec.\nVui lòng nhập lại URL Google Apps Script WebApp:', backupUrl.replace(/\/edit.*$/, '/exec'));
+                if (fixUrl && fixUrl.trim()) {
+                    backupUrl = fixUrl.trim();
+                    localStorage.setItem('times_backup_api_url', backupUrl);
+                } else {
+                    return;
+                }
+            }
+
             let modal = document.getElementById('sync-progress-modal');
             if (!modal) {
                 modal = document.createElement('div');
                 modal.id = 'sync-progress-modal';
                 modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:999999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(3px);';
                 modal.innerHTML = `
-                <div style="background:#fff; width:480px; max-width:90%; border-radius:12px; padding:24px; box-shadow:0 10px 30px rgba(0,0,0,0.3); text-align:center; font-family:sans-serif;">
+                <div style="background:#fff; width:520px; max-width:92%; border-radius:12px; padding:24px; box-shadow:0 10px 30px rgba(0,0,0,0.3); text-align:center; font-family:sans-serif;">
                     <div style="font-size:36px; margin-bottom:10px;">🔄</div>
-                    <h3 style="margin:0 0 10px 0; color:#2c3e50; font-size:18px;">Đồng bộ Trọn bộ Cơ sở Dữ liệu D1 ➔ Google Sheets</h3>
-                    <p id="sync-step-text" style="color:#7f8c8d; font-size:13px; margin:0 0 16px 0;">Đang khởi tạo kết nối...</p>
+                    <h3 style="margin:0 0 10px 0; color:#2c3e50; font-size:18px;">Đồng bộ Trọn bộ CSDL Cloudflare D1 ➔ Google Sheets</h3>
+                    <p id="sync-step-text" style="color:#7f8c8d; font-size:13px; margin:0 0 16px 0; line-height:1.5;">Đang khởi tạo kết nối...</p>
                     <div style="background:#ecf0f1; border-radius:10px; height:16px; overflow:hidden; margin-bottom:16px; position:relative;">
                         <div id="sync-progress-bar" style="background:linear-gradient(90deg, #27ae60, #2ecc71); width:5%; height:100%; transition:width 0.3s ease; border-radius:10px;"></div>
                     </div>
                     <div id="sync-percentage" style="font-size:14px; font-weight:bold; color:#27ae60;">5%</div>
-                    <button id="sync-close-btn" style="display:none; margin-top:16px; padding:8px 20px; background:#27ae60; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="document.getElementById('sync-progress-modal').style.display='none'">Hoàn tất / Đóng</button>
+                    <button id="sync-close-btn" style="display:none; margin-top:16px; padding:10px 24px; background:#27ae60; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="document.getElementById('sync-progress-modal').style.display='none'">Hoàn tất / Đóng</button>
                 </div>`;
                 document.body.appendChild(modal);
             }
@@ -399,9 +410,9 @@ window.showGlobalLoading = function (text) {
             }
 
             try {
-                updateProgress(15, '[1/6] 📡 Đang tải xuất trọn bộ CSDL & Lịch Sử từ Cloudflare D1...');
+                updateProgress(15, '[1/4] 📡 Đang xuất trọn bộ CSDL & Lịch Sử từ Cloudflare D1...');
                 
-                let dbTables = null;
+                let dbPayload = null;
                 try {
                     const respExport = await fetch(DEFAULT_API_URL, {
                         method: 'POST',
@@ -409,19 +420,30 @@ window.showGlobalLoading = function (text) {
                         body: JSON.stringify({ action: 'exportDatabase', args: [] })
                     });
                     const resExport = await respExport.json();
-                    if (resExport && resExport.status === 'success' && resExport.data && resExport.data.tables) {
-                        dbTables = resExport.data.tables;
+                    if (resExport && resExport.status === 'success' && resExport.data) {
+                        const d = resExport.data;
+                        dbPayload = {
+                            benh_nhan: d.pat || [],
+                            nhan_su: d.staff || [],
+                            may_moc: d.machines || [],
+                            phong: d.rooms || [],
+                            thu_thuat: d.procedures || [],
+                            lich_trinh: d.schedule || [],
+                            lich_su: d.history || [],
+                            tai_khoan: d.accounts || [],
+                            cham_cong: d.chamCong || [],
+                            thong_ke: d.thongKe || [],
+                            cai_dat: d.caiDat || []
+                        };
                     }
                 } catch(e) { console.warn('Could not fetch exportDatabase from D1, fallback to local cache:', e); }
 
                 const cache = window.dataCache || {};
 
-                updateProgress(45, '[2/6] 📦 Đóng gói trọn bộ các bảng dữ liệu (Bệnh nhân, Nhân sự, Máy, Phòng, Thủ thuật, Lịch trình, Lịch sử...)...');
+                updateProgress(45, '[2/4] 📦 Đóng gói trọn bộ các bảng dữ liệu...');
                 await new Promise(r => setTimeout(r, 200));
 
-                updateProgress(75, '[3/6] 📤 Truyền toàn bộ CSDL sang Google Apps Script...');
-
-                const payload = dbTables || {
+                const payload = dbPayload || {
                     benh_nhan: cache.pat || [],
                     nhan_su: cache.staff || [],
                     may_moc: cache.machines || [],
@@ -435,7 +457,7 @@ window.showGlobalLoading = function (text) {
                     cai_dat: localStorage.getItem('times_settings_cache') || ''
                 };
 
-                updateProgress(90, '[4/6] 📝 Đang ghi trọn bộ các trang Google Sheets...');
+                updateProgress(75, '[3/4] 📤 Truyền dữ liệu sang Google Apps Script...');
 
                 const resp = await fetch(backupUrl, {
                     method: 'POST',
@@ -443,12 +465,23 @@ window.showGlobalLoading = function (text) {
                     body: JSON.stringify({ action: 'saveBootstrapBackup', args: [payload] })
                 });
 
-                const res = await resp.json();
+                const rawText = await resp.text();
+                let res;
+                try {
+                    res = JSON.parse(rawText);
+                } catch (parseErr) {
+                    if (rawText.includes('<!DOCTYPE') || rawText.includes('<html') || rawText.includes('ServiceLogin')) {
+                        throw new Error("Google Apps Script WebApp chưa cấp quyền công khai. Vui lòng vào Apps Script -> Deploy -> Manage deployments -> Chọn 'Anyone' tại 'Who has access', hoặc kiểm tra URL kết thúc bằng /exec.");
+                    } else {
+                        throw new Error("Phản hồi không hợp lệ từ Apps Script: " + rawText.slice(0, 120));
+                    }
+                }
+
                 if (res && res.status === 'success') {
-                    updateProgress(100, '✅ Đồng bộ hoàn tất 100%! Đã tạo trọn bộ tất cả các trang Bệnh nhân, Nhân sự, Máy móc, Phòng, Thủ thuật, Lịch trình, Lịch sử, Tài khoản!');
+                    updateProgress(100, '✅ Đồng bộ hoàn tất 100%! Đã lưu trọn bộ tất cả các trang Bệnh nhân, Nhân sự, Máy móc, Phòng, Thủ thuật, Lịch trình, Lịch sử, Tài khoản vào Google Sheets!');
                     if (percentText) percentText.innerHTML = '<span style="color:#27ae60">🎉 ĐỒNG BỘ TRỌN BỘ THÀNH CÔNG!</span>';
                 } else {
-                    updateProgress(100, '⚠️ Đã gửi dữ liệu: ' + (res.error || res.data || 'Thành công'));
+                    updateProgress(100, '⚠️ Kết quả: ' + (res.error || res.data || res.message || 'Đã gửi'));
                 }
                 closeBtn.style.display = 'inline-block';
             } catch (err) {
@@ -634,8 +667,21 @@ window.renderSttOrderControl = function (type, i, total) {
                 });
 
                 clearTimeout(timeoutId);
-                const result = await response.json();
+                const rawText = await response.text();
                 finish();
+
+                let result;
+                try {
+                    result = JSON.parse(rawText);
+                } catch (parseErr) {
+                    if (rawText.includes('<!DOCTYPE') || rawText.includes('<html') || rawText.includes('ServiceLogin')) {
+                        const errMsg = "Máy chủ trả về trang HTML thay vì JSON. Nếu dùng Google Apps Script dự phòng, vui lòng cấp quyền 'Anyone' (Bất kỳ ai) khi Deploy Web App.";
+                        if (onError) onError(errMsg);
+                        else alert('Lỗi: ' + errMsg);
+                        return;
+                    }
+                    throw parseErr;
+                }
 
                 if (result && result.status === 'success') {
                     _consecutiveApiErrors = 0;

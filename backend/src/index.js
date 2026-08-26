@@ -1843,7 +1843,7 @@ async function handleApiAction(action, args, env, request, ctx) {
         db.prepare("SELECT * FROM cai_dat").all().catch(() => ({ results: [] }))
       ]);
       return success({
-        version: "3.1.8",
+        version: "3.1.9",
         exportedAt: new Date().toISOString(),
         pat: pat.results || [],
         staff: staff.results || [],

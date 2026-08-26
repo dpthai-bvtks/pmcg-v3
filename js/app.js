@@ -9700,7 +9700,7 @@ window.openHdsdModal = function() {
     const modal = document.getElementById('modal-hdsd-viewer');
     const iframe = document.getElementById('hdsd-modal-iframe');
     if (iframe && (!iframe.src || iframe.src === 'about:blank' || iframe.src.endsWith('about:blank'))) {
-        iframe.src = 'hdsd.html?v=3.1.8';
+        iframe.src = 'hdsd.html?v=3.1.9';
     }
     if (modal) {
         modal.style.display = 'flex';
@@ -10057,7 +10057,7 @@ window.saveDocListToServer = function() {
 
 
 // ============================================================
-// 📱 MOBILE & TABLET NAVIGATION CONTROLLER (v3.1.8)
+// 📱 MOBILE & TABLET NAVIGATION CONTROLLER (v3.1.9)
 // ============================================================
 
 window.switchMobileNav = function(tabId, el) {

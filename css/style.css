@@ -625,8 +625,8 @@
             overflow: hidden !important;
         }
 
-        /* Ẩn footer ở tất cả các tab trừ tab Trang Chủ */
-        body:not(:has(#tab-home.active)) .main-footer {
+        /* Ẩn footer ở các tab trừ tab Trang Chủ, Chấm Công, Thống Kê, Admin */
+        body:not(:has(#tab-home.active)):not(:has(#tab-chamcong.active)):not(:has(#tab-thongke.active)):not(:has(#tab-admin.active)) .main-footer {
             display: none !important;
         }
 

@@ -9402,9 +9402,25 @@ window.checkBackupReminder = function() {
 
     if (typeof window.onBackupScheduleUIChange === 'function') window.onBackupScheduleUIChange();
     if (typeof window.loadGoogleDriveSettingsUI === 'function') window.loadGoogleDriveSettingsUI();
-
-    if (period === 'none') return;;
 };
+
+const BK_DB_NAME = 'PMCG_Local_Backup_DB';
+const BK_STORE_NAME = 'handles';
+
+function getBackupIDB() {
+    return new Promise((resolve, reject) => {
+        if (!window.indexedDB) return reject(new Error("IndexedDB không được hỗ trợ trên trình duyệt này"));
+        const req = indexedDB.open(BK_DB_NAME, 1);
+        req.onupgradeneeded = e => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(BK_STORE_NAME)) {
+                db.createObjectStore(BK_STORE_NAME);
+            }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = e => reject(e.target?.error || e);
+    });
+}
 
 async function setSavedDirHandle(handle) {
     const db = await getBackupIDB();

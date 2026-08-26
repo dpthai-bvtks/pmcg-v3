@@ -1753,60 +1753,53 @@
             max-width: 100%;
         }
 
-
-
-        .split-layout>div {
-
+        .split-layout > div {
             min-width: 0 !important;
-
         }
-
-
 
         .sidebar-form {
-
             flex: 0 0 340px;
-
             background: #f1f2f6;
-
-            padding: 15px;
-
+            padding: 15px 15px 0 15px !important;
             border-radius: 8px;
-
             border: 1px solid #dcdde1;
-
             position: sticky;
-
             top: 0;
-
-            max-height: 100%;
-
-            overflow-y: auto;
-
-
-            max-height: calc(100vh - 240px) !important;
-            overflow-y: auto !important;
+            height: calc(100vh - 210px) !important;
+            max-height: calc(100vh - 210px) !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+            box-sizing: border-box !important;
         }
 
+        .sidebar-form-scroll-body,
+        .sidebar-form > div:first-child:not(.button-group):not(.sidebar-form-sticky-footer) {
+            flex: 1;
+            overflow-y: auto !important;
+            padding-right: 5px;
+            padding-bottom: 15px;
+        }
 
-
-        .sidebar-form-inner-wrapper {
-            display: flex;
-            flex-direction: column;
-            overflow: hidden !important;
-            height: calc(100vh - 210px);
-            max-height: none !important;
-            padding-bottom: 0;
+        .sidebar-form-sticky-footer,
+        .sidebar-form > div:last-child {
+            flex-shrink: 0 !important;
+            background: #f1f2f6 !important;
+            padding: 12px 15px 15px 15px !important;
+            margin: 0 -15px 0 -15px !important;
+            border-top: 1px solid #dcdde1 !important;
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.04) !important;
+            border-radius: 0 0 8px 8px !important;
+            position: relative !important;
+            z-index: 10 !important;
         }
 
         .main-table {
             flex: 1;
             overflow: auto !important;
-            max-height: calc(100vh - 240px) !important;
+            max-height: calc(100vh - 210px) !important;
             min-width: 0 !important;
         }
-
-
 
         #tab-utils .main-table {
 

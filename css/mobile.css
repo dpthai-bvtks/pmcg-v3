@@ -598,22 +598,37 @@
   }
 
   .sidebar-form {
-    display: none !important; /* Ẩn mặc định trên di động để nhường không gian toàn bộ cho bảng */
+    display: none !important;
+    position: static !important;
+    flex: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 12px !important;
+    margin: 0 0 12px 0 !important;
   }
 
   .sidebar-form.show-mobile-form {
     display: block !important;
     animation: mobileFormSlideDown 0.25s ease-out !important;
   }
-}
 
-@keyframes mobileFormSlideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
+  .sidebar-form-scroll-body,
+  .sidebar-form > div:first-child {
+    flex: none !important;
+    overflow-y: visible !important;
+    padding: 0 !important;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+
+  .sidebar-form-sticky-footer,
+  .sidebar-form > div:last-child {
+    flex-shrink: 0 !important;
+    margin: 10px 0 0 0 !important;
+    padding: 0 !important;
+    border-top: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
   }
 }

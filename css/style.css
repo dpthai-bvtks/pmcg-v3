@@ -4474,3 +4474,59 @@ transition: box-shadow 0.3s;
 .drag-handle:active {
     cursor: grabbing !important;
 }
+
+
+        /* ── BẢNG BẬN & RA VIỆN: TÊN BỆNH NHÂN TRÊN 1 DÒNG ── */
+        #busy-pat-table, #leave-pat-table {
+            width: 100%;
+            table-layout: auto;
+        }
+
+        #busy-pat-table th:nth-child(1), #leave-pat-table th:nth-child(1),
+        #busy-pat-table td:nth-child(1), #leave-pat-table td:nth-child(1) {
+            width: 28px !important;
+            min-width: 28px !important;
+            max-width: 32px !important;
+            text-align: center !important;
+            padding: 2px 2px !important;
+        }
+
+        #busy-pat-table th:nth-child(2), #leave-pat-table th:nth-child(2),
+        #busy-pat-table td:nth-child(2), #leave-pat-table td:nth-child(2) {
+            white-space: nowrap !important;
+            text-align: left !important;
+            padding: 2px 8px !important;
+            font-weight: 600 !important;
+        }
+
+        #busy-pat-table th:nth-child(3), #leave-pat-table th:nth-child(3),
+        #busy-pat-table td:nth-child(3), #leave-pat-table td:nth-child(3) {
+            width: 45px !important;
+            min-width: 42px !important;
+            max-width: 48px !important;
+            text-align: center !important;
+            padding: 2px 2px !important;
+            white-space: nowrap !important;
+            font-size: 11px !important;
+        }
+
+        #busy-pat-table th:nth-child(4), #leave-pat-table th:nth-child(4),
+        #busy-pat-table td:nth-child(4), #leave-pat-table td:nth-child(4) {
+            width: 55px !important;
+            min-width: 48px !important;
+            max-width: 60px !important;
+            text-align: center !important;
+            padding: 2px 3px !important;
+            white-space: nowrap !important;
+            font-size: 11px !important;
+        }
+
+        #busy-pat-table th:nth-child(5), #leave-pat-table th:nth-child(5),
+        #busy-pat-table td:nth-child(5), #leave-pat-table td:nth-child(5) {
+            width: 55px !important;
+            min-width: 50px !important;
+            max-width: 60px !important;
+            text-align: center !important;
+            padding: 2px 2px !important;
+            white-space: nowrap !important;
+        }

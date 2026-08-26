@@ -4529,11 +4529,11 @@ window.renderSttOrderControl = function (type, i, total) {
         }
 
         function runScheduling() {
-
             if (!document.getElementById('schedule-date').value) return alert("Vui lòng chọn ngày xếp lịch trước!");
-
             document.getElementById('strategyModal').style.display = 'flex';
-
+            if (window._crowdedMode === null || window._crowdedMode === undefined) {
+                setCrowdedMode(true);
+            }
         }
 
         function closeStrategyModal() { document.getElementById('strategyModal').style.display = 'none'; }

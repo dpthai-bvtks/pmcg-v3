@@ -21,8 +21,6 @@ Sau mỗi phiên làm việc hoặc khi giải quyết xong một vấn đề l�
 
 ## 5. 🏷️ Đồng bộ số phiên bản & Thời gian cập nhật (Version & Timestamp Synchronization)
 - Mỗi khi có bản nâng cấp hoặc sửa lỗi mới, **bắt buộc**:
-  + Đồng bộ tăng số phiên bản ở phần **Footer** (`🏷️ Phiên bản: X.X.X` trong `index.html`). Quy tắc đánh số: Bắt đầu từ `3.0.0` -> `3.0.1` -> ... -> `3.0.9` rồi mới nâng lên `3.1.0`. Tuy nhiên mỗi ngày sẽ chỉ dùng 1 số phin bản, sang ngày hôm sau mới nhảy số tiếp theo.
-  + Cập nhật chính xác ngày giờ hiện tại tại dòng **Cập nhật lần cuối** ở **Footer** (`⏱ Cập nhật lần cuối: HH:mm DD/MM/YYYY` trong `index.html`).
+  + Đồng bộ tăng số phiên bản ở phần **Footer** (`🏷️ Phiên bản: X.X.X` trong `index.html`). Quy tắc đánh số: Bắt đầu từ `3.0.0` -> `3.0.1` -> ... -> `3.0.9` rồi mới nâng lên `3.1.0`. Tuy nhiên mỗi ngày sẽ chỉ dùng 1 số phiên bản, sang ngày hôm sau mới nhảy số tiếp theo.
+  + Cập nhật chính xác ngày giờ hiện tại tại dòng **Cập nhật lần cuối** ở **Footer** theo thời gian thực hiện sửa lỗi/nâng cấp(`⏱ Cập nhật lần cuối: HH:mm DD/MM/YYYY` trong `index.html`).
   + Đồng bộ phiên bản cho **toàn bộ các thẻ tài nguyên** (`css/style.css?v=X.X.X`, `js/app.js?v=X.X.X`, `favicon...`, v.v.) để chống lưu cache trình duyệt cũ.
-
-

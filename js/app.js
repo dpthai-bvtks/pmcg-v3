@@ -2740,17 +2740,30 @@ window.renderSttOrderControl = function (type, i, total) {
             if (statEl) statEl.innerText = filteredStaff.length;
 
             const docGrid = document.getElementById('room-doctors-grid');
+            const ktvGrid = document.getElementById('room-ktv-grid');
+            const ddGrid = document.getElementById('room-dd-grid');
             const staffGrid = document.getElementById('room-staff-grid');
-            if (docGrid && staffGrid) {
-                let docHtml = '<div class="skills-col">', stfHtml = '<div class="skills-col">';
+            if (docGrid && (ktvGrid || staffGrid)) {
+                let docHtml = '<div class="skills-col">', ktvHtml = '<div class="skills-col">', ddHtml = '<div class="skills-col">';
                 staffList.forEach(s => {
                     if (!s || !s.ten) return;
-                    const isDoc = String(s.vaiTro || s.role || '').toLowerCase().includes('bác sĩ');
-                    const cb = `<label class="checkbox-item"><input type="checkbox" class="${isDoc ? 'room-doc-cb' : 'room-stf-cb'}" value="${escapeHtml(s.ten)}"> ${escapeHtml(s.ten)}</label>`;
-                    if (isDoc) docHtml += cb; else stfHtml += cb;
+                    const role = String(s.vaiTro || s.role || '').toLowerCase();
+                    const tenLower = String(s.ten).toLowerCase();
+                    const isDoc = role.includes('bác sĩ') || role.startsWith('bs') || tenLower.startsWith('bs');
+                    const isKtv = role.includes('kỹ thuật viên') || role.includes('ktv') || tenLower.startsWith('ktv');
+                    
+                    if (isDoc) {
+                        docHtml += `<label class="checkbox-item"><input type="checkbox" class="room-doc-cb" value="${escapeHtml(s.ten)}"> ${escapeHtml(s.ten)}</label>`;
+                    } else if (isKtv) {
+                        ktvHtml += `<label class="checkbox-item"><input type="checkbox" class="room-ktv-cb room-stf-cb" value="${escapeHtml(s.ten)}"> ${escapeHtml(s.ten)}</label>`;
+                    } else {
+                        ddHtml += `<label class="checkbox-item"><input type="checkbox" class="room-dd-cb room-stf-cb" value="${escapeHtml(s.ten)}"> ${escapeHtml(s.ten)}</label>`;
+                    }
                 });
                 docGrid.innerHTML = docHtml + '</div>';
-                staffGrid.innerHTML = stfHtml + '</div>';
+                if (ktvGrid) ktvGrid.innerHTML = ktvHtml + '</div>';
+                if (ddGrid) ddGrid.innerHTML = ddHtml + '</div>';
+                if (staffGrid) staffGrid.innerHTML = ktvHtml + ddHtml + '</div>';
             }
 
             const tbody = document.getElementById('staff-list');

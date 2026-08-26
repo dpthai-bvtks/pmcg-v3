@@ -4530,3 +4530,49 @@ transition: box-shadow 0.3s;
             padding: 2px 2px !important;
             white-space: nowrap !important;
         }
+
+
+        /* ── GHIM NÚT CHỨC NĂNG (THÊM / SỬA / HỦY) TẠI TẤT CẢ CÁC TAB ── */
+        .sidebar-form {
+            flex: 0 0 350px !important;
+            background: #f8fafc !important;
+            padding: 12px 14px 0 14px !important;
+            border-radius: 8px !important;
+            border: 1px solid #dcdde1 !important;
+            position: sticky !important;
+            top: 0 !important;
+            max-height: calc(100vh - 240px) !important;
+            display: flex !important;
+            flex-direction: column !important;
+            box-sizing: border-box !important;
+            overflow: hidden !important;
+        }
+
+        .sidebar-form-body {
+            flex: 1 !important;
+            overflow-y: auto !important;
+            padding-right: 4px !important;
+            padding-bottom: 10px !important;
+            min-height: 0 !important;
+        }
+
+        .sidebar-form .form-pinned-footer,
+        .form-pinned-footer {
+            flex-shrink: 0 !important;
+            background: #f1f2f6 !important;
+            padding: 10px 14px 10px 14px !important;
+            margin: 0 -14px 0 -14px !important;
+            border-top: 1px solid #dcdde1 !important;
+            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.04) !important;
+            position: sticky !important;
+            bottom: 0 !important;
+            z-index: 20 !important;
+            border-radius: 0 0 8px 8px !important;
+        }
+
+        .sidebar-form .form-pinned-footer .button-group,
+        .sidebar-form .button-group {
+            display: flex !important;
+            gap: 8px !important;
+            margin-top: 0 !important;
+        }

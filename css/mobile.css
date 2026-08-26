@@ -123,11 +123,19 @@
   }
 
   .sidebar-form > div,
+  .sidebar-form-body,
+  .form-pinned-footer,
   .sidebar-form-inner-wrapper > div {
     height: auto !important;
     min-height: auto !important;
     max-height: none !important;
     overflow: visible !important;
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 6px 0 0 0 !important;
+    box-shadow: none !important;
+    border: none !important;
   }
 
   /* Bảng dữ liệu luôn hiển thị phía dưới Form, cho phép vuốt ngang */

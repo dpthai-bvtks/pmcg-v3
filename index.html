@@ -552,19 +552,23 @@
                     <div class="split-layout">
                         <button type="button" class="mobile-toggle-form-btn" onclick="toggleMobileForm(this)">➕ Thêm Mới / Nhập Liệu</button>
                         <div class="sidebar-form">
-                            <div class="form-group"><label>Tên loại:</label><input type="text" id="machine-type" placeholder="Tên loại máy"></div>
-                            <div class="form-group"><label>Ký hiệu:</label><input type="text" id="machine-code" placeholder="Ký hiệu (Mã)"></div>
-                            <div class="form-group" id="group-qty"><label>Số lượng:</label><input type="number" id="machine-qty" placeholder="Số lượng" value="1" min="1"></div>
-                            <div class="form-group">
-                                <label>Trạng thái:</label><select id="machine-status">
-                                    <option>Sẵn sàng</option>
-                                    <option>Bảo trì</option>
-                                    <option>Hỏng</option>
-                                </select>
+                            <div class="sidebar-form-body">
+                                <div class="form-group"><label>Tên loại:</label><input type="text" id="machine-type" placeholder="Tên loại máy"></div>
+                                <div class="form-group"><label>Ký hiệu:</label><input type="text" id="machine-code" placeholder="Ký hiệu (Mã)"></div>
+                                <div class="form-group" id="group-qty"><label>Số lượng:</label><input type="number" id="machine-qty" placeholder="Số lượng" value="1" min="1"></div>
+                                <div class="form-group">
+                                    <label>Trạng thái:</label><select id="machine-status">
+                                        <option>Sẵn sàng</option>
+                                        <option>Bảo trì</option>
+                                        <option>Hỏng</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div class="button-group">
-                                <button class="btn-success" id="btn-save-machine" onclick="saveMachine()" style="flex:1">Thêm</button>
-                                <button class="btn-secondary" id="btn-cancel-machine" onclick="cancelEdit('machine')" style="display:none; flex:1">Hủy</button>
+                            <div class="form-pinned-footer">
+                                <div class="button-group">
+                                    <button class="btn-success" id="btn-save-machine" onclick="saveMachine()" style="flex:1">Thêm</button>
+                                    <button class="btn-secondary" id="btn-cancel-machine" onclick="cancelEdit('machine')" style="display:none; flex:1">Hủy</button>
+                                </div>
                             </div>
                         </div>
                         <div class="main-table">
@@ -593,37 +597,41 @@
                     <div class="split-layout">
                         <button type="button" class="mobile-toggle-form-btn" onclick="toggleMobileForm(this)">➕ Thêm Mới / Nhập Liệu</button>
                         <div class="sidebar-form">
-                            <div class="form-group"><label>Tên TT:</label><input type="text" id="proc-name" placeholder="Tên thủ thuật"></div>
-                            <div class="form-group"><label>Tên Viết Tắt:</label><input type="text" id="proc-short" placeholder="VD: SÂ, ĐX, KGC..."></div>
-                            <div class="form-group">
-                                <label>Hệ:</label><select id="proc-system">
-                                    <option>YHCT</option>
-                                    <option>PHCN</option>
-                                </select>
+                            <div class="sidebar-form-body">
+                                <div class="form-group"><label>Tên TT:</label><input type="text" id="proc-name" placeholder="Tên thủ thuật"></div>
+                                <div class="form-group"><label>Tên Viết Tắt:</label><input type="text" id="proc-short" placeholder="VD: SÂ, ĐX, KGC..."></div>
+                                <div class="form-group">
+                                    <label>Hệ:</label><select id="proc-system">
+                                        <option>YHCT</option>
+                                        <option>PHCN</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Phân loại:</label><select id="proc-category">
+                                        <option>Chưa phân loại</option>
+                                        <option>Loại 1</option>
+                                        <option>Loại 2</option>
+                                        <option>Loại 3</option>
+                                    </select>
+                                </div>
+                                <div class="form-group"><label>Loại Máy:</label><select id="proc-machine">
+                                        <option>Thủ công</option>
+                                    </select></div>
+                                <div class="form-group"><label>TG thực hiện:</label><input type="number" id="proc-person-time" placeholder="Phút (Ví dụ mắc máy 5p)"></div>
+                                <div class="form-group"><label>TG thủ thuật:</label><input type="number" id="proc-machine-time" placeholder="Phút (Ví dụ chạy máy 15p)"></div>
+                                <div class="form-group"><label>Khoảng cách ca:</label><input type="number" id="proc-gap" placeholder="Phút (VD: 9)"></div>
+                                <div style="margin: 15px 0 10px 5px;">
+                                    <label class="checkbox-item"><input type="checkbox" id="proc-unplug-cb" value="Có">
+                                        <span style="color:#2980b9; font-weight:bold;">Có Điều dưỡng rút/tháo máy</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" id="proc-assist-cb" value="Có">
+                                        <span style="color:#8e44ad; font-weight:bold;">Yêu cầu kíp (1 Chính + 1 Phụ)</span></label>
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label>Phân loại:</label><select id="proc-category">
-                                    <option>Chưa phân loại</option>
-                                    <option>Loại 1</option>
-                                    <option>Loại 2</option>
-                                    <option>Loại 3</option>
-                                </select>
-                            </div>
-                            <div class="form-group"><label>Loại Máy:</label><select id="proc-machine">
-                                    <option>Thủ công</option>
-                                </select></div>
-                            <div class="form-group"><label>TG thực hiện:</label><input type="number" id="proc-person-time" placeholder="Phút (Ví dụ mắc máy 5p)"></div>
-                            <div class="form-group"><label>TG thủ thuật:</label><input type="number" id="proc-machine-time" placeholder="Phút (Ví dụ chạy máy 15p)"></div>
-                            <div class="form-group"><label>Khoảng cách ca:</label><input type="number" id="proc-gap" placeholder="Phút (VD: 9)"></div>
-                            <div style="margin: 15px 0 10px 5px;">
-                                <label class="checkbox-item"><input type="checkbox" id="proc-unplug-cb" value="Có">
-                                    <span style="color:#2980b9; font-weight:bold;">Có Điều dưỡng rút/tháo máy</span></label>
-                                <label class="checkbox-item"><input type="checkbox" id="proc-assist-cb" value="Có">
-                                    <span style="color:#8e44ad; font-weight:bold;">Yêu cầu kíp (1 Chính + 1 Phụ)</span></label>
-                            </div>
-                            <div class="button-group">
-                                <button class="btn-success" id="btn-save-proc" onclick="saveProcedure()" style="flex:1">Thêm</button>
-                                <button class="btn-secondary" id="btn-cancel-proc" onclick="cancelEdit('proc')" style="display:none; flex:1">Hủy</button>
+                            <div class="form-pinned-footer">
+                                <div class="button-group">
+                                    <button class="btn-success" id="btn-save-proc" onclick="saveProcedure()" style="flex:1">Thêm</button>
+                                    <button class="btn-secondary" id="btn-cancel-proc" onclick="cancelEdit('proc')" style="display:none; flex:1">Hủy</button>
+                                </div>
                             </div>
                         </div>
                         <div class="main-table">
@@ -659,7 +667,7 @@
 
                         <button type="button" class="mobile-toggle-form-btn" onclick="toggleMobileForm(this)">➕ Thêm Mới / Nhập Liệu</button>
                         <div class="sidebar-form">
-                            <div style="flex: 1; overflow-y: auto; padding-right: 5px; padding-bottom: 15px;">
+                            <div class="sidebar-form-body">
 
                                 <div class="form-group">
 
@@ -822,7 +830,7 @@
 
                         <button type="button" class="mobile-toggle-form-btn" onclick="toggleMobileForm(this)">➕ Thêm Mới / Nhập Liệu</button>
                         <div class="sidebar-form">
-                            <div style="flex: 1; overflow-y: auto; padding-right: 5px; padding-bottom: 15px;">
+                            <div class="sidebar-form-body">
 
                                 <div class="form-group"><label>Tên phòng:</label><input type="text" id="room-name"
                                         placeholder="Tên Phòng"></div>
@@ -840,29 +848,31 @@
 
 
 
-                                <div style="display: flex; gap: 10px;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px;">
 
+                                    <div class="skills-box" style="margin-bottom: 0; padding: 6px 4px;">
 
+                                        <h4 style="font-size:11px; margin-bottom:6px; font-weight:700; color:#1e3d2b; text-align:center;">👨‍⚕️ Bác sĩ</h4>
 
-                                    <div class="skills-box" style="flex: 1;">
-
-                                        <h4 style="font-size:12px; margin-bottom:10px;">👨‍⚕️ Chọn Bác sĩ:</h4>
-
-                                        <div class="skills-grid" id="room-doctors-grid"></div>
+                                        <div class="skills-grid" id="room-doctors-grid" style="max-height: 180px; overflow-y: auto;"></div>
 
                                     </div>
 
+                                    <div class="skills-box" style="margin-bottom: 0; padding: 6px 4px;">
 
+                                        <h4 style="font-size:11px; margin-bottom:6px; font-weight:700; color:#1e3d2b; text-align:center;">🔧 KTV</h4>
 
-                                    <div class="skills-box" style="flex: 1;">
-
-                                        <h4 style="font-size:12px; margin-bottom:10px;">👩‍⚕️ Chọn ĐD/KTV:</h4>
-
-                                        <div class="skills-grid" id="room-staff-grid"></div>
+                                        <div class="skills-grid" id="room-ktv-grid" style="max-height: 180px; overflow-y: auto;"></div>
 
                                     </div>
 
+                                    <div class="skills-box" style="margin-bottom: 0; padding: 6px 4px;">
 
+                                        <h4 style="font-size:11px; margin-bottom:6px; font-weight:700; color:#1e3d2b; text-align:center;">👩‍⚕️ Điều dưỡng</h4>
+
+                                        <div class="skills-grid" id="room-dd-grid" style="max-height: 180px; overflow-y: auto;"></div>
+
+                                    </div>
 
                                 </div>
 
@@ -948,7 +958,7 @@
 
                         <button type="button" class="mobile-toggle-form-btn" onclick="toggleMobileForm(this)">➕ Thêm Mới / Nhập Liệu</button>
                         <div class="sidebar-form">
-                            <div style="flex: 1; overflow-y: auto; padding-right: 5px; padding-bottom: 15px;">
+                            <div class="sidebar-form-body">
 
                                 <div class="form-group">
 
@@ -2893,7 +2903,7 @@
 
                     <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.1.9</span></p>
 
-                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 09:39 26/08/2026</span></p>
+                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 09:45 26/08/2026</span></p>
 
                     <p><span class="f-icon">👨‍💻</span> <span>Thiết kế & Phát triển: <b>Bác sĩ Thái</b></span></p>
 

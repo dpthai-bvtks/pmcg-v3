@@ -2444,6 +2444,7 @@ window.renderSttOrderControl = function (type, i, total) {
         }
 
         function editRoomMachine(index) {
+            if (window.innerWidth <= 960 && typeof window.openMobileFormForEdit === "function") window.openMobileFormForEdit("machine");
 
             editIndex.machine = index;
 
@@ -2833,6 +2834,7 @@ window.renderSttOrderControl = function (type, i, total) {
         }
 
         function editStaff(index) {
+            if (window.innerWidth <= 960 && typeof window.openMobileFormForEdit === "function") window.openMobileFormForEdit("staff");
 
             editIndex.staff = index;
 
@@ -3038,6 +3040,7 @@ window.renderSttOrderControl = function (type, i, total) {
         }
 
         function editRoom(index) {
+            if (window.innerWidth <= 960 && typeof window.openMobileFormForEdit === "function") window.openMobileFormForEdit("room");
 
             editIndex.room = index;
 
@@ -3407,6 +3410,7 @@ window.renderSttOrderControl = function (type, i, total) {
         }
 
         function editPatient(index) {
+            if (window.innerWidth <= 960 && typeof window.openMobileFormForEdit === "function") window.openMobileFormForEdit("pat");
             if (checkUnclosedDay()) return;
 
 
@@ -10113,9 +10117,9 @@ window.openTabFromDrawer = function(tabId) {
 window.openAddPatientModal = function() {
     window.switchMobileNav('tab-patients', document.querySelector('.mobile-nav-item[data-tab="tab-patients"]'));
     setTimeout(() => {
+        if (typeof window.openMobileFormForEdit === 'function') window.openMobileFormForEdit('pat');
         const nameInput = document.getElementById('pat-name');
         if (nameInput) {
-            nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
             nameInput.focus();
         }
     }, 200);
@@ -10130,3 +10134,58 @@ window.addEventListener('hashchange', () => {
         matchingMobileBtn.classList.add('active');
     }
 });
+
+
+// ============================================================
+// 📱 MOBILE FORM TOGGLE & EDIT EXPANSION HELPERS
+// ============================================================
+
+window.toggleMobileForm = function(btn) {
+    if (!btn) return;
+    const parent = btn.closest('.split-layout') || btn.closest('.tab-content') || document.querySelector('.tab-content.active');
+    if (!parent) return;
+    const form = parent.querySelector('.sidebar-form');
+    if (!form) return;
+    
+    const isShowing = form.classList.contains('show-mobile-form');
+    if (isShowing) {
+        form.classList.remove('show-mobile-form');
+        btn.innerHTML = '➕ Thêm Mới / Nhập Liệu';
+        btn.classList.remove('active');
+    } else {
+        form.classList.add('show-mobile-form');
+        btn.innerHTML = '✖ Đóng Khung Nhập Liệu';
+        btn.classList.add('active');
+        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+};
+
+window.openMobileFormForEdit = function(type) {
+    const tabMap = {
+        machine: 'tab-machines',
+        machines: 'tab-machines',
+        proc: 'tab-procedures',
+        procedures: 'tab-procedures',
+        staff: 'tab-staff',
+        room: 'tab-rooms',
+        rooms: 'tab-rooms',
+        pat: 'tab-patients',
+        patient: 'tab-patients',
+        patients: 'tab-patients',
+        busy: 'tab-busy'
+    };
+    const tabId = tabMap[type] || ('tab-' + type);
+    const targetTab = document.getElementById(tabId) || document.querySelector('.tab-content.active');
+    if (targetTab) {
+        const form = targetTab.querySelector('.sidebar-form');
+        const toggleBtn = targetTab.querySelector('.mobile-toggle-form-btn');
+        if (form) {
+            form.classList.add('show-mobile-form');
+            if (toggleBtn) {
+                toggleBtn.innerHTML = '✖ Đóng Khung Nhập Liệu';
+                toggleBtn.classList.add('active');
+            }
+            form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+};

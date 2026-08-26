@@ -92,6 +92,18 @@
     height: auto !important;
   }
 
+  .split-layout > div {
+    position: static !important;
+    flex: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
+  }
+
   /* Form nhập liệu mở rộng 100% chiều rộng, không bị ghim sticky đè lên bảng */
   .sidebar-form {
     position: static !important;
@@ -547,5 +559,61 @@
     z-index: 5 !important;
     background: #ffffff !important;
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+  }
+}
+
+
+/* ==========================================================================
+   8. MOBILE COLLAPSIBLE FORM STYLES
+   ========================================================================== */
+.mobile-toggle-form-btn {
+  display: none;
+}
+
+@media screen and (max-width: 960px) {
+  .mobile-toggle-form-btn {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 100% !important;
+    min-height: 38px !important;
+    height: 38px !important;
+    padding: 8px 14px !important;
+    background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%) !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 700 !important;
+    font-size: 13px !important;
+    margin: 0 0 10px 0 !important;
+    cursor: pointer !important;
+    box-shadow: 0 2px 6px rgba(15, 118, 110, 0.25) !important;
+    gap: 6px !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .mobile-toggle-form-btn.active {
+    background: #64748b !important;
+    box-shadow: 0 2px 6px rgba(100, 116, 139, 0.25) !important;
+  }
+
+  .sidebar-form {
+    display: none !important; /* Ẩn mặc định trên di động để nhường không gian toàn bộ cho bảng */
+  }
+
+  .sidebar-form.show-mobile-form {
+    display: block !important;
+    animation: mobileFormSlideDown 0.25s ease-out !important;
+  }
+}
+
+@keyframes mobileFormSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

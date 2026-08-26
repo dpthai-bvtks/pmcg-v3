@@ -1973,78 +1973,96 @@
 
 
 
-                                <div style="display: flex; flex-direction: column; gap: 20px; max-width: 600px;">
-                                    <!-- Dòng chữ chạy -->
-                                    <div
-                                        style="background: #fdf2e9; padding: 15px; border-radius: 8px; border: 1px solid #e67e22;">
-                                        <label
-                                            style="font-size:13px; font-weight:bold; color:#d35400; display:block; margin-bottom:10px;">📢
-                                            Dòng chữ chạy (Thông báo):</label>
-                                        <input type="text" id="admin-marquee-input"
-                                            style="width:100%; padding:10px; border-radius:4px; border:1px solid #ccc; outline:none; font-size:13px; margin-bottom: 10px;"
-                                            placeholder="Nhập nội dung thông báo cho toàn khoa...">
-                                        <button class="btn-warning" onclick="luuDongChuChay(this)"
-                                            style="width:100%; padding:10px; font-size:13px; border:none; font-weight:bold; cursor:pointer;">Lưu
-                                            Thông Báo</button>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; width: 100%;">
+                                    <!-- CỘT 1: THÔNG BÁO & GIỜ CHỐT SỔ -->
+                                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                                        <!-- Dòng chữ chạy -->
+                                        <div style="background: #fff8f0; padding: 18px; border-radius: 10px; border: 1px solid #fed7aa; box-shadow: 0 2px 8px rgba(234, 88, 12, 0.05);">
+                                            <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                                                <span style="font-size:18px;">📢</span>
+                                                <label style="font-size:14px; font-weight:700; color:#c2410c; margin:0;">Dòng chữ chạy (Thông báo toàn khoa):</label>
+                                            </div>
+                                            <input type="text" id="admin-marquee-input"
+                                                style="width:100%; padding:10px 12px; border-radius:6px; border:1px solid #fdba74; outline:none; font-size:13px; margin-bottom: 12px; background:#fff;"
+                                                placeholder="Nhập nội dung thông báo hiển thị trên banner...">
+                                            <button class="btn-warning" onclick="luuDongChuChay(this)"
+                                                style="width:100%; padding:10px; font-size:13px; border:none; font-weight:700; cursor:pointer; border-radius:6px; background:#ea580c; color:#fff; transition:all 0.2s;">💾 Lưu Thông Báo</button>
+                                        </div>
+
+                                        <!-- Giờ chốt sổ & Giờ lố YHCT -->
+                                        <div style="background: #f8fafc; padding: 18px; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+                                            <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid #e2e8f0;">
+                                                <span style="font-size:18px;">⏰</span>
+                                                <h4 style="font-size:14px; font-weight:700; color:#1e293b; margin:0;">Thời Gian Vận Hành & Chốt Sổ</h4>
+                                            </div>
+
+                                            <div style="margin-bottom: 14px;">
+                                                <label style="font-size:13px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">⏰ Giờ chốt sổ tự động hàng ngày:</label>
+                                                <input type="text" id="admin-chotso-time" placeholder="VD: 16:20" class="time-input"
+                                                    style="width:100%; padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; outline:none; font-size:13px;">
+                                                <small style="display:block; margin-top:4px; color:#64748b; font-size:11px;">Hệ thống tự động khóa và thống kê dữ liệu lịch vào giờ này.</small>
+                                            </div>
+
+                                            <div style="margin-bottom: 14px;">
+                                                <label style="font-size:13px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">⏱️ Thời gian YHCT lố vào giờ nghỉ TRƯA (phút):</label>
+                                                <input type="number" id="admin-yhct-lunch" min="0" step="1" placeholder="5"
+                                                    style="width:100%; padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; outline:none; font-size:13px;">
+                                                <small style="display:block; margin-top:4px; color:#64748b; font-size:11px;">Cho phép thủ thuật YHCT kết thúc muộn vào giờ nghỉ trưa.</small>
+                                            </div>
+
+                                            <div>
+                                                <label style="font-size:13px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">⏱️ Thời gian YHCT lố vào giờ nghỉ CHIỀU (phút):</label>
+                                                <input type="number" id="admin-yhct-end" min="0" step="1" placeholder="5"
+                                                    style="width:100%; padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; outline:none; font-size:13px;">
+                                                <small style="display:block; margin-top:4px; color:#64748b; font-size:11px;">Cho phép thủ thuật YHCT kết thúc muộn vào giờ nghỉ chiều.</small>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <!-- Giờ chốt sổ tự động -->
-                                    <div
-                                        style="background: #f4f6f7; padding: 15px; border-radius: 8px; border: 1px solid #bdc3c7;">
-                                        <label
-                                            style="font-size:13px; font-weight:bold; color:#2c3e50; display:block; margin-bottom:10px;">⏰
-                                            Giờ chốt sổ tự động (Hàng ngày):</label>
-                                        <input type="text" id="admin-chotso-time" placeholder="VD: 16:00"
-                                            class="time-input"
-                                            style="width:100%; padding:10px; border-radius:4px; border:1px solid #ccc; outline:none; font-size:14px; margin-bottom: 10px;">
+                                    <!-- CỘT 2: TRỌNG SỐ THUẬT TOÁN XẾP LỊCH & HƯỚNG DẪN -->
+                                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                                        <!-- Trọng số thuật toán -->
+                                        <div style="background: #f8fafc; padding: 18px; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+                                            <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid #e2e8f0;">
+                                                <span style="font-size:18px;">⚖️</span>
+                                                <h4 style="font-size:14px; font-weight:700; color:#1e293b; margin:0;">Trọng Số Thuật Toán Xếp Lịch</h4>
+                                            </div>
 
-                                        <label
-                                            style="font-size:13px; font-weight:bold; color:#2c3e50; display:block; margin-bottom:5px; margin-top:10px;">Thời
-                                            gian YHCT lố vào giờ nghỉ TRƯA (phút)</label>
-                                        <input type="number" id="admin-yhct-lunch" min="0" step="1" placeholder="10"
-                                            style="width:100%; padding:8px; border-radius:4px; border:1px solid #ccc; outline:none; font-size:14px; margin-bottom: 5px;">
+                                            <div style="margin-bottom: 14px;">
+                                                <label style="font-size:13px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">🚫 Phạt mỗi ca bị rớt lịch (Rớt ca):</label>
+                                                <input type="number" id="admin-weight-drop" min="0" step="1" placeholder="10000"
+                                                    style="width:100%; padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; outline:none; font-size:13px;">
+                                                <small style="display:block; margin-top:4px; color:#64748b; font-size:11px;">Càng cao thuật toán càng ưu tiên KHÔNG để rớt ca bệnh nhân (mặc định: 10000).</small>
+                                            </div>
 
-                                        <label
-                                            style="font-size:13px; font-weight:bold; color:#2c3e50; display:block; margin-bottom:5px; margin-top:10px;">Thời
-                                            gian YHCT lố vào giờ nghỉ CHIỀU (phút)</label>
-                                        <input type="number" id="admin-yhct-end" min="0" step="1" placeholder="10"
-                                            style="width:100%; padding:8px; border-radius:4px; border:1px solid #ccc; outline:none; font-size:14px; margin-bottom: 5px;">
-                                        <small
-                                            style="display:block; margin-bottom:10px; color:#7f8c8d; font-size:11px;">Cho
-                                            phép YHCT kết thúc muộn vào giờ nghỉ (mặc định: 10 phút)</small>
+                                            <div style="margin-bottom: 14px;">
+                                                <label style="font-size:13px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">⏳ Phạt mỗi phút làm thêm / tăng ca:</label>
+                                                <input type="number" id="admin-weight-overtime" min="0" step="0.1" placeholder="2"
+                                                    style="width:100%; padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; outline:none; font-size:13px;">
+                                                <small style="display:block; margin-top:4px; color:#64748b; font-size:11px;">Càng cao càng ưu tiên giảm tăng ca ngoài giờ làm việc (mặc định: 2).</small>
+                                            </div>
 
-                                        <label
-                                            style="font-size:13px; font-weight:bold; color:#2c3e50; display:block; margin-bottom:5px; margin-top:10px;">Phạt
-                                            mỗi ca bị rớt lịch</label>
-                                        <input type="number" id="admin-weight-drop" min="0" step="1" placeholder="10000"
-                                            style="width:100%; padding:8px; border-radius:4px; border:1px solid #ccc; outline:none; font-size:14px; margin-bottom: 5px;">
-                                        <small
-                                            style="display:block; margin-bottom:10px; color:#7f8c8d; font-size:11px;">Càng
-                                            cao càng ưu tiên KHÔNG để rớt ca (mặc định: 10000)</small>
+                                            <div style="margin-bottom: 18px;">
+                                                <label style="font-size:13px; font-weight:600; color:#334155; display:block; margin-bottom:6px;">👥 Phạt lệch tải công việc giữa nhân viên:</label>
+                                                <input type="number" id="admin-weight-imbalance" min="0" step="0.01" placeholder="0.1"
+                                                    style="width:100%; padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; outline:none; font-size:13px;">
+                                                <small style="display:block; margin-top:4px; color:#64748b; font-size:11px;">Càng cao càng ưu tiên chia đều số ca giữa các nhân viên cùng vai trò (mặc định: 0.1).</small>
+                                            </div>
 
-                                        <label
-                                            style="font-size:13px; font-weight:bold; color:#2c3e50; display:block; margin-bottom:5px;">Phạt
-                                            mỗi phút tăng ca</label>
-                                        <input type="number" id="admin-weight-overtime" min="0" step="0.1"
-                                            placeholder="2"
-                                            style="width:100%; padding:8px; border-radius:4px; border:1px solid #ccc; outline:none; font-size:14px; margin-bottom: 5px;">
-                                        <small
-                                            style="display:block; margin-bottom:10px; color:#7f8c8d; font-size:11px;">Càng
-                                            cao càng ưu tiên giảm tăng ca (mặc định: 2)</small>
+                                            <button class="btn-success" onclick="luuCaiDatChotSo(this)"
+                                                style="width:100%; padding:10px; font-size:13px; border:none; font-weight:700; cursor:pointer; border-radius:6px; background:#16a085; color:#fff; transition:all 0.2s;">💾 Lưu Cài Đặt Hệ Thống</button>
+                                        </div>
 
-                                        <label
-                                            style="font-size:13px; font-weight:bold; color:#2c3e50; display:block; margin-bottom:5px;">Phạt
-                                            lệch tải công việc</label>
-                                        <input type="number" id="admin-weight-imbalance" min="0" step="0.01"
-                                            placeholder="0.1"
-                                            style="width:100%; padding:8px; border-radius:4px; border:1px solid #ccc; outline:none; font-size:14px; margin-bottom: 5px;">
-                                        <small
-                                            style="display:block; margin-bottom:15px; color:#7f8c8d; font-size:11px;">Càng
-                                            cao càng ưu tiên chia đều việc giữa nhân viên (mặc định: 0.1)</small>
-
-                                        <button class="btn-success" onclick="luuCaiDatChotSo(this)"
-                                            style="width:100%; padding:10px; font-size:13px; border:none; font-weight:bold; cursor:pointer;">Lưu
-                                            Cài Đặt</button>
+                                        <!-- Card Thông tin & Hướng dẫn -->
+                                        <div style="background: #f0fdf4; padding: 15px 18px; border-radius: 10px; border: 1px solid #bbf7d0;">
+                                            <h5 style="margin:0 0 8px 0; color:#166534; font-size:13px; font-weight:700; display:flex; align-items:center; gap:6px;">
+                                                <span>💡</span> Mẹo Cấu Hình Tối Ưu
+                                            </h5>
+                                            <ul style="margin:0; padding-left:18px; font-size:12px; color:#14532d; line-height:1.6;">
+                                                <li>Khi ngày làm việc có đông bệnh nhân, giữ nguyên <strong>Phạt rớt ca = 10000</strong> để xếp kín lịch.</li>
+                                                <li>Tính năng <strong>Ngày đông / Ngày vắng</strong> sẽ tự động kết hợp với các trọng số trên để điều phối chéo phòng thông minh.</li>
+                                            </ul>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -2326,7 +2344,7 @@
                                     📦 CẤU HÌNH TỰ ĐỘNG SAO LƯU (LOCAL & GOOGLE DRIVE)
                                 </div>
 
-                                <div style="display: flex; flex-direction: column; gap: 20px; max-width: 700px;">
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; width: 100%;">
                                     <!-- Card 1: Thư mục máy tính tự động -->
                                     <div
                                         style="background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
@@ -2528,7 +2546,7 @@
                                     🔗 QUẢN LÝ LIÊN KẾT NHANH (FOOTER LINKS)
                                 </div>
 
-                                <div style="display: flex; flex-direction: column; gap: 20px; max-width: 650px;">
+                                <div style="display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 900px;">
                                     <div
                                         style="background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
                                         <h4
@@ -2903,7 +2921,7 @@
 
                     <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.1.9</span></p>
 
-                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 10:22 26/08/2026</span></p>
+                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 10:26 26/08/2026</span></p>
 
                     <p><span class="f-icon">👨‍💻</span> <span>Thiết kế & Phát triển: <b>Bác sĩ Thái</b></span></p>
 

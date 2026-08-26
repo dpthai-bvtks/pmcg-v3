@@ -7097,49 +7097,37 @@ window.renderSttOrderControl = function (type, i, total) {
         function loadAccounts() {
 
             callApi('getAccounts', [], data => {
-
-                adminAccCache = data;
+                const list = Array.isArray(data) ? data : [];
+                adminAccCache = list;
 
                 const tbody = document.getElementById('acc-list');
+                if (!tbody) return;
 
-                const PERM_MAP = { 'tab-patients': '🛌 Bệnh Nhân', 'tab-schedule': '⚡ Xếp Lịch', 'tab-sat': '📅 Thứ 7', 'tab-busy': '⏱ Giờ Bận', 'tab-stats': '📊 Thống Kê', 'tab-utils': '🛠 Tiện Ích', 'tab-kiemtra': '✅ Kiểm Tra Lỗi', 'tab-machines': '⚙️ Máy Móc', 'tab-procedures': '💉 Thủ Thuật', 'tab-rooms': '🏥 Phòng', 'tab-staff': '👨‍⚕️ Nhân Sự' }; tbody.innerHTML = data.map((acc, i) => {
+                if (list.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" align="center" style="color:gray; padding:20px;">Chưa có tài khoản nào trong hệ thống</td></tr>';
+                    return;
+                }
+
+                const PERM_MAP = { 'tab-patients': '🛌 Bệnh Nhân', 'tab-schedule': '⚡ Xếp Lịch', 'tab-sat': '📅 Thứ 7', 'tab-busy': '⏱ Giờ Bận', 'tab-stats': '📊 Thống Kê', 'tab-utils': '🛠 Tiện Ích', 'tab-kiemtra': '✅ Kiểm Tra Lỗi', 'tab-machines': '⚙️ Máy Móc', 'tab-procedures': '💉 Thủ Thuật', 'tab-rooms': '🏥 Phòng', 'tab-staff': '👨‍⚕️ Nhân Sự', 'tab-chamcong': '⏱️ Chấm Công', 'tab-thongke': '📈 Thống Kê' }; 
+                
+                tbody.innerHTML = list.map((acc, i) => {
+                    const uName = acc.user || acc.username || '';
+                    const rRole = (acc.role && String(acc.role).toLowerCase() === 'admin') ? 'Admin' : 'User';
+                    const pPerms = acc.perms || acc.permissions || 'ALL';
 
                     let tenQuyen = "👑 Toàn quyền (Admin)";
+                    if (rRole !== 'Admin' && pPerms !== 'ALL') {
+                        tenQuyen = pPerms.split(',').map(p => PERM_MAP[p.trim()] || p.trim()).join(', ');
+                    }
 
-                    if (acc.perms !== 'ALL') tenQuyen = acc.perms.split(',').map(p => PERM_MAP[p.trim()] ||
-
-                        p.trim()).join(', ');
-
-
-
-                    return `<tr class="editable-row" onclick="editAccount(${i})">
-
-                                    <td>${acc.id}</td>
-
-                                    <td style="font-size:15px; color:#2c3e50;"><strong>${escapeHtml(acc.user)}</strong></td>
-
-                                    <td>${acc.hasPassword ? '<span style="color:#7f8c8d; font-style:italic; font-size:12px;">🔒 Đã bảo mật</span>' : '<span style="color:#e74c3c; font-weight:bold; font-size:12px;">⚠️ Chưa có MK</span>'}</td>
-
-                                    <td><span
-
-                                            style="color:${acc.role === 'Admin' ? '#c0392b' : '#2980b9'}; font-weight:bold; background:${acc.role === 'Admin' ? '#fadbd8' : '#d6eaf8'}; padding:4px 8px; border-radius:5px;">${acc.role}</span>
-
-                                    </td>
-
-                                    <td style="font-size:12px; line-height:1.6; color:#27ae60; font-weight:500;">
-
-                                        ${tenQuyen}</td>
-
-                                    <td><button class="btn-danger"
-
-                                            style="border-radius:5px; padding:6px 12px; font-weight:bold; cursor:pointer;"
-
-                                            onclick="event.stopPropagation(); deleteAccount('${acc.id}', '${acc.user}')">🗑️
-
-                                            Xóa</button></td>
-
+                    return `<tr class="editable-row" onclick="editAccount(${i})" title="Bấm để sửa tài khoản">
+                                    <td align="center">${acc.id || (i + 1)}</td>
+                                    <td style="font-size:14px; color:#2c3e50;"><strong>${escapeHtml(uName)}</strong></td>
+                                    <td align="center">${acc.hasPassword !== false ? '<span style="color:#27ae60; font-weight:600; font-size:12px;">🔒 Đã bảo mật</span>' : '<span style="color:#e74c3c; font-weight:bold; font-size:12px;">⚠️ Chưa có MK</span>'}</td>
+                                    <td align="center"><span style="color:${rRole === 'Admin' ? '#c0392b' : '#2980b9'}; font-weight:bold; background:${rRole === 'Admin' ? '#fadbd8' : '#d6eaf8'}; padding:4px 8px; border-radius:5px;">${rRole}</span></td>
+                                    <td style="font-size:12px; line-height:1.6; color:#27ae60; font-weight:500;">${tenQuyen}</td>
+                                    <td align="center"><button class="btn-danger" style="border-radius:5px; padding:4px 10px; font-weight:bold; cursor:pointer;" onclick="event.stopPropagation(); deleteAccount('${acc.id || ''}', '${escapeHtml(uName)}')">🗑️ Xóa</button></td>
                                 </tr>`;
-
                 }).join('');
 
             }, err => {
@@ -7151,37 +7139,26 @@ window.renderSttOrderControl = function (type, i, total) {
 
 
         function editAccount(i) {
-
             const acc = adminAccCache[i];
+            if (!acc) return;
 
-            document.getElementById('acc-id').value = acc.id;
-
-            document.getElementById('acc-user').value = acc.user;
-
-
-
-            // 🔥 ĐÃ SỬA: Để trống mật khẩu khi bấm sửa, kèm dòng nhắc nhở
+            document.getElementById('acc-id').value = acc.id || '';
+            document.getElementById('acc-user').value = acc.user || acc.username || '';
 
             const passInput = document.getElementById('acc-pass');
-
             passInput.value = '';
-
             passInput.placeholder = "(Để trống nếu không đổi MK)";
 
-
-
-            document.getElementById('acc-role').value = acc.role;
-
+            const rRole = (acc.role && String(acc.role).toLowerCase() === 'admin') ? 'Admin' : 'User';
+            document.getElementById('acc-role').value = rRole;
             togglePermissionsBox();
 
+            const pPerms = acc.perms || acc.permissions || '';
             document.querySelectorAll('.perm-cb').forEach(cb => {
-                cb.checked = acc.role === 'User'
-
-                    && acc.perms ? acc.perms.split(',').map(s => s.trim()).includes(cb.value) : false;
+                cb.checked = rRole === 'User' && pPerms ? pPerms.split(',').map(s => s.trim()).includes(cb.value) : false;
             });
 
             document.getElementById('btn-save-acc').innerText = "Cập nhật MK / Quyền";
-
         }
 
 

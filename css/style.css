@@ -625,9 +625,13 @@
             overflow: hidden !important;
         }
 
-        /* Ẩn footer ở các tab trừ tab Trang Chủ, Chấm Công, Thống Kê, Admin */
-        body:not(:has(#tab-home.active)):not(:has(#tab-chamcong.active)):not(:has(#tab-thongke.active)):not(:has(#tab-admin.active)) .main-footer {
-            display: none !important;
+        /* Hiển thị footer trên tất cả các tab với layout an toàn không che khuất nội dung */
+        .main-footer {
+            margin-top: 20px !important;
+            margin-bottom: 10px !important;
+            border-radius: 8px !important;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15) !important;
+            flex-shrink: 0 !important;
         }
 
         /* Ép các tab chiếm đúng phần nội dung còn lại, không để tab-scroll-content cuộn ngoài */

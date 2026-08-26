@@ -548,11 +548,49 @@
                 </div>
 
                 <div class="tab-content" id="tab-machines">
-
                     <div class="tab-header-title">⚙️ QUẢN LÝ MÁY MÓC</div>
-
                     <div class="split-layout">
+                        <button type="button" class="mobile-toggle-form-btn" onclick="toggleMobileForm(this)">➕ Thêm Mới / Nhập Liệu</button>
+                        <div class="sidebar-form">
+                            <div class="form-group"><label>Tên loại:</label><input type="text" id="machine-type" placeholder="Tên loại máy"></div>
+                            <div class="form-group"><label>Ký hiệu:</label><input type="text" id="machine-code" placeholder="Ký hiệu (Mã)"></div>
+                            <div class="form-group" id="group-qty"><label>Số lượng:</label><input type="number" id="machine-qty" placeholder="Số lượng" value="1" min="1"></div>
+                            <div class="form-group">
+                                <label>Trạng thái:</label><select id="machine-status">
+                                    <option>Sẵn sàng</option>
+                                    <option>Bảo trì</option>
+                                    <option>Hỏng</option>
+                                </select>
+                            </div>
+                            <div class="button-group">
+                                <button class="btn-success" id="btn-save-machine" onclick="saveMachine()" style="flex:1">Thêm</button>
+                                <button class="btn-secondary" id="btn-cancel-machine" onclick="cancelEdit('machine')" style="display:none; flex:1">Hủy</button>
+                            </div>
+                        </div>
+                        <div class="main-table">
+                            <table id="machines-table">
+                                <thead>
+                                    <tr>
+                                        <th>STT</th>
+                                        <th>Loại Máy</th>
+                                        <th>Mã Máy</th>
+                                        <th>Trạng Thái</th>
+                                        <th>Thao Tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="machines-list">
+                                    <tr>
+                                        <td colspan="5" align="center">Đang tải...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
 
+                <div class="tab-content" id="tab-procedures">
+                    <div class="tab-header-title">💉 QUẢN LÝ THỦ THUẬT</div>
+                    <div class="split-layout">
                         <button type="button" class="mobile-toggle-form-btn" onclick="toggleMobileForm(this)">➕ Thêm Mới / Nhập Liệu</button>
                         <div class="sidebar-form">
                             <div class="form-group"><label>Tên TT:</label><input type="text" id="proc-name" placeholder="Tên thủ thuật"></div>
@@ -588,54 +626,29 @@
                                 <button class="btn-secondary" id="btn-cancel-proc" onclick="cancelEdit('proc')" style="display:none; flex:1">Hủy</button>
                             </div>
                         </div>
-                        </div>
-
                         <div class="main-table">
-
                             <table id="procedures-table">
-
                                 <thead>
-
                                     <tr>
-
                                         <th>STT</th>
-
                                         <th>Tên Thủ Thuật</th>
-
                                         <th>Viết Tắt</th>
-
                                         <th>Thời gian thực hiện</th>
-
                                         <th>Thời gian thủ thuật</th>
-
                                         <th>Khoảng cách</th>
-
                                         <th>Rút Máy</th>
-
                                         <th>Người Phụ</th>
-
                                         <th>Thao Tác</th>
-
                                     </tr>
-
                                 </thead>
-
                                 <tbody id="procedures-list">
-
                                     <tr>
-
                                         <td colspan="9" align="center">Đang tải...</td>
-
                                     </tr>
-
                                 </tbody>
-
                             </table>
-
                         </div>
-
                     </div>
-
                 </div>
 
                 <div class="tab-content" id="tab-staff">
@@ -2880,7 +2893,7 @@
 
                     <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.1.9</span></p>
 
-                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 09:28 26/08/2026</span></p>
+                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 09:39 26/08/2026</span></p>
 
                     <p><span class="f-icon">👨‍💻</span> <span>Thiết kế & Phát triển: <b>Bác sĩ Thái</b></span></p>
 

@@ -1832,9 +1832,13 @@ window.renderSttOrderControl = function (type, i, total) {
 
 
 
-                        if (targetEl) targetEl.classList.add('active');
-
-                        else console.warn("Không tìm thấy tab:", targetTab);
+                        if (targetEl) {
+                            targetEl.classList.add('active');
+                            const scContainer = document.querySelector('.tab-scroll-content');
+                            if (scContainer) scContainer.scrollTop = 0;
+                        } else {
+                            console.warn("Không tìm thấy tab:", targetTab);
+                        }
 
 
 

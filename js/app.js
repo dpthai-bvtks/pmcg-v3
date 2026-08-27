@@ -5355,7 +5355,7 @@ window.renderSttOrderControl = function (type, i, total) {
                     let tenBN = String(row.tenBN || '').trim();
                     const isRV = !!row.__isDischarged;
                     if (isRV) {
-                        tenBN += ' (✔ RA VIỆN)';
+                        tenBN += ' (RV)';
                     }
 
                     bodyTable.push([
@@ -5430,7 +5430,7 @@ window.renderSttOrderControl = function (type, i, total) {
                         margin: [0, 10, 0, 0],
                         columns: [
                             {
-                                text: `Tổng số: ${roomRows.length} ca thủ thuật ${dischargedCount > 0 ? '(' + dischargedCount + ' ca ra viện)' : ''}`,
+                                text: `Tổng số: ${roomRows.length} ca thủ thuật ${dischargedCount > 0 ? '(' + dischargedCount + ' ca RV)' : ''}`,
                                 italic: true,
                                 fontSize: 9
                             },

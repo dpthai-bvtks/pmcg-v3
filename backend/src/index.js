@@ -372,8 +372,8 @@ async function handleApiAction(action, args, env, request, ctx) {
         thoiGianThucHien: p.tg_thuc_hien,
         thoiGianThuThuat: p.tg_thu_thuat,
         khoangCach: p.khoang_cach,
-        canRutMay: p.can_rut_may,
-        canNguoiPhu: p.can_nguoi_phu,
+        canRutMay: (p.can_rut_may === 1 || p.can_rut_may === '1' || p.can_rut_may === 'Có' || p.can_rut_may === true) ? 'Có' : 'Không',
+        canNguoiPhu: (p.can_nguoi_phu === 1 || p.can_nguoi_phu === '1' || p.can_nguoi_phu === 'Có' || p.can_nguoi_phu === true) ? 'Có' : 'Không',
         dsNguoiPhu: p.ds_nguoi_phu
       }));
 
@@ -539,8 +539,8 @@ async function handleApiAction(action, args, env, request, ctx) {
         thoiGianThucHien: p.tg_thuc_hien,
         thoiGianThuThuat: p.tg_thu_thuat,
         khoangCach: p.khoang_cach,
-        canRutMay: p.can_rut_may,
-        canNguoiPhu: p.can_nguoi_phu,
+        canRutMay: (p.can_rut_may === 1 || p.can_rut_may === '1' || p.can_rut_may === 'Có' || p.can_rut_may === true) ? 'Có' : 'Không',
+        canNguoiPhu: (p.can_nguoi_phu === 1 || p.can_nguoi_phu === '1' || p.can_nguoi_phu === 'Có' || p.can_nguoi_phu === true) ? 'Có' : 'Không',
         dsNguoiPhu: p.ds_nguoi_phu
       })));
     }
@@ -1893,7 +1893,7 @@ async function handleApiAction(action, args, env, request, ctx) {
         db.prepare("SELECT * FROM cai_dat").all().catch(() => ({ results: [] }))
       ]);
       return success({
-        version: "3.1.9",
+        version: "3.2.0",
         exportedAt: new Date().toISOString(),
         pat: pat.results || [],
         staff: staff.results || [],

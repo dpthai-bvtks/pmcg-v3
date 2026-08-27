@@ -1,9 +1,9 @@
 /**
- * SERVICE WORKER CHO PHẦN MỀM XẾP LỊCH YHCT - PHCN (T.I.M.E.S System v3.1.9)
+ * SERVICE WORKER CHO PHẦN MỀM XẾP LỊCH YHCT - PHCN (T.I.M.E.S System v3.2.0)
  * Quản lý Cache đệm tĩnh, cho phép mở App ngoại tuyến (Offline-first) và tải tức thì.
  */
 
-const CACHE_NAME = 'pmcg-cache-v3.1.9';
+const CACHE_NAME = 'pmcg-cache-v3.2.0';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -28,7 +28,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Đang nạp bộ nhớ đệm tĩnh v3.1.9...');
+      console.log('[Service Worker] Đang nạp bộ nhớ đệm tĩnh v3.2.0...');
       return cache.addAll(STATIC_ASSETS).catch((err) => {
         console.warn('[Service Worker] Một số tài sản chưa nạp được vào cache:', err);
       });

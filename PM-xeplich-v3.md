@@ -781,7 +781,17 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
      - Loại bỏ hoàn toàn các lỗi 400 / 500 khi nạp Dashboard, Bảng chấm công và Quản trị hệ thống.
   4. **Đồng bộ nội dung Hướng Dẫn Sử Dụng**:
      - Đồng bộ toàn bộ nội dung hướng dẫn sử dụng 12 chương vào cả `hdsd.html` và `huong-dan-su-dung.html`, giúp người dùng truy cập bất kỳ URL nào cũng mở trực tiếp tức thì không qua redirect.
-  5. **Đồng bộ phiên bản v3.1.8 & Thời gian cập nhật**:
-     - Đồng bộ toàn bộ tài nguyên `css` & `js` trên `index.html` sang phiên bản `v=3.1.8`.
-     - Cập nhật ngày giờ Footer: `14:00 25/08/2026`.
-- **File sửa đổi**: `index.html`, `hdsd.html`, `huong-dan-su-dung.html`, `js/app.js`, `js/init.js`, `backend/src/index.js`, `PM-xeplich-v3.md` (v3.1.8).
+### Cập nhật 27/08/2026 (v3.2.0)
+- **Chuẩn hóa hiển thị cột "Rút Máy" và "Người Phụ" trong Danh Mục Thủ Thuật**:
+  1. **Khắc phục hiển thị số 1 và 0**:
+     - Cột "Rút Máy" và "Người Phụ" tại bảng danh sách thủ thuật (`#procedures-list`) được chuẩn hóa hiển thị chữ `"Có"` hoặc `"Không"` rõ ràng, trực quan thay vì hiển thị dạng số `1` và `0`.
+  2. **Đồng bộ logic Backend D1 & Frontend**:
+     - Cập nhật mapping dữ liệu tại `backend/src/index.js` (`/api/bootstrap` và `getThuThuat`) để trả về `"Có"` / `"Không"` tương thích chuẩn từ dữ liệu số nguyên trong D1 database.
+     - Cập nhật hàm `editProc(index)` tại `js/app.js` để tự động tick chính xác 2 checkbox "Có Điều dưỡng rút/tháo máy" và "Yêu cầu kíp (1 Chính + 1 Phụ)" khi bấm sửa thủ thuật từ mọi nguồn dữ liệu (chuỗi "Có", số 1, chuỗi "1", boolean true).
+     - Cập nhật hàm xếp lịch `js/scheduler-engine.js` tương thích hoàn hảo với cả hai định dạng ("Có"/"Không" và 1/0).
+  3. **Đồng bộ phiên bản v3.2.0 & Thời gian cập nhật**:
+     - Nâng số phiên bản toàn hệ thống lên `3.2.0` cho ngày mới 27/08/2026.
+     - Đồng bộ toàn bộ tài nguyên `css` & `js` trên `index.html`, `sw.js` sang phiên bản `v=3.2.0`.
+     - Cập nhật ngày giờ Footer: `07:30 27/08/2026`.
+- **File sửa đổi**: `index.html`, `js/app.js`, `js/scheduler-engine.js`, `backend/src/index.js`, `sw.js`, `css/mobile.css`, `PM-xeplich-v3.md` (v3.2.0).
+

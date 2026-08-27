@@ -2624,6 +2624,10 @@ window.renderSttOrderControl = function (type, i, total) {
 
             tbody.innerHTML = dataCache.proc.map((item, i) => {
                 const idx = dataCache.proc.indexOf(item);
+                const isRutMay = (item.canRutMay === 'Có' || item.canRutMay === 1 || item.canRutMay === '1' || item.canRutMay === true || item[9] === 'Có' || item[9] === 1 || item[9] === '1');
+                const isNguoiPhu = (item.canNguoiPhu === 'Có' || item.canNguoiPhu === 1 || item.canNguoiPhu === '1' || item.canNguoiPhu === true || item[10] === 'Có' || item[10] === 1 || item[10] === '1');
+                const rutText = isRutMay ? 'Có' : 'Không';
+                const phuText = isNguoiPhu ? 'Có' : 'Không';
                 return `<tr class="draggable-row editable-row" data-drag-idx="${i}" onclick="if(!window._isDraggingRow) editProc(${idx})" title="Bấm sửa (Kéo thả nút ☰ hoặc bấm ▲/▼ để đổi thứ tự, Phím Delete để xóa)">
             <td>${renderSttOrderControl("procedures", i, dataCache.proc.length)}</td>
             <td>${escapeHtml(item.ten || item[1] || '')}</td>
@@ -2631,8 +2635,8 @@ window.renderSttOrderControl = function (type, i, total) {
             <td>${item.thoiGianThucHien || item[6] || 0}</td>
             <td>${item.thoiGianThuThuat || item[7] || 0}</td>
             <td>${item.khoangCach || item[8] || 0}</td>
-            <td>${item.canRutMay || item[9] || 'Không'}</td>
-            <td>${item.canNguoiPhu || item[10] || 'Không'}</td>
+            <td align="center">${rutText}</td>
+            <td align="center">${phuText}</td>
             <td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteProcedure(${idx})">Xóa</button></td>
         </tr>`;
             }).join('');
@@ -2692,9 +2696,13 @@ window.renderSttOrderControl = function (type, i, total) {
 
             });
 
-            document.getElementById('proc-unplug-cb').checked = (item.canRutMay === 'Có');
+            const isRutMay = (item.canRutMay === 'Có' || item.canRutMay === 1 || item.canRutMay === '1' || item.canRutMay === true || item[9] === 'Có' || item[9] === 1 || item[9] === '1');
 
-            document.getElementById('proc-assist-cb').checked = (item.canNguoiPhu === 'Có');
+            const isNguoiPhu = (item.canNguoiPhu === 'Có' || item.canNguoiPhu === 1 || item.canNguoiPhu === '1' || item.canNguoiPhu === true || item[10] === 'Có' || item[10] === 1 || item[10] === '1');
+
+            document.getElementById('proc-unplug-cb').checked = isRutMay;
+
+            document.getElementById('proc-assist-cb').checked = isNguoiPhu;
 
             document.getElementById('btn-save-proc').innerText = "Lưu Sửa";
 
@@ -9760,7 +9768,7 @@ window.openHdsdModal = function() {
     const modal = document.getElementById('modal-hdsd-viewer');
     const iframe = document.getElementById('hdsd-modal-iframe');
     if (iframe && (!iframe.src || iframe.src === 'about:blank' || iframe.src.endsWith('about:blank'))) {
-        iframe.src = 'hdsd.html?v=3.1.9';
+        iframe.src = 'hdsd.html?v=3.2.0';
     }
     if (modal) {
         modal.style.display = 'flex';
@@ -10117,7 +10125,7 @@ window.saveDocListToServer = function() {
 
 
 // ============================================================
-// 📱 MOBILE & TABLET NAVIGATION CONTROLLER (v3.1.9)
+// 📱 MOBILE & TABLET NAVIGATION CONTROLLER (v3.2.0)
 // ============================================================
 
 window.switchMobileNav = function(tabId, el) {

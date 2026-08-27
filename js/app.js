@@ -4414,6 +4414,10 @@ window.renderSttOrderControl = function (type, i, total) {
 
             renderSchedPage();
 
+            if (document.getElementById('schedule-gantt-wrap')?.style.display !== 'none') {
+                renderScheduleGanttTimeline();
+            }
+
         }
 
 
@@ -5287,7 +5291,7 @@ window.renderSttOrderControl = function (type, i, total) {
         }
 
         // ============================================================
-        // 📄 XUẤT PDF CHUẨN A4/A5 (PDFMAKE ENGINE)
+        // 📄 XUẤT PDF THEO TỪNG PHÒNG BỆNH (PDFMAKE ENGINE - MULTI-PAGE)
         // ============================================================
         function exportSchedulePDF() {
             if (typeof pdfMake === 'undefined') {
@@ -5302,99 +5306,160 @@ window.renderSttOrderControl = function (type, i, total) {
                 return alert("Chưa có dữ liệu lịch trình để xuất PDF!");
             }
 
-            const sorted = [...safeSched].sort((a, b) => {
-                const pA = String(a.phong || '').trim().toLowerCase();
-                const pB = String(b.phong || '').trim().toLowerCase();
-                if (pA !== pB) return pA.localeCompare(pB, 'vi');
-                const tA = String(a.tenBN || '').trim().toLowerCase();
-                const tB = String(b.tenBN || '').trim().toLowerCase();
-                if (tA !== tB) return tA.localeCompare(tB, 'vi');
-                return String(a.gioDienRa || '').localeCompare(String(b.gioDienRa || ''));
+            // 1. Phân nhóm ca thủ thuật theo từng Phòng bệnh
+            const roomMap = {};
+            safeSched.forEach(row => {
+                const roomName = String(row.phong || 'Chưa phân phòng').trim();
+                if (!roomMap[roomName]) roomMap[roomName] = [];
+                roomMap[roomName].push(row);
             });
 
-            const bodyTable = [
-                [
-                    { text: 'STT', style: 'tableHeader', alignment: 'center' },
-                    { text: 'Tên Bệnh Nhân', style: 'tableHeader' },
-                    { text: 'Năm Sinh', style: 'tableHeader', alignment: 'center' },
-                    { text: 'Phòng', style: 'tableHeader', alignment: 'center' },
-                    { text: 'Thủ Thuật', style: 'tableHeader' },
-                    { text: 'Bắt Đầu', style: 'tableHeader', alignment: 'center' },
-                    { text: 'Kết Thúc', style: 'tableHeader', alignment: 'center' },
-                    { text: 'KTV / Bác Sĩ', style: 'tableHeader' },
-                    { text: 'Máy / Giường', style: 'tableHeader' }
-                ]
-            ];
+            // 2. Sắp xếp danh sách trong từng phòng: BỆNH NHÂN RA VIỆN LÊN ĐẦU TIÊN
+            const roomNames = Object.keys(roomMap).sort((a, b) => a.localeCompare(b, 'vi', { numeric: true }));
 
-            sorted.forEach((row, idx) => {
-                let tenBN = String(row.tenBN || '').trim();
-                if (row.__isDischarged) tenBN += ' (RV)';
-
-                bodyTable.push([
-                    { text: String(idx + 1), alignment: 'center', fontSize: 9 },
-                    { text: tenBN, bold: true, fontSize: 9.5 },
-                    { text: String(row.namSinh || ''), alignment: 'center', fontSize: 9 },
-                    { text: String(row.phong || ''), alignment: 'center', fontSize: 9 },
-                    { text: String(row.thuThuat || ''), fontSize: 9 },
-                    { text: String(row.gioDienRa || ''), alignment: 'center', bold: true, color: '#16a085', fontSize: 9 },
-                    { text: String(row.gioKetThuc || ''), alignment: 'center', fontSize: 9 },
-                    { text: String(row.nvChinh || ''), bold: true, fontSize: 9 },
-                    { text: `${row.may || ''} ${row.giuong ? '(' + row.giuong + ')' : ''}`.trim(), fontSize: 8.5 }
-                ]);
+            roomNames.forEach(rName => {
+                roomMap[rName].sort((a, b) => {
+                    const dA = !!a.__isDischarged;
+                    const dB = !!b.__isDischarged;
+                    if (dA !== dB) return dA ? -1 : 1; // 🏃 Ra viện luôn luôn lên đầu tiên
+                    const tA = String(a.gioDienRa || '');
+                    const tB = String(b.gioDienRa || '');
+                    if (tA !== tB) return tA.localeCompare(tB);
+                    return String(a.tenBN || '').localeCompare(String(b.tenBN || ''), 'vi');
+                });
             });
 
-            const docDefinition = {
-                pageSize: 'A4',
-                pageOrientation: 'landscape',
-                pageMargins: [20, 25, 20, 25],
-                content: [
+            // 3. Xây dựng nội dung tài liệu PDF với mỗi phòng bắt đầu trên trang mới
+            const content = [];
+
+            roomNames.forEach((rName, rIdx) => {
+                const roomRows = roomMap[rName];
+                const dischargedCount = roomRows.filter(r => r.__isDischarged).length;
+
+                // Bảng dữ liệu của riêng phòng này
+                const bodyTable = [
+                    [
+                        { text: 'STT', style: 'tableHeader', alignment: 'center' },
+                        { text: 'Tên Bệnh Nhân', style: 'tableHeader' },
+                        { text: 'Năm Sinh', style: 'tableHeader', alignment: 'center' },
+                        { text: 'Giường', style: 'tableHeader', alignment: 'center' },
+                        { text: 'Thủ Thuật', style: 'tableHeader' },
+                        { text: 'Bắt Đầu', style: 'tableHeader', alignment: 'center' },
+                        { text: 'Kết Thúc', style: 'tableHeader', alignment: 'center' },
+                        { text: 'KTV / Bác Sĩ', style: 'tableHeader' },
+                        { text: 'Máy Móc', style: 'tableHeader' }
+                    ]
+                ];
+
+                roomRows.forEach((row, idx) => {
+                    let tenBN = String(row.tenBN || '').trim();
+                    const isRV = !!row.__isDischarged;
+                    if (isRV) {
+                        tenBN += ' (✔ RA VIỆN)';
+                    }
+
+                    bodyTable.push([
+                        { text: String(idx + 1), alignment: 'center', fontSize: 9 },
+                        { text: tenBN, bold: isRV, color: isRV ? '#7c3aed' : '#1e293b', fontSize: 9.5 },
+                        { text: String(row.namSinh || ''), alignment: 'center', fontSize: 9 },
+                        { text: String(row.giuong || '--'), alignment: 'center', bold: true, fontSize: 9 },
+                        { text: String(row.thuThuat || ''), fontSize: 9 },
+                        { text: String(row.gioDienRa || ''), alignment: 'center', bold: true, color: '#059669', fontSize: 9 },
+                        { text: String(row.gioKetThuc || ''), alignment: 'center', fontSize: 9 },
+                        { text: String(row.nvChinh || ''), bold: true, fontSize: 9 },
+                        { text: String(row.may || '--'), fontSize: 8.5 }
+                    ]);
+                });
+
+                // Mỗi phòng từ phòng thứ 2 trở đi sẽ tự động sang trang mới
+                const roomSection = [
                     {
                         columns: [
                             {
                                 width: '*',
                                 text: [
-                                    { text: 'BỆNH VIỆN THAN - KHOÁNG SẢN CS2\n', bold: true, fontSize: 10 },
-                                    { text: 'KHOA YHCT - PHỤC HỒI CHỨC NĂNG\n', bold: true, fontSize: 11, color: '#1e3d2b' }
+                                    { text: 'BỆNH VIỆN THAN - KHOÁNG SẢN CS2\n', bold: true, fontSize: 9.5 },
+                                    { text: 'KHOA YHCT - PHỤC HỒI CHỨC NĂNG\n', bold: true, fontSize: 10.5, color: '#1e3d2b' }
                                 ]
                             },
                             {
                                 width: 'auto',
                                 text: [
-                                    { text: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\n', bold: true, fontSize: 10 },
-                                    { text: 'Độc lập - Tự do - Hạnh phúc\n', italic: true, fontSize: 9.5 }
+                                    { text: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\n', bold: true, fontSize: 9.5 },
+                                    { text: 'Độc lập - Tự do - Hạnh phúc\n', italic: true, fontSize: 9 }
                                 ],
                                 alignment: 'center'
                             }
                         ]
                     },
-                    { text: `\nBẢNG LỊCH TRÌNH THỰC HIỆN THỦ THUẬT ĐIỀU TRỊ`, style: 'mainHeader', alignment: 'center' },
-                    { text: `Ngày thực hiện: ${displayDate}\n\n`, style: 'subHeader', alignment: 'center' },
+                    {
+                        text: `\nBẢNG LỊCH TRÌNH ĐIỀU TRỊ THỦ THUẬT`,
+                        style: 'mainHeader',
+                        alignment: 'center'
+                    },
+                    {
+                        text: `🏥 ${rName.toUpperCase()}`,
+                        style: 'roomHeader',
+                        alignment: 'center'
+                    },
+                    {
+                        text: `Ngày thực hiện: ${displayDate}\n\n`,
+                        style: 'subHeader',
+                        alignment: 'center'
+                    },
                     {
                         table: {
                             headerRows: 1,
-                            widths: [25, 130, 45, 45, 135, 45, 45, 110, '*'],
+                            widths: [24, 135, 45, 45, 140, 45, 45, 110, '*'],
                             body: bodyTable
                         },
                         layout: {
                             fillColor: function (rowIndex) {
-                                return (rowIndex === 0) ? '#e8f8f5' : (rowIndex % 2 === 0 ? '#fcfcfc' : null);
+                                if (rowIndex === 0) return '#e8f8f5';
+                                const isDischargedRow = roomRows[rowIndex - 1] && roomRows[rowIndex - 1].__isDischarged;
+                                if (isDischargedRow) return '#f5eef8'; // Highlight tím nhạt cho BN ra viện
+                                return rowIndex % 2 === 0 ? '#fcfcfc' : null;
                             },
                             hLineWidth: () => 0.5,
                             vLineWidth: () => 0.5,
-                            hLineColor: () => '#bdc3c7',
-                            vLineColor: () => '#bdc3c7'
+                            hLineColor: () => '#cbd5e1',
+                            vLineColor: () => '#cbd5e1'
                         }
                     },
                     {
+                        margin: [0, 10, 0, 0],
                         columns: [
-                            { text: `\nTổng số ca: ${sorted.length} ca thủ thuật`, italic: true, fontSize: 9.5 },
-                            { text: `\nQuảng Ninh, ngày ${displayDate}\nBÁC SĨ PHỤ TRÁCH KHOA\n\n\n\n(Ký và ghi rõ họ tên)`, alignment: 'right', bold: true, fontSize: 9.5 }
+                            {
+                                text: `Tổng số: ${roomRows.length} ca thủ thuật ${dischargedCount > 0 ? '(' + dischargedCount + ' ca ra viện)' : ''}`,
+                                italic: true,
+                                fontSize: 9
+                            },
+                            {
+                                text: `Quảng Ninh, ngày ${displayDate}\nBÁC SĨ PHỤ TRÁCH PHÒNG\n\n\n\n(Ký và ghi rõ họ tên)`,
+                                alignment: 'right',
+                                bold: true,
+                                fontSize: 9.5
+                            }
                         ]
                     }
-                ],
+                ];
+
+                if (rIdx > 0) {
+                    roomSection[0].pageBreak = 'before';
+                }
+
+                content.push(...roomSection);
+            });
+
+            const docDefinition = {
+                pageSize: 'A4',
+                pageOrientation: 'landscape',
+                pageMargins: [20, 20, 20, 20],
+                content: content,
                 styles: {
-                    mainHeader: { fontSize: 14, bold: true, color: '#1e3d2b' },
-                    subHeader: { fontSize: 10, italic: true, color: '#555' },
+                    mainHeader: { fontSize: 13, bold: true, color: '#1e3d2b' },
+                    roomHeader: { fontSize: 14, bold: true, color: '#059669', margin: [0, 2, 0, 2] },
+                    subHeader: { fontSize: 9.5, italic: true, color: '#475569' },
                     tableHeader: { bold: true, fontSize: 9.5, color: '#1e3d2b' }
                 },
                 defaultStyle: {
@@ -5403,8 +5468,8 @@ window.renderSttOrderControl = function (type, i, total) {
             };
 
             try {
-                pdfMake.createPdf(docDefinition).download(`Lich_ThuThuat_${displayDate.replace(/\//g, '-')}.pdf`);
-                if (typeof showToast === 'function') showToast("📄 Đang tải file PDF lịch trình...");
+                pdfMake.createPdf(docDefinition).download(`Lich_ThuThuat_TheoPhong_${displayDate.replace(/\//g, '-')}.pdf`);
+                if (typeof showToast === 'function') showToast("📄 Đang tải file PDF lịch trình theo từng phòng...");
             } catch (e) {
                 console.error("Lỗi xuất PDF:", e);
                 alert("Lỗi xuất PDF: " + e.message);
@@ -5413,10 +5478,32 @@ window.renderSttOrderControl = function (type, i, total) {
         window.exportSchedulePDF = exportSchedulePDF;
 
         // ============================================================
-        // ⏱️ CHẾ ĐỘ XEM TIMELINE (FRAPPE GANTT ENGINE)
+        // ⏱️ CHẾ ĐỘ XEM TIMELINE Y TẾ (MEDICAL RESOURCE TIMELINE)
         // ============================================================
-        let currentGanttInstance = null;
-        let currentGanttViewMode = 'Day';
+        let timelineGroupBy = 'room'; // 'room' | 'staff'
+        let timelineShift = 'all';    // 'all' | 'morning' | 'afternoon'
+
+        function setTimelineGroupBy(groupBy) {
+            timelineGroupBy = groupBy;
+            const btnRoom = document.getElementById('btn-tl-room');
+            const btnStaff = document.getElementById('btn-tl-staff');
+            if (btnRoom) btnRoom.className = `timeline-btn-pill ${groupBy === 'room' ? 'active' : ''}`;
+            if (btnStaff) btnStaff.className = `timeline-btn-pill ${groupBy === 'staff' ? 'active' : ''}`;
+            renderScheduleGanttTimeline();
+        }
+        window.setTimelineGroupBy = setTimelineGroupBy;
+
+        function setTimelineShift(shift) {
+            timelineShift = shift;
+            const btnAll = document.getElementById('btn-tl-all');
+            const btnMorn = document.getElementById('btn-tl-morning');
+            const btnAft = document.getElementById('btn-tl-afternoon');
+            if (btnAll) btnAll.className = `timeline-btn-pill ${shift === 'all' ? 'active' : ''}`;
+            if (btnMorn) btnMorn.className = `timeline-btn-pill ${shift === 'morning' ? 'active' : ''}`;
+            if (btnAft) btnAft.className = `timeline-btn-pill ${shift === 'afternoon' ? 'active' : ''}`;
+            renderScheduleGanttTimeline();
+        }
+        window.setTimelineShift = setTimelineShift;
 
         function toggleScheduleViewMode(mode) {
             const tableWrap = document.querySelector('.schedule-table-wrap');
@@ -5426,10 +5513,10 @@ window.renderSttOrderControl = function (type, i, total) {
 
             if (mode === 'gantt') {
                 if (tableWrap) tableWrap.style.display = 'none';
-                if (ganttWrap) ganttWrap.style.display = 'block';
+                if (ganttWrap) ganttWrap.style.display = 'flex';
                 if (btnTable) { btnTable.className = 'btn-secondary'; }
                 if (btnGantt) { btnGantt.className = 'btn-success'; }
-                renderScheduleGanttTimeline(currentGanttViewMode);
+                renderScheduleGanttTimeline();
             } else {
                 if (tableWrap) tableWrap.style.display = 'block';
                 if (ganttWrap) ganttWrap.style.display = 'none';
@@ -5439,86 +5526,189 @@ window.renderSttOrderControl = function (type, i, total) {
         }
         window.toggleScheduleViewMode = toggleScheduleViewMode;
 
-        function changeGanttMode(mode) {
-            currentGanttViewMode = mode;
-            renderScheduleGanttTimeline(mode);
-        }
-        window.changeGanttMode = changeGanttMode;
-
-        function renderScheduleGanttTimeline(viewMode = 'Day') {
+        function renderScheduleGanttTimeline() {
             const target = document.getElementById('schedule-gantt-target');
             if (!target) return;
 
-            if (typeof Gantt === 'undefined') {
-                target.innerHTML = `<div style="padding:30px; text-align:center; color:#7f8c8d;">⏳ Đang tải thư viện Timeline Gantt...</div>`;
+            const safeSched = (window.currentScheduleData || []).map(normalizeScheduleRow).filter(r => !isDroppedScheduleRow(r));
+            const totalBadge = document.getElementById('timeline-total-badge');
+            if (totalBadge) totalBadge.innerText = `${safeSched.length} ca`;
+
+            if (!safeSched.length) {
+                target.innerHTML = `
+                    <div style="padding: 50px 20px; text-align: center; color: #94a3b8;">
+                        <div style="font-size: 40px; margin-bottom: 10px;">📅</div>
+                        <h4 style="margin: 0; color: #475569; font-size: 16px;">Chưa có dữ liệu lịch trình hôm nay</h4>
+                        <p style="margin: 6px 0 0 0; font-size: 13px;">Vui lòng bấm nút <b>"CHẠY XẾP LỊCH TỔNG"</b> để khởi tạo dòng thời gian.</p>
+                    </div>
+                `;
                 return;
             }
 
-            const sched = (window.currentScheduleData || []).map(normalizeScheduleRow).filter(r => !isDroppedScheduleRow(r));
-            if (!sched.length) {
-                target.innerHTML = `<div style="padding:40px; text-align:center; color:#95a5a6; font-size:14px;">📭 Chưa có lịch trình. Vui lòng bấm <b>"CHẠY XẾP LỊCH TỔNG"</b> để xem Timeline.</div>`;
-                return;
+            // Bộ lọc tìm kiếm
+            const searchQuery = String(document.getElementById('schedule-search-input')?.value || '').trim().toLowerCase();
+            let schedData = safeSched;
+            if (searchQuery) {
+                schedData = safeSched.filter(row => {
+                    const txt = `${row.tenBN} ${row.phong} ${row.nvChinh} ${row.thuThuat} ${row.may} ${row.giuong}`.toLowerCase();
+                    return txt.includes(searchQuery);
+                });
             }
 
-            const activeDateVal = (document.getElementById('schedule-date')?.value) || (sched[0]?.ngay) || new Date().toISOString().slice(0, 10);
-            const dateParts = activeDateVal.split('-').map(Number);
-            const y = dateParts[0] || 2026;
-            const m = dateParts[1] || 8;
-            const d = dateParts[2] || 27;
+            // Định nghĩa các khung giờ dựa trên timelineShift
+            let timeSlots = [];
+            if (timelineShift === 'morning') {
+                timeSlots = ['07:30', '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30'];
+            } else if (timelineShift === 'afternoon') {
+                timeSlots = ['13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'];
+            } else {
+                timeSlots = ['07:30', '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'];
+            }
 
-            const tasks = sched.slice(0, 100).map((row, idx) => {
-                let startH = 7, startM = 30;
-                let endH = 8, endM = 0;
-                if (row.gioDienRa && row.gioDienRa.includes(':')) {
-                    const p = row.gioDienRa.split(':');
-                    startH = parseInt(p[0], 10) || 7;
-                    startM = parseInt(p[1], 10) || 0;
+            // Gom nhóm theo Phòng hoặc theo KTV
+            const groups = {};
+            schedData.forEach(row => {
+                let key = '';
+                if (timelineGroupBy === 'staff') {
+                    key = String(row.nvChinh || 'Chưa gán KTV').trim();
+                } else {
+                    key = String(row.phong || 'Chưa phân phòng').trim();
                 }
-                if (row.gioKetThuc && row.gioKetThuc.includes(':')) {
-                    const p = row.gioKetThuc.split(':');
-                    endH = parseInt(p[0], 10) || 8;
-                    endM = parseInt(p[1], 10) || 0;
-                }
-
-                const startDate = new Date(y, m - 1, d, startH, startM, 0);
-                const endDate = new Date(y, m - 1, d, endH, endM, 0);
-
-                return {
-                    id: `task_${idx}`,
-                    name: `${row.tenBN} - ${row.thuThuat} (${row.nvChinh || ''})`,
-                    start: `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')} ${String(startH).padStart(2,'0')}:${String(startM).padStart(2,'0')}:00`,
-                    end: `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')} ${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}:00`,
-                    progress: 100,
-                    dependencies: '',
-                    custom_class: (idx % 2 === 0 ? 'bar-ktv-a' : 'bar-ktv-b')
-                };
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(row);
             });
 
-            target.innerHTML = '';
-            try {
-                currentGanttInstance = new Gantt('#schedule-gantt-target', tasks, {
-                    header_height: 45,
-                    column_width: 30,
-                    step: 24,
-                    bar_height: 25,
-                    bar_corner_radius: 4,
-                    arrow_curve: 5,
-                    padding: 18,
-                    view_mode: 'Quarter Day',
-                    date_format: 'YYYY-MM-DD',
-                    custom_popup_html: function (task) {
-                        return `
-                            <div style="padding: 10px; font-size: 12px; min-width: 180px;">
-                                <h5 style="margin: 0 0 5px 0; color: #1e3d2b;">${task.name}</h5>
-                                <p style="margin: 0; color: #555;">⏱️ ${task.start} ➔ ${task.end}</p>
-                            </div>
-                        `;
-                    }
-                });
-            } catch (err) {
-                console.warn('[Gantt render error]:', err);
-                target.innerHTML = `<div style="padding:20px; color:#e74c3c;">Lỗi vẽ Timeline: ${err.message}</div>`;
+            const groupKeys = Object.keys(groups).sort((a, b) => a.localeCompare(b, 'vi', { numeric: true }));
+
+            // Hàm chuyển đổi giờ HH:MM sang phút
+            function timeToMinutes(tStr) {
+                if (!tStr || !tStr.includes(':')) return 0;
+                const p = tStr.split(':');
+                return (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0);
             }
+
+            // Hàm tính toán vị trí Left (%) và Width (%)
+            function calcPosition(startMin, endMin) {
+                if (timelineShift === 'morning') {
+                    // 07:30 (450) -> 11:30 (690) = 240 mins
+                    if (startMin >= 690 || endMin <= 450) return null; // Ngoài ca sáng
+                    const s = Math.max(450, startMin);
+                    const e = Math.min(690, endMin);
+                    const left = ((s - 450) / 240) * 100;
+                    const width = Math.max(3.5, ((e - s) / 240) * 100);
+                    return { left, width };
+                } else if (timelineShift === 'afternoon') {
+                    // 13:00 (780) -> 16:30 (990) = 210 mins
+                    if (startMin >= 990 || endMin <= 780) return null; // Ngoài ca chiều
+                    const s = Math.max(780, startMin);
+                    const e = Math.min(990, endMin);
+                    const left = ((s - 780) / 210) * 100;
+                    const width = Math.max(3.5, ((e - s) / 210) * 100);
+                    return { left, width };
+                } else {
+                    // Cả ngày: Sáng (450->690 = 240m, 0%->50%) và Chiều (780->990 = 210m, 50%->100%)
+                    if (startMin < 690) {
+                        const s = Math.max(450, startMin);
+                        const e = Math.min(690, endMin);
+                        const left = ((s - 450) / 240) * 50;
+                        const width = Math.max(2.5, ((e - s) / 240) * 50);
+                        return { left, width };
+                    } else if (startMin >= 750) {
+                        const s = Math.max(780, startMin);
+                        const e = Math.min(990, endMin);
+                        const left = 50 + ((s - 780) / 210) * 50;
+                        const width = Math.max(2.5, ((e - s) / 210) * 50);
+                        return { left, width };
+                    }
+                    return null;
+                }
+            }
+
+            // Xây dựng Header Bảng
+            let html = `
+                <div class="timeline-grid-table">
+                    <div class="timeline-header-row">
+                        <div class="timeline-corner-cell">
+                            ${timelineGroupBy === 'room' ? '🏥 PHÒNG / GIƯỜNG' : '👨‍⚕️ NHÂN SỰ / KTV'}
+                        </div>
+            `;
+
+            timeSlots.forEach(slot => {
+                html += `<div class="timeline-time-header">${slot}</div>`;
+            });
+
+            html += `</div>`; // Đóng header-row
+
+            // Xây dựng các hàng dữ liệu
+            groupKeys.forEach(gKey => {
+                const rows = groups[gKey];
+                const rvCount = rows.filter(r => r.__isDischarged).length;
+
+                html += `
+                    <div class="timeline-row">
+                        <div class="timeline-resource-header">
+                            <div class="timeline-resource-name">${timelineGroupBy === 'room' ? '🏥 ' : '👨‍⚕️ '}${gKey}</div>
+                            <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                                <span class="timeline-resource-badge">${rows.length} ca</span>
+                                ${rvCount > 0 ? `<span class="timeline-resource-badge" style="background:#f5eef8; color:#7c3aed; font-weight:700;">${rvCount} RV</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="timeline-track-cell" colspan="${timeSlots.length}">
+                            <div class="timeline-grid-lines">
+                `;
+
+                for (let i = 0; i < timeSlots.length; i++) {
+                    html += `<div class="timeline-grid-line"></div>`;
+                }
+
+                html += `
+                            </div>
+                            <div class="timeline-events-container">
+                `;
+
+                rows.forEach((row) => {
+                    const startMin = timeToMinutes(row.gioDienRa);
+                    const endMin = timeToMinutes(row.gioKetThuc);
+                    if (!startMin || !endMin) return;
+
+                    const pos = calcPosition(startMin, endMin);
+                    if (!pos) return;
+
+                    const isRV = !!row.__isDischarged;
+                    const isYHCT = String(row.thuThuat || '').toLowerCase().includes('châm') || String(row.thuThuat || '').toLowerCase().includes('xoa bóp') || String(row.thuThuat || '').toLowerCase().includes('cấy chỉ') || String(row.thuThuat || '').toLowerCase().includes('giác');
+                    
+                    let cardClass = isRV ? 'timeline-card-rv' : (isYHCT ? 'timeline-card-yhct' : 'timeline-card-phcn');
+
+                    const tooltipText = `Bệnh nhân: ${row.tenBN} (${row.namSinh || ''})&#10;Thủ thuật: ${row.thuThuat}&#10;Thời gian: ${row.gioDienRa} - ${row.gioKetThuc}&#10;Phòng: ${row.phong || ''} | Giường: ${row.giuong || ''}&#10;KTV: ${row.nvChinh || ''} ${row.nvPhu ? '(Phụ: ' + row.nvPhu + ')' : ''}&#10;Máy: ${row.may || ''}`;
+
+                    html += `
+                        <div class="timeline-card ${cardClass}" 
+                             style="left: ${pos.left}%; width: ${pos.width}%;"
+                             title="${tooltipText}">
+                            <div class="timeline-card-title">
+                                <span style="overflow:hidden; text-overflow:ellipsis;">${row.tenBN}</span>
+                                ${isRV ? '<span class="rv-badge">RV</span>' : ''}
+                            </div>
+                            <div class="timeline-card-sub">
+                                <span>${row.thuThuat}</span>
+                                ${row.giuong ? `<span style="opacity:0.85;"> • G.${row.giuong}</span>` : ''}
+                            </div>
+                            <div class="timeline-card-time">
+                                ⏱️ ${row.gioDienRa}-${row.gioKetThuc} • ${timelineGroupBy === 'room' ? (row.nvChinh || '') : (row.phong || '')}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</div>`; // Đóng timeline-grid-table
+            target.innerHTML = html;
         }
         window.renderScheduleGanttTimeline = renderScheduleGanttTimeline;
 

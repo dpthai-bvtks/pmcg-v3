@@ -800,7 +800,7 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
 - **File sửa đổi**: `js/app.js`, `backend/src/index.js`, `js/offline-sync-engine.js`, `index.html`, `PM-xeplich-v3.md`.
 
 ### Cập nhật 27/08/2026 (v3.2.1)
-- **Tích hợp Toàn diện 4 Thư Viện Hàng Đầu (Dexie.js, Hono, Frappe Gantt, pdfmake)**:
+- **Tích hợp Toàn diện 4 Thư Viện Hàng Đầu & Nâng Cấp Giao Diện Timeline + Xuất PDF Y Tế**:
   1. **Nâng cấp Bộ Nhớ Đệm Offline Dexie.js (`js/offline-sync-engine.js` & `js/dexie.min.js`)**:
      - Tích hợp Dexie.js quản lý IndexedDB chuẩn công nghiệp, vượt qua hoàn toàn rào cản 5MB của LocalStorage.
      - Khởi tạo các Stores chuyên biệt: `cache`, `patients`, `history`, `schedules`, `chamcong`, `thongke`, `syncQueue`.
@@ -809,13 +809,16 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
      - Chuyển đổi Worker sang framework Hono siêu nhẹ (<15KB) chuẩn Edge, zero-dependency.
      - Tự động xử lý Global CORS Middleware, kiểm soát phương thức OPTIONS và lỗi bất đồng bộ.
      - Hỗ trợ song song cả Legacy Bridge (`POST /` & `POST /api/action` với `{ action, args }`) lẫn RESTful endpoints (`GET /api/ping`, `GET /api/bootstrap`).
-  3. **Tích Hợp Chế Độ Xem Dòng Thời Gian Timeline Gantt (`js/frappe-gantt.min.js`, `css/frappe-gantt.css`, `js/app.js`, `index.html`)**:
-     - Bổ sung bộ nút chuyển đổi giao diện trên Tab Lịch Trình: **📋 Bảng** (Table View) & **⏱️ Timeline** (Gantt View).
-     - Xây dựng hàm `renderScheduleGanttTimeline()` tự động chuyển đổi dữ liệu ca thủ thuật trong ngày thành dòng thời gian trực quan theo giờ và theo ngày.
-  4. **Tích Hợp Trình Xuất PDF Chuẩn In Ấn A4/A5 Tiếng Việt (`js/pdfmake.min.js`, `js/vfs_fonts.js`, `js/app.js`, `index.html`)**:
-     - Bổ sung nút **"📄 XUẤT PDF"** trên thanh công cụ Lịch trình.
-     - Xây dựng hàm `exportSchedulePDF()` tạo file PDF bảng lịch trình điều trị chuẩn y tế khổ A4 ngang có tiêu đề Bệnh viện, Khoa YHCT-PHCN, Quốc hiệu Tiêu ngữ, phân ca chi tiết và phần ký tên bác sĩ phụ trách.
+  3. **Thiết Kế Lại Giao Diện Dòng Thời Gian Y Tế Sang Trọng (Medical Resource Timeline)**:
+     - Xây dựng giao diện Timeline chuẩn phòng khám/bệnh viện: Cột cố định hiển thị từng **Phòng Điều Trị 🏥** hoặc từng **Bác sĩ / KTV 👨‍⚕️**.
+     - Thẻ ca thủ thuật (Cards) theo chuẩn gradient YHCT (Xanh ngọc), PHCN (Xanh sapphire) và Bệnh nhân Ra viện (Tím hoàng gia `✔ RV`).
+     - Hỗ trợ lọc linh hoạt: Theo Phòng / Theo Nhân viên, và xem theo Ca Sáng / Ca Chiều / Cả Ngày.
+     - Tooltip tương tác hiển thị chi tiết bệnh nhân, thủ thuật, máy móc, giường và nhân viên phụ trách khi rê chuột.
+  4. **Nâng Cấp Trình Xuất PDF Chuẩn Y Tế Phân Trang Theo Từng Phòng Bệnh**:
+     - Tự động phân chia mỗi phòng bệnh trên 1-2 trang riêng biệt (`pageBreak: 'before'`).
+     - **Ưu tiên đưa toàn bộ Bệnh nhân Ra Viện (`__isDischarged`) lên đầu tiên** của từng phòng, có nhãn `(✔ RA VIỆN)` và màu sắc nổi bật.
+     - Mỗi trang phòng có tiêu đề bệnh viện, tên phòng to rõ, bảng chi tiết phân ca, tổng số ca và phần ký tên Bác sĩ phụ trách phòng.
   5. **Tự Động Hóa & Cache Busting Toàn Diện**:
      - Cập nhật `sw.js` (Service Worker) bổ sung cache đệm tĩnh cho toàn bộ 5 tài nguyên mới.
      - Nâng cấp số phiên bản toàn hệ thống lên `3.2.1`, đồng bộ tham số `?v=3.2.1` trên tất cả liên kết tài nguyên.
-- **File tạo mới & sửa đổi**: `js/dexie.min.js`, `js/frappe-gantt.min.js`, `css/frappe-gantt.css`, `js/pdfmake.min.js`, `js/vfs_fonts.js`, `backend/src/hono.js`, `backend/src/index.js`, `backend/package.json`, `js/offline-sync-engine.js`, `js/app.js`, `index.html`, `sw.js`, `PM-xeplich-v3.md` (v3.2.1).
+- **File tạo mới & sửa đổi**: `js/dexie.min.js`, `js/frappe-gantt.min.js`, `css/frappe-gantt.css`, `js/pdfmake.min.js`, `js/vfs_fonts.js`, `backend/src/hono.js`, `backend/src/index.js`, `backend/package.json`, `js/offline-sync-engine.js`, `js/app.js`, `css/style.css`, `index.html`, `sw.js`, `PM-xeplich-v3.md` (v3.2.1).

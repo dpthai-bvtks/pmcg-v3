@@ -1,3 +1,5 @@
+import { Hono } from './hono.js';
+
 function normalizeMonthKeys(inputStr) {
   const str = String(inputStr || '').trim();
   if (!str) {
@@ -25,9 +27,9 @@ function normalizeMonthKeys(inputStr) {
 }
 
 /**
- * CLOUDFLARE WORKER BACKEND CHO PM-XEPLICH V3
+ * CLOUDFLARE WORKER HONO BACKEND CHO PM-XEPLICH V3
  * Hoàn toàn tương thích 100% với toàn bộ 43 hàm và tham số của phiên bản V2
- * Tốc độ 10-25ms, Zero-CORS, D1 SQLite Database
+ * Tốc độ 10-25ms, Zero-CORS, D1 SQLite Database, Hono Edge Router
  */
 
 const CORS_HEADERS = {
@@ -54,6 +56,89 @@ function success(data) {
 function error(message, status = 400) {
   return jsonResponse({ status: "error", error: message }, status);
 }
+
+const app = new Hono();
+
+// Global CORS Middleware
+app.use('*', async (c, next) => {
+  if (c.req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
+  await next();
+  c.header("Access-Control-Allow-Origin", "*");
+  c.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  c.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+});
+
+// Root & Health Check
+app.get('/', (c) => {
+  return success({
+    message: "PM-XepLich v3 Cloudflare Hono API is running perfectly!",
+    version: "3.2.1",
+    engine: "Hono on Cloudflare Workers",
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/ping', (c) => {
+  return success({
+    message: "PM-XepLich v3 Cloudflare Hono API is running perfectly!",
+    version: "3.2.1",
+    timestamp: new Date().toISOString()
+  });
+});
+
+// RESTful Route Shortcuts
+app.get('/api/bootstrap', async (c) => {
+  const env = c.env;
+  if (!env || !env.DB) return error("D1 Database not bound", 500);
+  await ensureSchema(env.DB);
+  return handleApiAction("getBootstrapData", [], env, c.req.raw, c.executionCtx);
+});
+
+// Universal API Action Bridge (POST / and POST /api/action)
+async function processApiRequest(c) {
+  let action = c.req.query("action") || "";
+  let args = [];
+
+  if (c.req.method === "POST") {
+    const body = await c.req.json().catch(() => ({}));
+    action = body.action || action;
+    args = body.args || [];
+  } else {
+    const argsParam = c.req.query("args");
+    if (argsParam) {
+      try { args = JSON.parse(argsParam); } catch (e) {}
+    }
+  }
+
+  if (!action || action === "ping") {
+    return success({
+      message: "PM-XepLich v3 Cloudflare Hono API is running perfectly!",
+      version: "3.2.1",
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  const env = c.env;
+  const ctx = c.executionCtx;
+  const db = env ? env.DB : null;
+  if (!db) {
+    return error("Database D1 binding 'DB' không tồn tại!", 500);
+  }
+
+  await ensureSchema(db);
+
+  const res = await handleApiAction(action, args, env, c.req.raw, ctx);
+  if (res && res.status === 200) {
+    dispatchBackgroundSync(action, args, env, ctx);
+  }
+  return res;
+}
+
+app.post('/', processApiRequest);
+app.post('/api/action', processApiRequest);
+app.get('/api/action', processApiRequest);
 
 function parseStringOrJsonArray(val) {
   if (!val) return [];
@@ -142,41 +227,8 @@ async function bumpDataVersion(db) {
 }
 
 export default {
-  async fetch(request, env, ctx) {
-    if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: CORS_HEADERS });
-    }
-
-    const url = new URL(request.url);
-
-    try {
-      let action = url.searchParams.get("action") || "";
-      let args = [];
-
-      if (request.method === "POST") {
-        const body = await request.json().catch(() => ({}));
-        action = body.action || action;
-        args = body.args || [];
-      } else {
-        const argsParam = url.searchParams.get("args");
-        if (argsParam) {
-          try { args = JSON.parse(argsParam); } catch (e) {}
-        }
-      }
-
-      if (!action || action === "ping") {
-        return success({ message: "PM-XepLich v3 Cloudflare API is running perfectly!", timestamp: new Date().toISOString() });
-      }
-
-      const res = await handleApiAction(action, args, env, request, ctx);
-      if (res && res.status === 200) {
-        dispatchBackgroundSync(action, args, env, ctx);
-      }
-      return res;
-    } catch (err) {
-      console.error("[Worker Error]:", err);
-      return error("Lỗi máy chủ Worker: " + err.message, 500);
-    }
+  fetch(request, env, ctx) {
+    return app.fetch(request, env, ctx);
   },
 
   async scheduled(event, env, ctx) {

@@ -1,19 +1,42 @@
 /**
- * OFFLINE SYNC ENGINE & EMERGENCY DATA BACKUP MODULE
- * Cho phép PMCG V3 tự chủ hoạt động 100% khi mất mạng hoặc tất cả Server đều sập.
+ * OFFLINE SYNC ENGINE & EMERGENCY DATA BACKUP MODULE (v3.2.1)
+ * Tích hợp Dexie.js + IndexedDB dung lượng cao (hàng trăm MB)
+ * Cho phép PMCG V3 tự chủ hoạt động 100% khi mất mạng hoặc Server gặp sự cố.
  */
 
 window.OfflineSyncEngine = (function () {
-  const DB_NAME = 'PMCG_Offline_DB';
-  const DB_VERSION = 1;
-  let dbInstance = null;
+  'use strict';
 
-  function openDB() {
-    return new Promise((resolve, reject) => {
-      if (dbInstance) return resolve(dbInstance);
+  const DB_NAME = 'PMCG_Offline_DB';
+  let dexieDb = null;
+
+  // Khởi tạo Dexie IndexedDB Store
+  try {
+    if (typeof window.Dexie !== 'undefined') {
+      dexieDb = new window.Dexie(DB_NAME);
+      dexieDb.version(1).stores({
+        cache: 'key, timestamp',
+        patients: '++id, name, age, room, status, order_idx',
+        history: '++id, date, patient_name, procedure_name, staff_name',
+        schedules: 'date, created_at',
+        chamcong: 'month_year, updated_at',
+        thongke: 'month_year, updated_at',
+        syncQueue: '++id, action, timestamp'
+      });
+      console.log('[Dexie.js] Khởi tạo bộ nhớ đệm Offline IndexedDB thành công!');
+    }
+  } catch (e) {
+    console.warn('[Dexie.js] Khởi tạo Dexie thất bại, chuyển sang IndexedDB thuần:', e);
+  }
+
+  // Fallback IndexedDB thuần nếu Dexie chưa sẵn sàng
+  let rawDbInstance = null;
+  function openRawDB() {
+    return new Promise((resolve) => {
+      if (rawDbInstance) return resolve(rawDbInstance);
       if (!window.indexedDB) return resolve(null);
 
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
+      const request = indexedDB.open('PMCG_Raw_DB', 1);
       request.onupgradeneeded = function (e) {
         const db = e.target.result;
         if (!db.objectStoreNames.contains('cache')) {
@@ -24,55 +47,100 @@ window.OfflineSyncEngine = (function () {
         }
       };
       request.onsuccess = function (e) {
-        dbInstance = e.target.result;
-        resolve(dbInstance);
+        rawDbInstance = e.target.result;
+        resolve(rawDbInstance);
       };
-      request.onerror = function (e) {
-        console.warn('[IndexedDB] Failed to open IndexedDB:', e);
+      request.onerror = function () {
         resolve(null);
       };
     });
   }
 
+  /**
+   * Lưu dữ liệu vào cache Offline (Dexie -> IndexedDB -> LocalStorage)
+   */
   async function saveCache(key, data) {
     try {
-      const db = await openDB();
-      if (!db) {
-        localStorage.setItem('pmcg_cache_' + key, JSON.stringify(data));
-        return;
+      if (dexieDb && dexieDb.cache) {
+        await dexieDb.cache.put({ key: key, data: data, timestamp: Date.now() });
+      } else {
+        const db = await openRawDB();
+        if (db) {
+          const tx = db.transaction('cache', 'readwrite');
+          tx.objectStore('cache').put({ key: key, data: data, timestamp: Date.now() });
+        }
       }
-      const tx = db.transaction('cache', 'readwrite');
-      tx.objectStore('cache').put({ key: key, data: data, timestamp: Date.now() });
     } catch (e) {
-      console.warn('[IndexedDB Save Error]:', e);
+      console.warn('[OfflineSyncEngine Save Warning]:', e);
+    }
+
+    // Luôn duy trì đồng bộ bản sao nhẹ trên LocalStorage cho các hàm đọc đồng bộ tức thì
+    try {
+      if (key === 'times_bootstrap_cache' || key === 'meds_success') {
+        localStorage.setItem(key, typeof data === 'string' ? data : JSON.stringify(data));
+      }
+    } catch (e) {
+      // LocalStorage đầy thì bỏ qua, dữ liệu đã an toàn trong IndexedDB
     }
   }
 
+  /**
+   * Đọc dữ liệu từ cache Offline
+   */
   async function getCache(key) {
     try {
-      const db = await openDB();
-      if (!db) {
-        const raw = localStorage.getItem('pmcg_cache_' + key);
-        return raw ? JSON.parse(raw) : null;
+      if (dexieDb && dexieDb.cache) {
+        const rec = await dexieDb.cache.get(key);
+        if (rec && rec.data !== undefined) return rec.data;
       }
-      return new Promise((resolve) => {
-        const tx = db.transaction('cache', 'readonly');
-        const req = tx.objectStore('cache').get(key);
-        req.onsuccess = () => resolve(req.result ? req.result.data : null);
-        req.onerror = () => resolve(null);
-      });
+
+      const db = await openRawDB();
+      if (db) {
+        const val = await new Promise((resolve) => {
+          const tx = db.transaction('cache', 'readonly');
+          const req = tx.objectStore('cache').get(key);
+          req.onsuccess = () => resolve(req.result ? req.result.data : null);
+          req.onerror = () => resolve(null);
+        });
+        if (val !== null) return val;
+      }
+    } catch (e) {
+      console.warn('[OfflineSyncEngine Get Warning]:', e);
+    }
+
+    // Fallback sang LocalStorage
+    try {
+      const raw = localStorage.getItem(key) || localStorage.getItem('pmcg_cache_' + key);
+      return raw ? JSON.parse(raw) : null;
     } catch (e) {
       return null;
     }
   }
 
-  // 1-Click Export emergency backup JSON
+  /**
+   * Lưu hàng loạt lịch sử thủ thuật vào Dexie
+   */
+  async function bulkSaveHistory(records) {
+    if (!dexieDb || !dexieDb.history || !Array.isArray(records)) return false;
+    try {
+      await dexieDb.history.clear();
+      await dexieDb.history.bulkPut(records);
+      return true;
+    } catch (e) {
+      console.warn('[Dexie bulkSaveHistory error]:', e);
+      return false;
+    }
+  }
+
+  /**
+   * 1-Click Xuất file sao lưu khẩn cấp JSON
+   */
   function exportEmergencyBackupData() {
     try {
       const cache = window.dataCache || {};
       const backupPayload = {
         app: 'PMCG-Xeplichthuthuat',
-        version: '3.1.1',
+        version: '3.2.1',
         exportTime: new Date().toLocaleString('vi-VN'),
         data: {
           pat: cache.pat || [],
@@ -96,13 +164,19 @@ window.OfflineSyncEngine = (function () {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      alert(`✅ Đã xuất file sao lưu khẩn cấp thành công!\nTên file: ${filename}`);
+      if (typeof window.showToast === 'function') {
+        window.showToast('✅ Đã xuất file sao lưu khẩn cấp thành công!');
+      } else {
+        alert(`✅ Đã xuất file sao lưu khẩn cấp thành công!\nTên file: ${filename}`);
+      }
     } catch (e) {
       alert('❌ Lỗi xuất file dự phòng: ' + e.message);
     }
   }
 
-  // 1-Click Import emergency backup JSON
+  /**
+   * 1-Click Nạp file sao lưu khẩn cấp JSON
+   */
   function importEmergencyBackupData(fileInput) {
     if (!fileInput.files || fileInput.files.length === 0) return;
     const file = fileInput.files[0];
@@ -127,7 +201,7 @@ window.OfflineSyncEngine = (function () {
         window.currentScheduleData = d.schedule || [];
         window.lastUnscheduledData = d.unscheduled || [];
 
-        // Save into offline cache
+        // Lưu vào Offline Dexie Cache
         saveCache('times_bootstrap_cache', window.dataCache);
         localStorage.setItem('meds_success', JSON.stringify(d.schedule || []));
 
@@ -135,7 +209,11 @@ window.OfflineSyncEngine = (function () {
         if (typeof renderPatientsTable === 'function') renderPatientsTable();
         if (typeof renderStats === 'function') renderStats(window.lastUnscheduledData);
 
-        alert(`✅ Đã nạp thành công dữ liệu từ file sao lưu!\nThời điểm tạo file: ${payload.exportTime || 'Không xác định'}`);
+        if (typeof window.showToast === 'function') {
+          window.showToast('✅ Đã nạp thành công dữ liệu từ file sao lưu!');
+        } else {
+          alert(`✅ Đã nạp thành công dữ liệu từ file sao lưu!\nThời điểm tạo file: ${payload.exportTime || 'Không xác định'}`);
+        }
       } catch (err) {
         alert('❌ Lỗi nạp file dự phòng: ' + err.message);
       }
@@ -146,7 +224,9 @@ window.OfflineSyncEngine = (function () {
   return {
     saveCache,
     getCache,
+    bulkSaveHistory,
     exportEmergencyBackupData,
-    importEmergencyBackupData
+    importEmergencyBackupData,
+    getDexieDB: () => dexieDb
   };
 })();

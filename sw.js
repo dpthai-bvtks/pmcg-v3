@@ -1,9 +1,9 @@
 /**
- * SERVICE WORKER CHO PHẦN MỀM XẾP LỊCH YHCT - PHCN (T.I.M.E.S System v3.2.0)
+ * SERVICE WORKER CHO PHẦN MỀM XẾP LỊCH YHCT - PHCN (T.I.M.E.S System v3.2.1)
  * Quản lý Cache đệm tĩnh, cho phép mở App ngoại tuyến (Offline-first) và tải tức thì.
  */
 
-const CACHE_NAME = 'pmcg-cache-v3.2.0';
+const CACHE_NAME = 'pmcg-cache-v3.2.1';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -11,13 +11,18 @@ const STATIC_ASSETS = [
   './manifest.json',
   './css/style.css',
   './css/mobile.css',
+  './css/frappe-gantt.css',
   './js/init.js',
   './js/app.js',
   './js/thongke.js',
   './js/scheduler-engine.js',
   './js/sync.js',
   './js/offline-sync-engine.js',
+  './js/dexie.min.js',
   './js/sortable.min.js',
+  './js/frappe-gantt.min.js',
+  './js/pdfmake.min.js',
+  './js/vfs_fonts.js',
   './logo-chuan-chinh.png',
   './favicon-128.png',
   './apple-touch-icon.png'

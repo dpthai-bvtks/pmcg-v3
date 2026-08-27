@@ -72,7 +72,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
     <!-- CSS Custom -->
-    <link rel="stylesheet" href="css/style.css?v=3.2.0">
+    <link rel="stylesheet" href="css/style.css?v=3.2.1">
     <!-- PWA & Mobile Web App Meta Tags -->
     <link rel="manifest" href="manifest.json">
     <meta name="mobile-web-app-capable" content="yes">
@@ -80,10 +80,19 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="T.I.M.E.S">
     <!-- CSS Mobile & Tablet Responsive -->
-    <link rel="stylesheet" href="css/mobile.css?v=3.2.0">
+    <link rel="stylesheet" href="css/mobile.css?v=3.2.1">
 
+    <!-- JS Thư viện Offline IndexedDB Dexie.js -->
+    <script src="js/dexie.min.js?v=3.2.1"></script>
     <!-- JS Thư viện kéo thả nội bộ -->
-    <script src="js/sortable.min.js?v=3.2.0"></script>
+    <script src="js/sortable.min.js?v=3.2.1"></script>
+    <!-- Thư viện Dòng thời gian Timeline Frappe Gantt -->
+    <link rel="stylesheet" href="css/frappe-gantt.css?v=3.2.1">
+    <script src="js/frappe-gantt.min.js?v=3.2.1"></script>
+    <!-- Thư viện Xuất PDF pdfmake tiếng Việt -->
+    <script src="js/pdfmake.min.js?v=3.2.1"></script>
+    <script src="js/vfs_fonts.js?v=3.2.1"></script>
+
     <!-- Chart.js for Thống Kê & ExcelJS -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
@@ -1393,140 +1402,100 @@
 
                 <div class="tab-content" id="tab-schedule">
 
-
-
                     <div class="schedule-compact-header"
                         style="position: sticky; top: -15px; z-index: 900; background: #fdfaf1; padding: 8px 0; margin-top: -15px; margin-bottom: 8px; border-bottom: 2px solid #d4c5a9; box-shadow: 0 8px 15px -10px rgba(0,0,0,0.15);">
 
-
-
                         <div
-                            style="display:flex; align-items:center; gap:12px; justify-content: space-between; min-width:0;">
-
-
+                            style="display:flex; align-items:center; gap:12px; justify-content: space-between; min-width:0; flex-wrap:wrap;">
 
                             <div style="display:flex; align-items:center; gap:8px; flex:1 1 auto; min-width:260px;">
-
-                                <label style="font-weight:bold; color:#2c3e50; font-size:13px; white-space:nowrap;">🔍
-
-                                    Tìm kiếm:</label>
-
+                                <label style="font-weight:bold; color:#2c3e50; font-size:13px; white-space:nowrap;">🔍 Tìm kiếm:</label>
                                 <input type="text" id="schedule-search-input" placeholder="Gõ tên BN, năm sinh, KTV..."
-                                    style="padding:6px 10px; width:100%; max-width:380px; border:1px solid #bdc3c7; border-radius:4px;"
+                                    style="padding:6px 10px; width:100%; max-width:320px; border:1px solid #bdc3c7; border-radius:4px;"
                                     onkeyup="filterSchedule()">
-
                             </div>
 
-
+                            <div style="display:flex; gap:5px; align-items:center; flex:0 0 auto;">
+                                <button id="btn-view-table" class="btn-success" onclick="toggleScheduleViewMode('table')"
+                                    style="padding:4px 10px; font-size:12px; height:30px; font-weight:bold; border-radius:4px;" title="Xem dạng bảng danh sách">📋 Bảng</button>
+                                <button id="btn-view-gantt" class="btn-secondary" onclick="toggleScheduleViewMode('gantt')"
+                                    style="padding:4px 10px; font-size:12px; height:30px; font-weight:bold; border-radius:4px;" title="Xem dạng dòng thời gian Timeline Gantt">⏱️ Timeline</button>
+                            </div>
 
                             <div class="schedule-title-inline"
                                 style="flex:0 0 auto; font-weight:bold; color:#2c3e50; font-size:16px; white-space:nowrap;">
-
                                 ⚡ XẾP LỊCH TỰ ĐỘNG</div>
-
-
 
                             <div
                                 style="display:flex; align-items:center; gap:8px; background:#f5eef8; padding:4px 10px; border-radius:6px; border:1px solid #dcdde1; flex:0 0 auto;">
-
-                                <label style="font-weight:bold; color:#8e44ad; font-size:12px; white-space:nowrap;">🕒
-
-                                    Lịch cũ:</label>
-
+                                <label style="font-weight:bold; color:#8e44ad; font-size:12px; white-space:nowrap;">🕒 Lịch cũ:</label>
                                 <input type="date" id="history-date"
                                     style="padding:4px 8px; border-radius:3px; border:1px solid #ccc; outline:none; font-size:12px; height:30px;">
-
                                 <button class="btn-purple" onclick="xemLichSu()"
                                     style="padding:5px 12px; height:30px;">Xem</button>
-
                                 <button class="btn-primary"
                                     onclick="window.viewingImportedScheduleFile=false; loadScheduleList(); document.getElementById('schedule-result').innerHTML=''; restoreHistoryTabs();"
                                     style="padding:5px 12px; height:30px;">Lịch Hiện Tại</button>
-
                             </div>
 
                         </div>
 
-
-
                         <div id="schedule-result" style="margin-top:10px; font-weight:bold; color:#c0392b;"></div>
 
-
-
                     </div>
-
-
 
                     <div class="schedule-table-wrap"
                         style="flex: 1 1 auto; min-height: 0; overflow-y:auto; border:1px solid #bdc3c7; border-radius:5px; background:white; position:relative;">
 
                         <table id="schedule-table" style="margin-top:0; width:100%; border-collapse:collapse;">
-
                             <thead>
-
                                 <tr>
-
                                     <th>STT</th>
-
                                     <th>Ngày</th>
-
                                     <th>Tên BN</th>
-
                                     <th>Năm Sinh</th>
-
                                     <th>Phòng</th>
-
                                     <th>Thủ Thuật</th>
-
                                     <th>Bắt Đầu</th>
-
                                     <th>Kết Thúc</th>
-
                                     <th>NV Chính</th>
-
                                     <th>NV Phụ</th>
-
                                     <th>Máy</th>
-
                                     <th>Giường</th>
-
                                 </tr>
-
                             </thead>
-
                             <tbody id="schedule-list">
-
                                 <tr>
-
                                     <td colspan="12" align="center">Chưa có lịch.</td>
-
                                 </tr>
-
                             </tbody>
-
                         </table>
 
                     </div>
 
-
+                    <!-- Khung hiển thị Biểu đồ Timeline Gantt -->
+                    <div id="schedule-gantt-wrap"
+                        style="display:none; flex: 1 1 auto; min-height: 420px; overflow:auto; border:1px solid #bdc3c7; border-radius:5px; background:white; padding:15px; position:relative;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #eee; padding-bottom:8px;">
+                            <span style="font-size:13px; font-weight:bold; color:#1e3d2b;">📊 DÒNG THỜI GIAN THỦ THUẬT (TIMELINE GANTT)</span>
+                            <div style="display:flex; gap:6px;">
+                                <button type="button" onclick="changeGanttMode('Quarter Day')"
+                                    style="padding:4px 10px; border:1px solid #ccc; border-radius:4px; font-size:11.5px; cursor:pointer; background:#27ae60; color:#fff; font-weight:bold;">Theo Giờ</button>
+                                <button type="button" onclick="changeGanttMode('Day')"
+                                    style="padding:4px 10px; border:1px solid #ccc; border-radius:4px; font-size:11.5px; cursor:pointer; background:#fff; color:#333; font-weight:bold;">Theo Ngày</button>
+                            </div>
+                        </div>
+                        <div id="schedule-gantt-target" style="overflow-x:auto;"></div>
+                    </div>
 
                     <div id="sched-pagination-container"></div>
 
-
-
                     <div
-                        style="flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 10px; background: #ecf0f1; border-top: 2px solid #27ae60; border-radius: 0 0 8px 8px;">
+                        style="flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 10px; background: #ecf0f1; border-top: 2px solid #27ae60; border-radius: 0 0 8px 8px; flex-wrap:wrap;">
 
-
-
-                        <label style="font-weight:bold; color:#2c3e50; font-size:13px; margin-bottom:0;">Ngày xếp
-
-                            lịch:</label>
-
+                        <label style="font-weight:bold; color:#2c3e50; font-size:13px; margin-bottom:0;">Ngày xếp lịch:</label>
                         <input type="date" id="schedule-date"
                             style="padding:4px 8px; border-radius:4px; border:1px solid #ccc; font-size:13px; outline:none; height:32px; box-sizing:border-box;">
-
-
 
                         <button id="btn-run-sched" class="btn-success" onclick="runScheduling()"
                             style="height:32px; padding:0 15px; background:#008b02;">CHẠY XẾP LỊCH TỔNG</button>
@@ -1540,14 +1509,13 @@
                         <button class="btn-success" onclick="exportSchedule()"
                             style="height:32px; padding:0 15px; background:#16a085;">XUẤT LỊCH Y LỆNH</button>
 
-                        <button class="btn-primary" onclick="printSchedule()" style="height:32px; padding:0 15px;">🖨 IN
+                        <button class="btn-primary" onclick="exportSchedulePDF()"
+                            style="height:32px; padding:0 15px; background:#c0392b; border-color:#c0392b; color:#fff;" title="Xuất file PDF chuẩn A4/A5 in ấn đẹp mắt">📄 XUẤT PDF</button>
 
-                            LỊCH</button>
+                        <button class="btn-primary" onclick="printSchedule()" style="height:32px; padding:0 15px;">🖨 IN LỊCH</button>
 
                         <button id="btn-chot-so" class="btn-purple" onclick="callChotSo()"
                             style="height:32px; padding:0 15px;">CHỐT SỔ & SANG NGÀY MỚI</button>
-
-
 
                     </div>
 
@@ -2926,9 +2894,9 @@
 
                     <h4><span class="f-icon">⚙️</span> <span>THÔNG TIN HỆ THỐNG</span></h4>
 
-                    <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.2.0</span></p>
+                    <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.2.1</span></p>
 
-                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 13:42 27/08/2026</span></p>
+                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 15:30 27/08/2026</span></p>
 
                     <p><span class="f-icon">👨‍💻</span> <span>Thiết kế & Phát triển: <b>Bác sĩ Thái</b></span></p>
 
@@ -3270,18 +3238,18 @@
     <div id="sidebar-tooltip"></div>
 
     <!-- JavaScript Modules -->
-    <script src="js/offline-sync-engine.js?v=3.2.0"></script>
-    <script src="js/scheduler-engine.js?v=3.2.0"></script>
-    <script src="js/app.js?v=3.2.0"></script>
-    <script src="js/init.js?v=3.2.0"></script>
-    <script src="js/sync.js?v=3.2.0"></script>
-    <script src="js/thongke.js?v=3.2.0"></script>
+    <script src="js/offline-sync-engine.js?v=3.2.1"></script>
+    <script src="js/scheduler-engine.js?v=3.2.1"></script>
+    <script src="js/app.js?v=3.2.1"></script>
+    <script src="js/init.js?v=3.2.1"></script>
+    <script src="js/sync.js?v=3.2.1"></script>
+    <script src="js/thongke.js?v=3.2.1"></script>
 
     <!-- PWA Service Worker Registration -->
     <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=3.2.0')
+            navigator.serviceWorker.register('./sw.js?v=3.2.1')
                 .then(reg => console.log('[PWA] Service Worker đăng ký thành công! Scope:', reg.scope))
                 .catch(err => console.warn('[PWA] Service Worker đăng ký thất bại:', err));
         });

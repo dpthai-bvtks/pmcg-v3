@@ -5286,6 +5286,242 @@ window.renderSttOrderControl = function (type, i, total) {
 
         }
 
+        // ============================================================
+        // 📄 XUẤT PDF CHUẨN A4/A5 (PDFMAKE ENGINE)
+        // ============================================================
+        function exportSchedulePDF() {
+            if (typeof pdfMake === 'undefined') {
+                return alert("Thư viện pdfmake đang được nạp, vui lòng thử lại sau 1-2 giây!");
+            }
+
+            const safeSched = (window.currentScheduleData || []).map(normalizeScheduleRow).filter(r => !isDroppedScheduleRow(r));
+            const activeDateVal = (document.getElementById('schedule-date')?.value) || (safeSched[0]?.ngay) || '';
+            let displayDate = activeDateVal ? activeDateVal.split('-').reverse().join('/') : new Date().toLocaleDateString('vi-VN');
+
+            if (!safeSched.length) {
+                return alert("Chưa có dữ liệu lịch trình để xuất PDF!");
+            }
+
+            const sorted = [...safeSched].sort((a, b) => {
+                const pA = String(a.phong || '').trim().toLowerCase();
+                const pB = String(b.phong || '').trim().toLowerCase();
+                if (pA !== pB) return pA.localeCompare(pB, 'vi');
+                const tA = String(a.tenBN || '').trim().toLowerCase();
+                const tB = String(b.tenBN || '').trim().toLowerCase();
+                if (tA !== tB) return tA.localeCompare(tB, 'vi');
+                return String(a.gioDienRa || '').localeCompare(String(b.gioDienRa || ''));
+            });
+
+            const bodyTable = [
+                [
+                    { text: 'STT', style: 'tableHeader', alignment: 'center' },
+                    { text: 'Tên Bệnh Nhân', style: 'tableHeader' },
+                    { text: 'Năm Sinh', style: 'tableHeader', alignment: 'center' },
+                    { text: 'Phòng', style: 'tableHeader', alignment: 'center' },
+                    { text: 'Thủ Thuật', style: 'tableHeader' },
+                    { text: 'Bắt Đầu', style: 'tableHeader', alignment: 'center' },
+                    { text: 'Kết Thúc', style: 'tableHeader', alignment: 'center' },
+                    { text: 'KTV / Bác Sĩ', style: 'tableHeader' },
+                    { text: 'Máy / Giường', style: 'tableHeader' }
+                ]
+            ];
+
+            sorted.forEach((row, idx) => {
+                let tenBN = String(row.tenBN || '').trim();
+                if (row.__isDischarged) tenBN += ' (RV)';
+
+                bodyTable.push([
+                    { text: String(idx + 1), alignment: 'center', fontSize: 9 },
+                    { text: tenBN, bold: true, fontSize: 9.5 },
+                    { text: String(row.namSinh || ''), alignment: 'center', fontSize: 9 },
+                    { text: String(row.phong || ''), alignment: 'center', fontSize: 9 },
+                    { text: String(row.thuThuat || ''), fontSize: 9 },
+                    { text: String(row.gioDienRa || ''), alignment: 'center', bold: true, color: '#16a085', fontSize: 9 },
+                    { text: String(row.gioKetThuc || ''), alignment: 'center', fontSize: 9 },
+                    { text: String(row.nvChinh || ''), bold: true, fontSize: 9 },
+                    { text: `${row.may || ''} ${row.giuong ? '(' + row.giuong + ')' : ''}`.trim(), fontSize: 8.5 }
+                ]);
+            });
+
+            const docDefinition = {
+                pageSize: 'A4',
+                pageOrientation: 'landscape',
+                pageMargins: [20, 25, 20, 25],
+                content: [
+                    {
+                        columns: [
+                            {
+                                width: '*',
+                                text: [
+                                    { text: 'BỆNH VIỆN THAN - KHOÁNG SẢN CS2\n', bold: true, fontSize: 10 },
+                                    { text: 'KHOA YHCT - PHỤC HỒI CHỨC NĂNG\n', bold: true, fontSize: 11, color: '#1e3d2b' }
+                                ]
+                            },
+                            {
+                                width: 'auto',
+                                text: [
+                                    { text: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\n', bold: true, fontSize: 10 },
+                                    { text: 'Độc lập - Tự do - Hạnh phúc\n', italic: true, fontSize: 9.5 }
+                                ],
+                                alignment: 'center'
+                            }
+                        ]
+                    },
+                    { text: `\nBẢNG LỊCH TRÌNH THỰC HIỆN THỦ THUẬT ĐIỀU TRỊ`, style: 'mainHeader', alignment: 'center' },
+                    { text: `Ngày thực hiện: ${displayDate}\n\n`, style: 'subHeader', alignment: 'center' },
+                    {
+                        table: {
+                            headerRows: 1,
+                            widths: [25, 130, 45, 45, 135, 45, 45, 110, '*'],
+                            body: bodyTable
+                        },
+                        layout: {
+                            fillColor: function (rowIndex) {
+                                return (rowIndex === 0) ? '#e8f8f5' : (rowIndex % 2 === 0 ? '#fcfcfc' : null);
+                            },
+                            hLineWidth: () => 0.5,
+                            vLineWidth: () => 0.5,
+                            hLineColor: () => '#bdc3c7',
+                            vLineColor: () => '#bdc3c7'
+                        }
+                    },
+                    {
+                        columns: [
+                            { text: `\nTổng số ca: ${sorted.length} ca thủ thuật`, italic: true, fontSize: 9.5 },
+                            { text: `\nQuảng Ninh, ngày ${displayDate}\nBÁC SĨ PHỤ TRÁCH KHOA\n\n\n\n(Ký và ghi rõ họ tên)`, alignment: 'right', bold: true, fontSize: 9.5 }
+                        ]
+                    }
+                ],
+                styles: {
+                    mainHeader: { fontSize: 14, bold: true, color: '#1e3d2b' },
+                    subHeader: { fontSize: 10, italic: true, color: '#555' },
+                    tableHeader: { bold: true, fontSize: 9.5, color: '#1e3d2b' }
+                },
+                defaultStyle: {
+                    font: 'Roboto'
+                }
+            };
+
+            try {
+                pdfMake.createPdf(docDefinition).download(`Lich_ThuThuat_${displayDate.replace(/\//g, '-')}.pdf`);
+                if (typeof showToast === 'function') showToast("📄 Đang tải file PDF lịch trình...");
+            } catch (e) {
+                console.error("Lỗi xuất PDF:", e);
+                alert("Lỗi xuất PDF: " + e.message);
+            }
+        }
+        window.exportSchedulePDF = exportSchedulePDF;
+
+        // ============================================================
+        // ⏱️ CHẾ ĐỘ XEM TIMELINE (FRAPPE GANTT ENGINE)
+        // ============================================================
+        let currentGanttInstance = null;
+        let currentGanttViewMode = 'Day';
+
+        function toggleScheduleViewMode(mode) {
+            const tableWrap = document.querySelector('.schedule-table-wrap');
+            const ganttWrap = document.getElementById('schedule-gantt-wrap');
+            const btnTable = document.getElementById('btn-view-table');
+            const btnGantt = document.getElementById('btn-view-gantt');
+
+            if (mode === 'gantt') {
+                if (tableWrap) tableWrap.style.display = 'none';
+                if (ganttWrap) ganttWrap.style.display = 'block';
+                if (btnTable) { btnTable.className = 'btn-secondary'; }
+                if (btnGantt) { btnGantt.className = 'btn-success'; }
+                renderScheduleGanttTimeline(currentGanttViewMode);
+            } else {
+                if (tableWrap) tableWrap.style.display = 'block';
+                if (ganttWrap) ganttWrap.style.display = 'none';
+                if (btnTable) { btnTable.className = 'btn-success'; }
+                if (btnGantt) { btnGantt.className = 'btn-secondary'; }
+            }
+        }
+        window.toggleScheduleViewMode = toggleScheduleViewMode;
+
+        function changeGanttMode(mode) {
+            currentGanttViewMode = mode;
+            renderScheduleGanttTimeline(mode);
+        }
+        window.changeGanttMode = changeGanttMode;
+
+        function renderScheduleGanttTimeline(viewMode = 'Day') {
+            const target = document.getElementById('schedule-gantt-target');
+            if (!target) return;
+
+            if (typeof Gantt === 'undefined') {
+                target.innerHTML = `<div style="padding:30px; text-align:center; color:#7f8c8d;">⏳ Đang tải thư viện Timeline Gantt...</div>`;
+                return;
+            }
+
+            const sched = (window.currentScheduleData || []).map(normalizeScheduleRow).filter(r => !isDroppedScheduleRow(r));
+            if (!sched.length) {
+                target.innerHTML = `<div style="padding:40px; text-align:center; color:#95a5a6; font-size:14px;">📭 Chưa có lịch trình. Vui lòng bấm <b>"CHẠY XẾP LỊCH TỔNG"</b> để xem Timeline.</div>`;
+                return;
+            }
+
+            const activeDateVal = (document.getElementById('schedule-date')?.value) || (sched[0]?.ngay) || new Date().toISOString().slice(0, 10);
+            const dateParts = activeDateVal.split('-').map(Number);
+            const y = dateParts[0] || 2026;
+            const m = dateParts[1] || 8;
+            const d = dateParts[2] || 27;
+
+            const tasks = sched.slice(0, 100).map((row, idx) => {
+                let startH = 7, startM = 30;
+                let endH = 8, endM = 0;
+                if (row.gioDienRa && row.gioDienRa.includes(':')) {
+                    const p = row.gioDienRa.split(':');
+                    startH = parseInt(p[0], 10) || 7;
+                    startM = parseInt(p[1], 10) || 0;
+                }
+                if (row.gioKetThuc && row.gioKetThuc.includes(':')) {
+                    const p = row.gioKetThuc.split(':');
+                    endH = parseInt(p[0], 10) || 8;
+                    endM = parseInt(p[1], 10) || 0;
+                }
+
+                const startDate = new Date(y, m - 1, d, startH, startM, 0);
+                const endDate = new Date(y, m - 1, d, endH, endM, 0);
+
+                return {
+                    id: `task_${idx}`,
+                    name: `${row.tenBN} - ${row.thuThuat} (${row.nvChinh || ''})`,
+                    start: `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')} ${String(startH).padStart(2,'0')}:${String(startM).padStart(2,'0')}:00`,
+                    end: `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')} ${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}:00`,
+                    progress: 100,
+                    dependencies: '',
+                    custom_class: (idx % 2 === 0 ? 'bar-ktv-a' : 'bar-ktv-b')
+                };
+            });
+
+            target.innerHTML = '';
+            try {
+                currentGanttInstance = new Gantt('#schedule-gantt-target', tasks, {
+                    header_height: 45,
+                    column_width: 30,
+                    step: 24,
+                    bar_height: 25,
+                    bar_corner_radius: 4,
+                    arrow_curve: 5,
+                    padding: 18,
+                    view_mode: 'Quarter Day',
+                    date_format: 'YYYY-MM-DD',
+                    custom_popup_html: function (task) {
+                        return `
+                            <div style="padding: 10px; font-size: 12px; min-width: 180px;">
+                                <h5 style="margin: 0 0 5px 0; color: #1e3d2b;">${task.name}</h5>
+                                <p style="margin: 0; color: #555;">⏱️ ${task.start} ➔ ${task.end}</p>
+                            </div>
+                        `;
+                    }
+                });
+            } catch (err) {
+                console.warn('[Gantt render error]:', err);
+                target.innerHTML = `<div style="padding:20px; color:#e74c3c;">Lỗi vẽ Timeline: ${err.message}</div>`;
+            }
+        }
+        window.renderScheduleGanttTimeline = renderScheduleGanttTimeline;
+
 
 
         function importScheduleFile() {

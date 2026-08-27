@@ -810,10 +810,11 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
      - Tự động xử lý Global CORS Middleware, kiểm soát phương thức OPTIONS và lỗi bất đồng bộ.
      - Hỗ trợ song song cả Legacy Bridge (`POST /` & `POST /api/action` với `{ action, args }`) lẫn RESTful endpoints (`GET /api/ping`, `GET /api/bootstrap`).
   3. **Thiết Kế Lại Giao Diện Dòng Thời Gian Y Tế Sang Trọng (Medical Resource Timeline)**:
-     - Xây dựng giao diện Timeline chuẩn phòng khám/bệnh viện: Cột cố định hiển thị từng **Phòng Điều Trị 🏥** hoặc từng **Bác sĩ / KTV 👨‍⚕️**.
+     - **Khắc phục triệt để lỗi thẻ bị dồn cục ở 07:30**: Chuyển đổi layout từ table sang cấu trúc Flexbox/Canvas với chiều rộng pixel tuyệt đối (95px/slot 30 phút).
+     - **Thuật toán Multi-lane Packing chống đè thẻ**: Tự động xếp các ca trùng giờ của cùng 1 bác sĩ / phòng vào các làn (Lanes) riêng biệt, đảm bảo hiển thị trải dài 100% chính xác từ 07:30 đến 16:30.
+     - Cột cố định hiển thị từng **Phòng Điều Trị 🏥** hoặc từng **Bác sĩ / KTV 👨‍⚕️**.
      - Thẻ ca thủ thuật (Cards) theo chuẩn gradient YHCT (Xanh ngọc), PHCN (Xanh sapphire) và Bệnh nhân Ra viện (Tím hoàng gia `✔ RV`).
      - Hỗ trợ lọc linh hoạt: Theo Phòng / Theo Nhân viên, và xem theo Ca Sáng / Ca Chiều / Cả Ngày.
-     - Tooltip tương tác hiển thị chi tiết bệnh nhân, thủ thuật, máy móc, giường và nhân viên phụ trách khi rê chuột.
   4. **Nâng Cấp Trình Xuất PDF Chuẩn Y Tế Phân Trang Theo Từng Phòng Bệnh**:
      - Tự động phân chia mỗi phòng bệnh trên 1-2 trang riêng biệt (`pageBreak: 'before'`).
      - **Ưu tiên đưa toàn bộ Bệnh nhân Ra Viện (`__isDischarged`) lên đầu tiên** của từng phòng, có nhãn `(✔ RA VIỆN)` và màu sắc nổi bật.

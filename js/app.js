@@ -5555,17 +5555,71 @@ window.renderSttOrderControl = function (type, i, total) {
                 });
             }
 
-            // Định nghĩa các khung giờ dựa trên timelineShift
-            let timeSlots = [];
+            // Cấu hình khung giờ và độ rộng mỗi slot (30 phút)
+            let slotTicks = [];
+            let slotWidth = 95; // px mỗi 30 phút
+            let morningSlotCount = 8; // 07:30, 08:00, 08:30, 09:00, 09:30, 10:00, 10:30, 11:00 (kết thúc 11:30)
+            let afternoonSlotCount = 7; // 13:00, 13:30, 14:00, 14:30, 15:00, 15:30, 16:00 (kết thúc 16:30)
+            let totalCanvasWidth = 0;
+
             if (timelineShift === 'morning') {
-                timeSlots = ['07:30', '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30'];
+                slotTicks = ['07:30', '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00'];
+                slotWidth = 130;
+                totalCanvasWidth = slotTicks.length * slotWidth;
             } else if (timelineShift === 'afternoon') {
-                timeSlots = ['13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'];
+                slotTicks = ['13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00'];
+                slotWidth = 140;
+                totalCanvasWidth = slotTicks.length * slotWidth;
             } else {
-                timeSlots = ['07:30', '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'];
+                slotTicks = ['07:30', '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00'];
+                slotWidth = 95;
+                totalCanvasWidth = slotTicks.length * slotWidth;
             }
 
-            // Gom nhóm theo Phòng hoặc theo KTV
+            // Hàm chuyển đổi giờ HH:MM sang phút
+            function timeToMinutes(tStr) {
+                if (!tStr || !tStr.includes(':')) return 0;
+                const p = tStr.split(':');
+                return (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0);
+            }
+
+            // Hàm tính toán pixel Left và Width chính xác
+            function calcCardPixel(startMin, endMin) {
+                if (timelineShift === 'morning') {
+                    if (startMin >= 690 || endMin <= 450) return null;
+                    const s = Math.max(450, startMin);
+                    const e = Math.min(690, endMin);
+                    const left = ((s - 450) / 30) * slotWidth;
+                    const width = Math.max(65, ((e - s) / 30) * slotWidth - 3);
+                    return { left, width };
+                } else if (timelineShift === 'afternoon') {
+                    if (startMin >= 990 || endMin <= 780) return null;
+                    const s = Math.max(780, startMin);
+                    const e = Math.min(990, endMin);
+                    const left = ((s - 780) / 30) * slotWidth;
+                    const width = Math.max(65, ((e - s) / 30) * slotWidth - 3);
+                    return { left, width };
+                } else {
+                    // Cả ngày
+                    if (startMin < 690) {
+                        const s = Math.max(450, startMin);
+                        const e = Math.min(690, endMin);
+                        const left = ((s - 450) / 30) * slotWidth;
+                        const width = Math.max(55, ((e - s) / 30) * slotWidth - 3);
+                        return { left, width };
+                    } else if (startMin >= 750) {
+                        const s = Math.max(780, startMin);
+                        const e = Math.min(990, endMin);
+                        const morningWidth = morningSlotCount * slotWidth;
+                        const left = morningWidth + ((s - 780) / 30) * slotWidth;
+                        const width = Math.max(55, ((e - s) / 30) * slotWidth - 3);
+                        return { left, width };
+                    }
+                    return null;
+                }
+            }
+
+            // Gom nhóm theo Phòng hoặc Nhân Viên
             const groups = {};
             schedData.forEach(row => {
                 let key = '';
@@ -5580,134 +5634,122 @@ window.renderSttOrderControl = function (type, i, total) {
 
             const groupKeys = Object.keys(groups).sort((a, b) => a.localeCompare(b, 'vi', { numeric: true }));
 
-            // Hàm chuyển đổi giờ HH:MM sang phút
-            function timeToMinutes(tStr) {
-                if (!tStr || !tStr.includes(':')) return 0;
-                const p = tStr.split(':');
-                return (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0);
-            }
-
-            // Hàm tính toán vị trí Left (%) và Width (%)
-            function calcPosition(startMin, endMin) {
-                if (timelineShift === 'morning') {
-                    // 07:30 (450) -> 11:30 (690) = 240 mins
-                    if (startMin >= 690 || endMin <= 450) return null; // Ngoài ca sáng
-                    const s = Math.max(450, startMin);
-                    const e = Math.min(690, endMin);
-                    const left = ((s - 450) / 240) * 100;
-                    const width = Math.max(3.5, ((e - s) / 240) * 100);
-                    return { left, width };
-                } else if (timelineShift === 'afternoon') {
-                    // 13:00 (780) -> 16:30 (990) = 210 mins
-                    if (startMin >= 990 || endMin <= 780) return null; // Ngoài ca chiều
-                    const s = Math.max(780, startMin);
-                    const e = Math.min(990, endMin);
-                    const left = ((s - 780) / 210) * 100;
-                    const width = Math.max(3.5, ((e - s) / 210) * 100);
-                    return { left, width };
-                } else {
-                    // Cả ngày: Sáng (450->690 = 240m, 0%->50%) và Chiều (780->990 = 210m, 50%->100%)
-                    if (startMin < 690) {
-                        const s = Math.max(450, startMin);
-                        const e = Math.min(690, endMin);
-                        const left = ((s - 450) / 240) * 50;
-                        const width = Math.max(2.5, ((e - s) / 240) * 50);
-                        return { left, width };
-                    } else if (startMin >= 750) {
-                        const s = Math.max(780, startMin);
-                        const e = Math.min(990, endMin);
-                        const left = 50 + ((s - 780) / 210) * 50;
-                        const width = Math.max(2.5, ((e - s) / 210) * 50);
-                        return { left, width };
-                    }
-                    return null;
-                }
-            }
-
             // Xây dựng Header Bảng
             let html = `
-                <div class="timeline-grid-table">
-                    <div class="timeline-header-row">
-                        <div class="timeline-corner-cell">
+                <div class="timeline-board">
+                    <div class="timeline-board-header">
+                        <div class="timeline-res-col-hdr">
                             ${timelineGroupBy === 'room' ? '🏥 PHÒNG / GIƯỜNG' : '👨‍⚕️ NHÂN SỰ / KTV'}
                         </div>
+                        <div class="timeline-slots-hdr" style="width: ${totalCanvasWidth}px;">
             `;
 
-            timeSlots.forEach(slot => {
-                html += `<div class="timeline-time-header">${slot}</div>`;
+            slotTicks.forEach(tick => {
+                html += `<div class="timeline-slot-tick" style="width: ${slotWidth}px; min-width: ${slotWidth}px;">${tick}</div>`;
             });
 
-            html += `</div>`; // Đóng header-row
+            html += `</div></div>`; // Đóng timeline-slots-hdr và timeline-board-header
 
-            // Xây dựng các hàng dữ liệu
+            // Xây dựng từng hàng dữ liệu với thuật toán xếp Lane
             groupKeys.forEach(gKey => {
                 const rows = groups[gKey];
                 const rvCount = rows.filter(r => r.__isDischarged).length;
 
+                // Sắp xếp các ca theo giờ bắt đầu tăng dần
+                rows.sort((a, b) => timeToMinutes(a.gioDienRa) - timeToMinutes(b.gioDienRa));
+
+                // Thuật toán Lane Packing chống đè thẻ
+                const lanes = [];
+                const packedCards = [];
+
+                rows.forEach(row => {
+                    const sMin = timeToMinutes(row.gioDienRa);
+                    const eMin = timeToMinutes(row.gioKetThuc);
+                    if (!sMin || !eMin) return;
+
+                    const pos = calcCardPixel(sMin, eMin);
+                    if (!pos) return;
+
+                    let assignedLane = -1;
+                    for (let l = 0; l < lanes.length; l++) {
+                        if (lanes[l] <= sMin) {
+                            assignedLane = l;
+                            lanes[l] = eMin;
+                            break;
+                        }
+                    }
+                    if (assignedLane === -1) {
+                        assignedLane = lanes.length;
+                        lanes.push(eMin);
+                    }
+
+                    packedCards.push({
+                        row,
+                        left: pos.left,
+                        width: pos.width,
+                        lane: assignedLane
+                    });
+                });
+
+                const totalLanes = Math.max(1, lanes.length);
+                const trackHeight = totalLanes * 40 + 8;
+
                 html += `
-                    <div class="timeline-row">
-                        <div class="timeline-resource-header">
-                            <div class="timeline-resource-name">${timelineGroupBy === 'room' ? '🏥 ' : '👨‍⚕️ '}${gKey}</div>
+                    <div class="timeline-board-row">
+                        <div class="timeline-res-side">
+                            <div class="timeline-resource-name" title="${gKey}">${timelineGroupBy === 'room' ? '🏥 ' : '👨‍⚕️ '}${gKey}</div>
                             <div style="display:flex; gap:4px; flex-wrap:wrap;">
-                                <span class="timeline-resource-badge">${rows.length} ca</span>
+                                <span class="timeline-resource-badge">${packedCards.length} ca</span>
                                 ${rvCount > 0 ? `<span class="timeline-resource-badge" style="background:#f5eef8; color:#7c3aed; font-weight:700;">${rvCount} RV</span>` : ''}
                             </div>
                         </div>
-                        <div class="timeline-track-cell" colspan="${timeSlots.length}">
+                        <div class="timeline-track-canvas" style="width: ${totalCanvasWidth}px; min-width: ${totalCanvasWidth}px; height: ${trackHeight}px;">
                             <div class="timeline-grid-lines">
                 `;
 
-                for (let i = 0; i < timeSlots.length; i++) {
-                    html += `<div class="timeline-grid-line"></div>`;
+                // Vạch kẻ dọc mỗi 30 phút
+                slotTicks.forEach(() => {
+                    html += `<div class="timeline-grid-tick-line" style="width: ${slotWidth}px; min-width: ${slotWidth}px;"></div>`;
+                });
+
+                html += `</div>`; // Đóng timeline-grid-lines
+
+                // Đường phân cách giờ nghỉ trưa (nếu xem cả ngày)
+                if (timelineShift === 'all') {
+                    const morningBoundary = morningSlotCount * slotWidth;
+                    html += `<div class="timeline-lunch-divider" style="left: ${morningBoundary}px;" title="Nghỉ trưa (11:30 - 13:00)"></div>`;
                 }
 
-                html += `
-                            </div>
-                            <div class="timeline-events-container">
-                `;
-
-                rows.forEach((row) => {
-                    const startMin = timeToMinutes(row.gioDienRa);
-                    const endMin = timeToMinutes(row.gioKetThuc);
-                    if (!startMin || !endMin) return;
-
-                    const pos = calcPosition(startMin, endMin);
-                    if (!pos) return;
-
-                    const isRV = !!row.__isDischarged;
-                    const isYHCT = String(row.thuThuat || '').toLowerCase().includes('châm') || String(row.thuThuat || '').toLowerCase().includes('xoa bóp') || String(row.thuThuat || '').toLowerCase().includes('cấy chỉ') || String(row.thuThuat || '').toLowerCase().includes('giác');
+                // Render từng Card với tọa độ Left, Width và Top (theo Lane)
+                packedCards.forEach(item => {
+                    const r = item.row;
+                    const topPx = 4 + item.lane * 40;
+                    const isRV = !!r.__isDischarged;
+                    const isYHCT = String(r.thuThuat || '').toLowerCase().includes('châm') || String(r.thuThuat || '').toLowerCase().includes('xoa bóp') || String(r.thuThuat || '').toLowerCase().includes('cấy chỉ') || String(r.thuThuat || '').toLowerCase().includes('giác');
                     
                     let cardClass = isRV ? 'timeline-card-rv' : (isYHCT ? 'timeline-card-yhct' : 'timeline-card-phcn');
 
-                    const tooltipText = `Bệnh nhân: ${row.tenBN} (${row.namSinh || ''})&#10;Thủ thuật: ${row.thuThuat}&#10;Thời gian: ${row.gioDienRa} - ${row.gioKetThuc}&#10;Phòng: ${row.phong || ''} | Giường: ${row.giuong || ''}&#10;KTV: ${row.nvChinh || ''} ${row.nvPhu ? '(Phụ: ' + row.nvPhu + ')' : ''}&#10;Máy: ${row.may || ''}`;
+                    const tooltipText = `Bệnh nhân: ${r.tenBN} (${r.namSinh || ''})&#10;Thủ thuật: ${r.thuThuat}&#10;Thời gian: ${r.gioDienRa} - ${r.gioKetThuc}&#10;Phòng: ${r.phong || ''} | Giường: ${r.giuong || ''}&#10;KTV: ${r.nvChinh || ''} ${r.nvPhu ? '(Phụ: ' + r.nvPhu + ')' : ''}&#10;Máy: ${r.may || ''}`;
 
                     html += `
                         <div class="timeline-card ${cardClass}" 
-                             style="left: ${pos.left}%; width: ${pos.width}%;"
+                             style="left: ${item.left}px; width: ${item.width}px; top: ${topPx}px;"
                              title="${tooltipText}">
                             <div class="timeline-card-title">
-                                <span style="overflow:hidden; text-overflow:ellipsis;">${row.tenBN}</span>
+                                <span style="overflow:hidden; text-overflow:ellipsis;">${r.tenBN}</span>
                                 ${isRV ? '<span class="rv-badge">RV</span>' : ''}
                             </div>
                             <div class="timeline-card-sub">
-                                <span>${row.thuThuat}</span>
-                                ${row.giuong ? `<span style="opacity:0.85;"> • G.${row.giuong}</span>` : ''}
-                            </div>
-                            <div class="timeline-card-time">
-                                ⏱️ ${row.gioDienRa}-${row.gioKetThuc} • ${timelineGroupBy === 'room' ? (row.nvChinh || '') : (row.phong || '')}
+                                <span>${r.thuThuat} • ${r.gioDienRa}-${r.gioKetThuc}${r.giuong ? ' • G.' + r.giuong : ''}</span>
                             </div>
                         </div>
                     `;
                 });
 
-                html += `
-                            </div>
-                        </div>
-                    </div>
-                `;
+                html += `</div></div>`; // Đóng timeline-track-canvas và timeline-board-row
             });
 
-            html += `</div>`; // Đóng timeline-grid-table
+            html += `</div>`; // Đóng timeline-board
             target.innerHTML = html;
         }
         window.renderScheduleGanttTimeline = renderScheduleGanttTimeline;

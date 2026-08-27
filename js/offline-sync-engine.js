@@ -78,7 +78,7 @@ window.OfflineSyncEngine = (function () {
           pat: cache.pat || [],
           staff: cache.staff || [],
           machines: cache.machines || cache.machine || [],
-          rooms: cache.rooms || [],
+          rooms: cache.rooms || cache.room || [],
           procedures: cache.procedures || cache.proc || [],
           schedule: cache.schedule || window.currentScheduleData || [],
           unscheduled: window.lastUnscheduledData || []
@@ -117,9 +117,12 @@ window.OfflineSyncEngine = (function () {
         if (!window.dataCache) window.dataCache = {};
         window.dataCache.pat = d.pat || [];
         window.dataCache.staff = d.staff || [];
-        window.dataCache.machines = d.machines || [];
-        window.dataCache.rooms = d.rooms || [];
-        window.dataCache.procedures = d.procedures || [];
+        window.dataCache.machine = d.machines || d.machine || [];
+        window.dataCache.machines = window.dataCache.machine;
+        window.dataCache.room = d.rooms || d.room || [];
+        window.dataCache.rooms = window.dataCache.room;
+        window.dataCache.proc = d.procedures || d.proc || [];
+        window.dataCache.procedures = window.dataCache.proc;
         window.dataCache.schedule = d.schedule || [];
         window.currentScheduleData = d.schedule || [];
         window.lastUnscheduledData = d.unscheduled || [];

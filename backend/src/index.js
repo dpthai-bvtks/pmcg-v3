@@ -486,7 +486,21 @@ async function handleApiAction(action, args, env, request, ctx) {
         case "getMayMoc":
     case "getDanhSachMay": {
       const res = await db.prepare("SELECT * FROM may_moc ORDER BY order_idx ASC, id ASC").all();
-      const list = (res.results || []).map((m, i) => [i + 1, m.ten_loai, m.ma_may, m.trang_thai]);
+      const list = (res.results || []).map((m, i) => ({
+        id: m.id,
+        tenLoai: m.ten_loai,
+        maMay: m.ma_may,
+        trangThai: m.trang_thai,
+        ten_loai: m.ten_loai,
+        ma_may: m.ma_may,
+        trang_thai: m.trang_thai,
+        name: m.ma_may,
+        ten: m.ma_may,
+        0: i + 1,
+        1: m.ten_loai,
+        2: m.ma_may,
+        3: m.trang_thai
+      }));
       return success(list);
     }
 

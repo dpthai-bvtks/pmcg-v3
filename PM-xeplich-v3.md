@@ -781,17 +781,22 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
      - Loại bỏ hoàn toàn các lỗi 400 / 500 khi nạp Dashboard, Bảng chấm công và Quản trị hệ thống.
   4. **Đồng bộ nội dung Hướng Dẫn Sử Dụng**:
      - Đồng bộ toàn bộ nội dung hướng dẫn sử dụng 12 chương vào cả `hdsd.html` và `huong-dan-su-dung.html`, giúp người dùng truy cập bất kỳ URL nào cũng mở trực tiếp tức thì không qua redirect.
-### Cập nhật 27/08/2026 (v3.2.0)
-- **Chuẩn hóa hiển thị cột "Rút Máy" và "Người Phụ" trong Danh Mục Thủ Thuật**:
-  1. **Khắc phục hiển thị số 1 và 0**:
-     - Cột "Rút Máy" và "Người Phụ" tại bảng danh sách thủ thuật (`#procedures-list`) được chuẩn hóa hiển thị chữ `"Có"` hoặc `"Không"` rõ ràng, trực quan thay vì hiển thị dạng số `1` và `0`.
-  2. **Đồng bộ logic Backend D1 & Frontend**:
-     - Cập nhật mapping dữ liệu tại `backend/src/index.js` (`/api/bootstrap` và `getThuThuat`) để trả về `"Có"` / `"Không"` tương thích chuẩn từ dữ liệu số nguyên trong D1 database.
-     - Cập nhật hàm `editProc(index)` tại `js/app.js` để tự động tick chính xác 2 checkbox "Có Điều dưỡng rút/tháo máy" và "Yêu cầu kíp (1 Chính + 1 Phụ)" khi bấm sửa thủ thuật từ mọi nguồn dữ liệu (chuỗi "Có", số 1, chuỗi "1", boolean true).
-     - Cập nhật hàm xếp lịch `js/scheduler-engine.js` tương thích hoàn hảo với cả hai định dạng ("Có"/"Không" và 1/0).
-  3. **Đồng bộ phiên bản v3.2.0 & Thời gian cập nhật**:
-     - Nâng số phiên bản toàn hệ thống lên `3.2.0` cho ngày mới 27/08/2026.
-     - Đồng bộ toàn bộ tài nguyên `css` & `js` trên `index.html`, `sw.js` sang phiên bản `v=3.2.0`.
-     - Cập nhật ngày giờ Footer: `07:30 27/08/2026`.
-- **File sửa đổi**: `index.html`, `js/app.js`, `js/scheduler-engine.js`, `backend/src/index.js`, `sw.js`, `css/mobile.css`, `PM-xeplich-v3.md` (v3.2.0).
+### Cập nhật 27/08/2026 (v3.2.0 - Lần 2)
+- **Khắc phục triệt để lỗi ô điền số lượng máy móc trong tab Phòng chuyển sang `undefined`**:
+  1. **Nguyên nhân phát hiện**:
+     - Khi đồng bộ nền hoặc gọi `loadMachines()` / `getDanhSachMay`, dữ liệu máy móc trả về dạng mảng `[STT, ten_loai, ma_may, trang_thai]`.
+     - Hàm `renderDynamicMachineInputs()` trước đó truy xuất trực tiếp `m.tenLoai` mà không hỗ trợ mảng `m[1]` hoặc `m.ten_loai`. Với mảng, `m.tenLoai` là `undefined`, khi bọc `String(undefined)` thành chuỗi `"undefined"` và vượt qua bộ lọc `filter(t => t !== '')`, dẫn đến render ra ô nhập liệu có nhãn `undefined: [____]`.
+     - Hàm `editRoom()` và `saveRoom()` cũng bị lỗi tìm kiếm mã máy `m.maMay === code` khi `m` là mảng.
+  2. **Giải pháp xử lý**:
+     - **`js/app.js` (`renderDynamicMachineInputs`)**: Bóc tách an toàn `m.tenLoai || m.ten_loai || m[1] || m.ten || m.name`, lọc bỏ triệt để chuỗi rác `"undefined"`, `"null"`, tự động hiển thị thông báo khi kho chưa có máy và mã hóa an toàn HTML `escapeHtml`.
+     - **`js/app.js` (`loadFromSheets`)**: Chuẩn hóa toàn bộ máy về object đồng nhất có đầy đủ `tenLoai`, `maMay`, `trangThai` cùng các alias dự phòng.
+     - **`js/app.js` (`editRoom` & `saveRoom`)**: Đảm bảo `renderDynamicMachineInputs()` luôn được gọi trước khi điền dữ liệu; kiểm tra an toàn mã máy `maMay` và loại máy `tenLoai` bất kể dạng dữ liệu.
+     - **`js/app.js` (`editRoomMachine` & `timMayRanh`)**: Khắc phục lỗi tiềm ẩn khi đọc dữ liệu máy dạng mảng hoặc thiếu thuộc tính.
+     - **Bổ sung sự kiện chuyển tab**: Tự động làm mới danh sách ô nhập máy móc khi chuyển sang tab Phòng (`tab-rooms`).
+     - **`backend/src/index.js`**: Cập nhật endpoint `getDanhSachMay` / `getMayMoc` trả về object có đầy đủ cả `tenLoai`, `maMay`, `trangThai` và các chỉ số `[0, 1, 2, 3]` để đảm bảo tương thích ngược 100%.
+     - **`js/offline-sync-engine.js`**: Đồng bộ hóa các khóa cache (`machine`/`machines`, `room`/`rooms`, `proc`/`procedures`) khi sao lưu và khôi phục dữ liệu khẩn cấp.
+  3. **Đồng bộ thời gian Footer**:
+     - Cập nhật thời gian Footer: `13:42 27/08/2026`.
+- **File sửa đổi**: `js/app.js`, `backend/src/index.js`, `js/offline-sync-engine.js`, `index.html`, `PM-xeplich-v3.md`.
+
 

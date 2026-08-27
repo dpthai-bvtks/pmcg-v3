@@ -5012,7 +5012,7 @@ window.renderSttOrderControl = function (type, i, total) {
                     [`BẢNG LỊCH TRÌNH ĐIỀU TRỊ THỦ THUẬT - ${roomTitle.toUpperCase()}`],
                     [`Ngày thực hiện: ${displayDate}`],
                     [""], // Dòng trống cách quãng
-                    ["STT", "Tên Bệnh Nhân", "Năm Sinh", "Giường", "Thủ Thuật", "Bắt Đầu", "Kết Thúc", "KTV / Bác Sĩ", "Máy Móc"]
+                    ["STT", "Tên Bệnh Nhân", "Năm Sinh", "Thủ Thuật", "Bắt Đầu", "Kết Thúc", "KTV / Bác Sĩ", "Máy Móc"]
                 ];
 
                 rows.forEach((row, idx) => {
@@ -5024,7 +5024,6 @@ window.renderSttOrderControl = function (type, i, total) {
                         idx + 1,
                         tenBNText,
                         String(row.namSinh || '').trim(),
-                        String(row.giuong || '--').trim(),
                         String(row.thuThuat || '').trim(),
                         String(row.gioDienRa || '').trim(),
                         String(row.gioKetThuc || '').trim(),
@@ -5039,25 +5038,24 @@ window.renderSttOrderControl = function (type, i, total) {
 
                 const ws = XLSX.utils.aoa_to_sheet(ws_data);
 
-                // Merge tiêu đề đầu bảng
+                // Merge tiêu đề đầu bảng (Cột A đến H: c=0 đến c=7)
                 ws['!merges'] = [
-                    { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } }, // Dòng 1
-                    { s: { r: 1, c: 0 }, e: { r: 1, c: 8 } }, // Dòng 2
-                    { s: { r: 2, c: 0 }, e: { r: 2, c: 8 } }, // Dòng 3
-                    { s: { r: ws_data.length - 1, c: 0 }, e: { r: ws_data.length - 1, c: 8 } } // Dòng tổng kết
+                    { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }, // Dòng 1
+                    { s: { r: 1, c: 0 }, e: { r: 1, c: 7 } }, // Dòng 2
+                    { s: { r: 2, c: 0 }, e: { r: 2, c: 7 } }, // Dòng 3
+                    { s: { r: ws_data.length - 1, c: 0 }, e: { r: ws_data.length - 1, c: 7 } } // Dòng tổng kết
                 ];
 
-                // Độ rộng cột
+                // Độ rộng cột (Autofit tối ưu không có cột Giường)
                 ws['!cols'] = [
                     { wch: 6 },   // STT
-                    { wch: 26 },  // Tên Bệnh Nhân
-                    { wch: 10 },  // Năm Sinh
-                    { wch: 10 },  // Giường
-                    { wch: 26 },  // Thủ Thuật
+                    { wch: 28 },  // Tên Bệnh Nhân
+                    { wch: 11 },  // Năm Sinh
+                    { wch: 28 },  // Thủ Thuật
                     { wch: 11 },  // Bắt Đầu
                     { wch: 11 },  // Kết Thúc
                     { wch: 20 },  // KTV / Bác Sĩ
-                    { wch: 16 }   // Máy Móc
+                    { wch: 18 }   // Máy Móc
                 ];
 
                 // Chiều cao dòng
@@ -5065,12 +5063,12 @@ window.renderSttOrderControl = function (type, i, total) {
                 ws['!rows'][0] = { hpt: 20 };
                 ws['!rows'][1] = { hpt: 26 };
                 ws['!rows'][2] = { hpt: 18 };
-                ws['!rows'][4] = { hpt: 24 }; // Header bảng
+                ws['!rows'][4] = { hpt: 25 }; // Header bảng
                 for (let r = 5; r < ws_data.length - 2; r++) {
                     ws['!rows'][r] = { hpt: 22 }; // Các dòng dữ liệu
                 }
 
-                // Định dạng Style sắc nét bằng xlsx-js-style
+                // Định dạng Style sắc nét bằng xlsx-js-style với DÒNG KẺ NGANG ĐẬM
                 try {
                     const range = XLSX.utils.decode_range(ws['!ref']);
                     for (let R = range.s.r; R <= range.e.r; R++) {
@@ -5112,7 +5110,7 @@ window.renderSttOrderControl = function (type, i, total) {
 
                         // Tiêu đề cột bảng (Dòng 4)
                         if (R === 4) {
-                            for (let C = 0; C <= 8; C++) {
+                            for (let C = 0; C <= 7; C++) {
                                 const addr = XLSX.utils.encode_cell({ r: 4, c: C });
                                 if (ws[addr]) {
                                     ws[addr].s = {
@@ -5120,8 +5118,8 @@ window.renderSttOrderControl = function (type, i, total) {
                                         font: { name: "Arial", sz: 10.5, bold: true, color: { rgb: "1E3D2B" } },
                                         alignment: { horizontal: "center", vertical: "center", wrapText: true },
                                         border: {
-                                            top: { style: "thin", color: { rgb: "CBD5E1" } },
-                                            bottom: { style: "thin", color: { rgb: "CBD5E1" } },
+                                            top: { style: "medium", color: { rgb: "000000" } },
+                                            bottom: { style: "medium", color: { rgb: "000000" } },
                                             left: { style: "thin", color: { rgb: "CBD5E1" } },
                                             right: { style: "thin", color: { rgb: "CBD5E1" } }
                                         }
@@ -5147,27 +5145,27 @@ window.renderSttOrderControl = function (type, i, total) {
                         const dataIdx = R - 5;
                         const rowObj = rows[dataIdx];
                         const isRV = rowObj && !!rowObj.__isDischarged;
-                        const centerCols = new Set([0, 2, 3, 5, 6]); // STT, NamSinh, Giuong, BatDau, KetThuc
+                        const centerCols = new Set([0, 2, 4, 5]); // STT, NamSinh, BatDau, KetThuc
 
-                        for (let C = 0; C <= 8; C++) {
+                        for (let C = 0; C <= 7; C++) {
                             const addr = XLSX.utils.encode_cell({ r: R, c: C });
                             if (!ws[addr]) continue;
 
                             const alignH = centerCols.has(C) ? "center" : "left";
-                            const fontColor = isRV ? (C === 1 ? "7C3AED" : "1E293B") : (C === 5 ? "059669" : "1E293B");
+                            const fontColor = isRV ? (C === 1 ? "7C3AED" : "1E293B") : (C === 4 ? "059669" : "1E293B");
 
                             ws[addr].s = {
                                 fill: isRV ? { fgColor: { rgb: "F5EEF8" } } : (dataIdx % 2 === 1 ? { fgColor: { rgb: "F8FAFC" } } : undefined),
                                 font: {
                                     name: "Arial",
                                     sz: 10,
-                                    bold: isRV || C === 0 || C === 3 || C === 5 || C === 7,
+                                    bold: isRV || C === 0 || C === 4 || C === 6,
                                     color: { rgb: fontColor }
                                 },
                                 alignment: { horizontal: alignH, vertical: "center" },
                                 border: {
-                                    top: { style: "thin", color: { rgb: "CBD5E1" } },
-                                    bottom: { style: "thin", color: { rgb: "CBD5E1" } },
+                                    top: { style: "thin", color: { rgb: "334155" } },
+                                    bottom: { style: "medium", color: { rgb: "000000" } }, // Dòng kẻ ngang đậm ngăn cách rõ ràng
                                     left: { style: "thin", color: { rgb: "CBD5E1" } },
                                     right: { style: "thin", color: { rgb: "CBD5E1" } }
                                 }
@@ -5399,13 +5397,12 @@ window.renderSttOrderControl = function (type, i, total) {
                 const roomRows = roomMap[rName];
                 const dischargedCount = roomRows.filter(r => r.__isDischarged).length;
 
-                // Bảng dữ liệu của riêng phòng này
+                // Bảng dữ liệu của riêng phòng này (không có cột Giường)
                 const bodyTable = [
                     [
                         { text: 'STT', style: 'tableHeader', alignment: 'center' },
                         { text: 'Tên Bệnh Nhân', style: 'tableHeader' },
                         { text: 'Năm Sinh', style: 'tableHeader', alignment: 'center' },
-                        { text: 'Giường', style: 'tableHeader', alignment: 'center' },
                         { text: 'Thủ Thuật', style: 'tableHeader' },
                         { text: 'Bắt Đầu', style: 'tableHeader', alignment: 'center' },
                         { text: 'Kết Thúc', style: 'tableHeader', alignment: 'center' },
@@ -5425,7 +5422,6 @@ window.renderSttOrderControl = function (type, i, total) {
                         { text: String(idx + 1), alignment: 'center', fontSize: 9 },
                         { text: tenBN, bold: isRV, color: isRV ? '#7c3aed' : '#1e293b', fontSize: 9.5 },
                         { text: String(row.namSinh || ''), alignment: 'center', fontSize: 9 },
-                        { text: String(row.giuong || '--'), alignment: 'center', bold: true, fontSize: 9 },
                         { text: String(row.thuThuat || ''), fontSize: 9 },
                         { text: String(row.gioDienRa || ''), alignment: 'center', bold: true, color: '#059669', fontSize: 9 },
                         { text: String(row.gioKetThuc || ''), alignment: 'center', fontSize: 9 },
@@ -5464,7 +5460,7 @@ window.renderSttOrderControl = function (type, i, total) {
                     {
                         table: {
                             headerRows: 1,
-                            widths: [24, 140, 45, 45, 145, 45, 45, 110, '*'],
+                            widths: [24, 155, 48, 165, 48, 48, 120, '*'],
                             body: bodyTable
                         },
                         layout: {
@@ -5474,9 +5470,9 @@ window.renderSttOrderControl = function (type, i, total) {
                                 if (isDischargedRow) return '#f5eef8'; // Highlight tím nhạt cho BN ra viện
                                 return rowIndex % 2 === 0 ? '#fcfcfc' : null;
                             },
-                            hLineWidth: () => 0.5,
+                            hLineWidth: (i, node) => (i === 0 || i === 1 || i === node.table.body.length) ? 1.5 : 1,
                             vLineWidth: () => 0.5,
-                            hLineColor: () => '#cbd5e1',
+                            hLineColor: () => '#000000',
                             vLineColor: () => '#cbd5e1'
                         }
                     },

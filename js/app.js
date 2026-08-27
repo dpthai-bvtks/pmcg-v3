@@ -5379,38 +5379,29 @@ window.renderSttOrderControl = function (type, i, total) {
                                 width: '*',
                                 text: [
                                     { text: 'BỆNH VIỆN THAN - KHOÁNG SẢN CS2\n', bold: true, fontSize: 9.5 },
-                                    { text: 'KHOA YHCT - PHỤC HỒI CHỨC NĂNG\n', bold: true, fontSize: 10.5, color: '#1e3d2b' }
+                                    { text: 'KHOA YHCT - PHỤC HỒI CHỨC NĂNG', bold: true, fontSize: 10.5, color: '#1e3d2b' }
                                 ]
                             },
                             {
                                 width: 'auto',
-                                text: [
-                                    { text: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\n', bold: true, fontSize: 9.5 },
-                                    { text: 'Độc lập - Tự do - Hạnh phúc\n', italic: true, fontSize: 9 }
-                                ],
-                                alignment: 'center'
+                                text: `Ngày thực hiện: ${displayDate}`,
+                                alignment: 'right',
+                                italics: true,
+                                fontSize: 9.5,
+                                color: '#475569'
                             }
                         ]
                     },
                     {
-                        text: `\nBẢNG LỊCH TRÌNH ĐIỀU TRỊ THỦ THUẬT`,
+                        text: `BẢNG LỊCH TRÌNH ĐIỀU TRỊ THỦ THUẬT - ${rName.toUpperCase()}`,
                         style: 'mainHeader',
-                        alignment: 'center'
-                    },
-                    {
-                        text: `🏥 ${rName.toUpperCase()}`,
-                        style: 'roomHeader',
-                        alignment: 'center'
-                    },
-                    {
-                        text: `Ngày thực hiện: ${displayDate}\n\n`,
-                        style: 'subHeader',
-                        alignment: 'center'
+                        alignment: 'center',
+                        margin: [0, 4, 0, 8]
                     },
                     {
                         table: {
                             headerRows: 1,
-                            widths: [24, 135, 45, 45, 140, 45, 45, 110, '*'],
+                            widths: [24, 140, 45, 45, 145, 45, 45, 110, '*'],
                             body: bodyTable
                         },
                         layout: {
@@ -5427,20 +5418,11 @@ window.renderSttOrderControl = function (type, i, total) {
                         }
                     },
                     {
-                        margin: [0, 10, 0, 0],
-                        columns: [
-                            {
-                                text: `Tổng số: ${roomRows.length} ca thủ thuật ${dischargedCount > 0 ? '(' + dischargedCount + ' ca RV)' : ''}`,
-                                italic: true,
-                                fontSize: 9
-                            },
-                            {
-                                text: `Quảng Ninh, ngày ${displayDate}\nBÁC SĨ PHỤ TRÁCH PHÒNG\n\n\n\n(Ký và ghi rõ họ tên)`,
-                                alignment: 'right',
-                                bold: true,
-                                fontSize: 9.5
-                            }
-                        ]
+                        margin: [0, 6, 0, 0],
+                        text: `Tổng số: ${roomRows.length} ca thủ thuật ${dischargedCount > 0 ? '(' + dischargedCount + ' ca RV)' : ''}`,
+                        italic: true,
+                        fontSize: 9,
+                        color: '#64748b'
                     }
                 ];
 
@@ -5454,12 +5436,10 @@ window.renderSttOrderControl = function (type, i, total) {
             const docDefinition = {
                 pageSize: 'A4',
                 pageOrientation: 'landscape',
-                pageMargins: [20, 20, 20, 20],
+                pageMargins: [20, 15, 20, 15],
                 content: content,
                 styles: {
                     mainHeader: { fontSize: 13, bold: true, color: '#1e3d2b' },
-                    roomHeader: { fontSize: 14, bold: true, color: '#059669', margin: [0, 2, 0, 2] },
-                    subHeader: { fontSize: 9.5, italic: true, color: '#475569' },
                     tableHeader: { bold: true, fontSize: 9.5, color: '#1e3d2b' }
                 },
                 defaultStyle: {

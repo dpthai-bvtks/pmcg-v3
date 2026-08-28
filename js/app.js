@@ -2057,6 +2057,11 @@ window.renderSttOrderControl = function (type, i, total) {
                             loadThongKeData();
                         }
 
+                        // Cập nhật URL hash để hỗ trợ chia sẻ / mở trực tiếp tab
+                        try {
+                            history.replaceState(null, '', '#tab=' + targetTab);
+                        } catch(e) {}
+
 
 
                     } catch (error) { console.error("Lỗi chuyển tab:", error); }
@@ -2089,6 +2094,10 @@ window.renderSttOrderControl = function (type, i, total) {
 
             if (typeof setupTableSorting === 'function') setupTableSorting();
 
+            // Khởi động Context Menu và URL Hash Router
+            if (typeof initTabContextMenu === 'function') initTabContextMenu();
+            if (typeof handleInitialUrlTab === 'function') handleInitialUrlTab();
+
             // Khởi động nạp dữ liệu Bootstrap (All-in-One + Offline Cache)
             if (typeof initProtocolsData === 'function') {
                 initProtocolsData();
@@ -2099,6 +2108,128 @@ window.renderSttOrderControl = function (type, i, total) {
                 loadAllData();
             }
         });
+
+        // ============================================================
+        // 🌐 TAB CONTEXT MENU & DEEP-LINKING (MỞ TRONG TAB MỚI)
+        // ============================================================
+        let _currentContextTabId = null;
+        let _currentContextTabName = '';
+
+        function initTabContextMenu() {
+            const menu = document.getElementById('tab-context-menu');
+            if (!menu) return;
+
+            document.querySelectorAll('.nav-tab, .nav-item').forEach(tab => {
+                // Click chuột phải
+                tab.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    _currentContextTabId = tab.getAttribute('data-tab') || 'tab-home';
+                    const textEl = tab.querySelector('.text');
+                    _currentContextTabName = textEl ? textEl.innerText.trim() : (tab.innerText || 'Tab').trim();
+
+                    const titleEl = document.getElementById('tab-context-title');
+                    if (titleEl) titleEl.innerText = `📌 ${_currentContextTabName}`;
+
+                    const menuWidth = 230;
+                    const menuHeight = 150;
+                    let posX = e.clientX;
+                    let posY = e.clientY;
+
+                    if (posX + menuWidth > window.innerWidth) posX = window.innerWidth - menuWidth - 10;
+                    if (posY + menuHeight > window.innerHeight) posY = window.innerHeight - menuHeight - 10;
+
+                    menu.style.left = posX + 'px';
+                    menu.style.top = posY + 'px';
+                    menu.style.display = 'block';
+                });
+
+                // Hỗ trợ Middle Click (Click con lăn chuột) hoặc Ctrl+Click / Cmd+Click để mở Tab mới
+                tab.addEventListener('auxclick', (e) => {
+                    if (e.button === 1) { // Middle click
+                        e.preventDefault();
+                        const targetTab = tab.getAttribute('data-tab') || 'tab-home';
+                        openTabInNewWindow(targetTab);
+                    }
+                });
+                tab.addEventListener('click', (e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        const targetTab = tab.getAttribute('data-tab') || 'tab-home';
+                        openTabInNewWindow(targetTab);
+                    }
+                });
+            });
+
+            // Ẩn context menu khi click ra ngoài hoặc cuộn
+            document.addEventListener('click', (e) => {
+                if (!menu.contains(e.target)) {
+                    menu.style.display = 'none';
+                }
+            });
+            window.addEventListener('scroll', () => { menu.style.display = 'none'; }, true);
+        }
+        window.initTabContextMenu = initTabContextMenu;
+
+        function openTabInNewWindow(tabId) {
+            if (!tabId) tabId = 'tab-home';
+            const baseUrl = window.location.origin + window.location.pathname;
+            const targetUrl = `${baseUrl}#tab=${tabId}`;
+            window.open(targetUrl, '_blank');
+        }
+        window.openTabInNewWindow = openTabInNewWindow;
+
+        function openCurrentTabInNewWindow() {
+            const menu = document.getElementById('tab-context-menu');
+            if (menu) menu.style.display = 'none';
+            openTabInNewWindow(_currentContextTabId);
+        }
+        window.openCurrentTabInNewWindow = openCurrentTabInNewWindow;
+
+        function copyCurrentTabLink() {
+            const menu = document.getElementById('tab-context-menu');
+            if (menu) menu.style.display = 'none';
+            const tabId = _currentContextTabId || 'tab-home';
+            const baseUrl = window.location.origin + window.location.pathname;
+            const targetUrl = `${baseUrl}#tab=${tabId}`;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(targetUrl).then(() => {
+                    if (typeof window.showToast === 'function') window.showToast(`📋 Đã sao chép liên kết Tab: ${targetUrl}`);
+                }).catch(() => {
+                    prompt('Sao chép liên kết Tab tại đây:', targetUrl);
+                });
+            } else {
+                prompt('Sao chép liên kết Tab tại đây:', targetUrl);
+            }
+        }
+        window.copyCurrentTabLink = copyCurrentTabLink;
+
+        function reloadCurrentTab() {
+            const menu = document.getElementById('tab-context-menu');
+            if (menu) menu.style.display = 'none';
+            const tabBtn = document.querySelector(`.nav-tab[data-tab="${_currentContextTabId}"]`);
+            if (tabBtn) tabBtn.click();
+            if (typeof window.loadBootstrapData === 'function') window.loadBootstrapData(true);
+        }
+        window.reloadCurrentTab = reloadCurrentTab;
+
+        function handleInitialUrlTab() {
+            const hash = window.location.hash || '';
+            let targetTab = '';
+            if (hash.startsWith('#tab=')) {
+                targetTab = hash.replace('#tab=', '').trim();
+            } else if (hash.startsWith('#tab-')) {
+                targetTab = hash.substring(1).trim();
+            }
+            if (targetTab) {
+                const tabBtn = document.querySelector(`.nav-tab[data-tab="${targetTab}"], .nav-item[data-tab="${targetTab}"]`);
+                if (tabBtn) {
+                    setTimeout(() => { tabBtn.click(); }, 80);
+                }
+            }
+        }
+        window.handleInitialUrlTab = handleInitialUrlTab;
 
         // ============================================================
         // 🚀 ALL-IN-ONE BOOTSTRAP DATA & OFFLINE-FIRST CACHE
@@ -2125,6 +2256,23 @@ window.renderSttOrderControl = function (type, i, total) {
                     console.error("Lỗi đồng bộ cấu hình nhắc sao lưu:", e);
                 }
             }
+
+            // Đồng bộ phác đồ từ Server Settings
+            if (res.clinical_protocols || res.protocols) {
+                try {
+                    const rawProtocols = res.clinical_protocols || res.protocols;
+                    const parsed = typeof rawProtocols === 'string' ? JSON.parse(rawProtocols) : rawProtocols;
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        window.dataCache.protocols = parsed;
+                        try { localStorage.setItem('meds_protocols', JSON.stringify(parsed)); } catch(e) {}
+                        if (typeof renderProtocolsTable === 'function') renderProtocolsTable();
+                        if (typeof renderProtocolSelectOptions === 'function') renderProtocolSelectOptions();
+                    }
+                } catch(e) {
+                    console.error("Lỗi đồng bộ phác đồ từ server:", e);
+                }
+            }
+
             if (res.yhctLunch !== undefined && document.getElementById("admin-yhct-lunch")) document.getElementById("admin-yhct-lunch").value = res.yhctLunch;
             if (res.yhctEnd !== undefined && document.getElementById("admin-yhct-end")) document.getElementById("admin-yhct-end").value = res.yhctEnd;
             if (res.dropWeight !== undefined && document.getElementById("admin-weight-drop")) document.getElementById("admin-weight-drop").value = res.dropWeight;
@@ -2804,10 +2952,35 @@ window.renderSttOrderControl = function (type, i, total) {
             if (!window.dataCache.protocols || !window.dataCache.protocols.length) {
                 window.dataCache.protocols = JSON.parse(JSON.stringify(DEFAULT_PROTOCOLS));
             }
+            
+            // Tự động đẩy phác đồ lên Cloudflare D1 nếu có dữ liệu
+            if (window.dataCache.protocols && window.dataCache.protocols.length) {
+                syncProtocolsToCloud(false);
+            }
+
             renderProtocolsTable();
             renderProtocolSelectOptions();
         }
         window.initProtocolsData = initProtocolsData;
+
+        function syncProtocolsToCloud(showToastMsg = false) {
+            const list = window.dataCache && window.dataCache.protocols ? window.dataCache.protocols : [];
+            if (!list.length) return;
+            const jsonStr = JSON.stringify(list);
+            if (typeof callApi === 'function') {
+                callApi('saveProtocolsData', [list], () => {}, () => {});
+                callApi('saveSystemSettings', [{ clinical_protocols: jsonStr }], res => {
+                    if (showToastMsg && typeof window.showToast === 'function') {
+                        window.showToast(`☁️ Đã đồng bộ ${list.length} phác đồ lên đám mây thành công!`);
+                    }
+                }, err => {
+                    if (showToastMsg && typeof window.showToast === 'function') {
+                        window.showToast('⚠️ Lỗi đồng bộ đám mây: ' + err, 'error');
+                    }
+                });
+            }
+        }
+        window.syncProtocolsToCloud = syncProtocolsToCloud;
 
         function saveProtocolsData(newList) {
             window.dataCache.protocols = newList;
@@ -2819,14 +2992,8 @@ window.renderSttOrderControl = function (type, i, total) {
                 }
             } catch (e) {}
 
-            // ĐỒNG BỘ LÊN CLOUDFLARE D1 BACKEND ĐỂ MỌI THIẾT BỊ (ĐIỆN THOẠI/TABLET/PC) ĐỀU CÓ DỮ LIỆU
-            if (typeof callApi === 'function') {
-                callApi('saveProtocolsData', [newList], res => {
-                    console.log('[Protocols]: Đã đồng bộ phác đồ lên Cloudflare D1 Backend thành công!');
-                }, err => {
-                    console.warn('[Protocols]: Lưu D1 thất bại, dữ liệu lưu Offline:', err);
-                });
-            }
+            // ĐỒNG BỘ LÊN CLOUDFLARE D1 BACKEND CHO MỌI THIẾT BỊ
+            syncProtocolsToCloud(false);
 
             renderProtocolsTable();
             renderProtocolSelectOptions();

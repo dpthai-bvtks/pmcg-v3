@@ -5171,3 +5171,9 @@ transition: box-shadow 0.3s;
         width: 100% !important;
     }
 }
+
+/* ── Tab Context Menu ── */
+.tab-context-item:hover {
+    background: #eff6ff !important;
+    color: #1d4ed8 !important;
+}

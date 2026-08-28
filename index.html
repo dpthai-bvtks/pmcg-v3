@@ -672,9 +672,12 @@
 
                     <!-- BẢNG QUẢN LÝ PHÁC ĐỒ ĐIỀU TRỊ -->
                     <div style="margin-top: 25px; border-top: 2px solid #cbd5e1; padding-top: 18px;">
-                        <div class="tab-header-title" style="font-size: 15px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+                        <div class="tab-header-title" style="font-size: 15px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                             <span style="display: flex; align-items: center; gap: 6px;">📋 QUẢN LÝ PHÁC ĐỒ ĐIỀU TRỊ CỦA KHOA</span>
-                            <button type="button" class="btn btn-primary btn-sm" onclick="openProtocolModal(-1)" style="font-size: 12px; padding: 6px 14px; font-weight: 600; cursor: pointer;">➕ Thêm Phác Đồ Mới</button>
+                            <div style="display: flex; gap: 6px; align-items: center;">
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="syncProtocolsToCloud(true)" style="font-size: 12px; padding: 6px 12px; font-weight: 600; cursor: pointer;" title="Đồng bộ ngay phác đồ lên đám mây cho Điện thoại & Máy tính bảng">🔄 Đồng Bộ Đám Mây</button>
+                                <button type="button" class="btn btn-primary btn-sm" onclick="openProtocolModal(-1)" style="font-size: 12px; padding: 6px 14px; font-weight: 600; cursor: pointer;">➕ Thêm Phác Đồ Mới</button>
+                            </div>
                         </div>
                         <div class="main-table" style="max-height: 450px; overflow-y: auto;">
                             <table id="protocols-table">
@@ -2948,7 +2951,7 @@
 
                     <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.2.5</span></p>
 
-                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 15:55 28/08/2026</span></p>
+                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 16:05 28/08/2026</span></p>
 
                     <p><span class="f-icon">👨‍💻</span> <span>Thiết kế & Phát triển: <b>Bác sĩ Thái</b></span></p>
 
@@ -3074,6 +3077,29 @@
                 <button id="confirm-ok-btn"
                     style="flex:1; background:#8e44ad; color:#fff; border:none; padding:10px; border-radius:6px; cursor:pointer; font-weight:bold;">Đồng ý</button>
             </div>
+        </div>
+    </div>
+
+    <!-- CONTEXT MENU KHI CHUỘT PHẢI VÀO TAB -->
+    <div id="tab-context-menu"
+        style="display: none; position: fixed; z-index: 100000; background: #ffffff; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.2), 0 2px 8px rgba(0,0,0,0.1); border: 1px solid #cbd5e1; padding: 6px 0; min-width: 220px; font-family: inherit;">
+        <div id="tab-context-title" style="padding: 6px 14px; font-size: 11.5px; font-weight: 700; color: #64748b; border-bottom: 1px solid #f1f5f9; text-transform: uppercase; letter-spacing: 0.5px;">
+            Tab Options
+        </div>
+        <div class="tab-context-item" onclick="openCurrentTabInNewWindow()"
+            style="padding: 9px 14px; font-size: 13px; color: #1e293b; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: background 0.15s;">
+            <span style="font-size: 15px;">🌐</span>
+            <span style="font-weight: 600;">Mở trong Tab mới</span>
+        </div>
+        <div class="tab-context-item" onclick="copyCurrentTabLink()"
+            style="padding: 9px 14px; font-size: 13px; color: #1e293b; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: background 0.15s;">
+            <span style="font-size: 15px;">📋</span>
+            <span>Sao chép liên kết Tab</span>
+        </div>
+        <div class="tab-context-item" onclick="reloadCurrentTab()"
+            style="padding: 9px 14px; font-size: 13px; color: #1e293b; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: background 0.15s;">
+            <span style="font-size: 15px;">🔄</span>
+            <span>Làm mới dữ liệu Tab</span>
         </div>
     </div>
 

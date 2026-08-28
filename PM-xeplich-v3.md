@@ -970,3 +970,16 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
      - Mỗi khi Thêm / Sửa / Xóa phác đồ, gọi ngay `callApi('saveProtocolsData', [newList])` để cập nhật lên Cloudflare D1 Database.
      - Hàm `loadBootstrapData()` tự động nạp phác đồ mới nhất từ Cloud và lưu vào bộ nhớ Offline Cache của từng thiết bị.
 - **File sửa đổi**: `backend/src/index.js`, `js/app.js`, `index.html`, `PM-xeplich-v3.md`.
+
+### Nâng Cấp: Menu Chuột Phải Mở Tab Mới & Nút Đồng Bộ Đám Mây Tức Thì (28/08/2026)
+- **Tính năng Chuột Phải Tab (Tab Context Menu)**:
+  - Khi click chuột phải vào bất kỳ tab nào (hoặc Middle-click con lăn chuột / `Ctrl + Click`) ➔ Xuất hiện menu tùy chọn:
+    1. **🌐 Mở trong Tab mới**: Mở tab đó trong một tab trình duyệt độc lập với đường dẫn Deep Link (VD: `#tab=tab-procedures`).
+    2. **📋 Sao chép liên kết Tab**: Sao chép URL trực tiếp vào Clipboard để chia sẻ.
+    3. **🔄 Làm mới dữ liệu Tab**: Tải lại dữ liệu mới nhất của tab hiện tại.
+  - Tự động nhận diện URL Hash khi người dùng truy cập trực tiếp bằng liên kết.
+- **Nâng Cấp Đồng Bộ Phác Đồ Đám Mây (Cloudflare D1)**:
+  - Bổ sung nút **"🔄 Đồng Bộ Đám Mây"** ngay cạnh nút Thêm Phác Đồ Mới.
+  - Tự động đẩy phác đồ từ LocalStorage lên `cai_dat` (key `clinical_protocols`) ngay khi ứng dụng khởi động trên PC.
+  - Khi mở trên Điện thoại / Máy tính bảng, dữ liệu phác đồ đám mây được kéo về và cập nhật tức thì.
+- **File sửa đổi**: `index.html`, `js/app.js`, `css/style.css`, `backend/src/index.js`, `PM-xeplich-v3.md`.

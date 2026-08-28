@@ -2998,6 +2998,28 @@ window.renderSttOrderControl = function (type, i, total) {
         }
         window.applyClinicalProtocol = applyClinicalProtocol;
 
+        function toggleMobileForm(btn) {
+            if (!btn) return;
+            const parent = btn.closest('.split-layout') || btn.parentElement;
+            if (!parent) return;
+            const form = parent.querySelector('.sidebar-form');
+            if (!form) return;
+            
+            const isHidden = window.getComputedStyle(form).display === 'none' || form.classList.contains('mobile-form-collapsed');
+            if (isHidden) {
+                form.style.display = 'block';
+                form.classList.remove('mobile-form-collapsed');
+                btn.innerHTML = '➖ Thu Gọn Form Nhập Liệu';
+                btn.style.background = 'linear-gradient(135deg, #475569, #334155)';
+            } else {
+                form.style.display = 'none';
+                form.classList.add('mobile-form-collapsed');
+                btn.innerHTML = '➕ Thêm Mới / Nhập Liệu';
+                btn.style.background = 'linear-gradient(135deg, #0284c7, #0369a1)';
+            }
+        }
+        window.toggleMobileForm = toggleMobileForm;
+
         // ============================================================
         // 💉 2. THỦ THUẬT
         // ============================================================

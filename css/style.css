@@ -4859,3 +4859,315 @@ transition: box-shadow 0.3s;
     border-radius: 3px;
     text-transform: uppercase;
 }
+
+/* ==========================================================================
+   📱 COMPREHENSIVE MOBILE & TABLET RESPONSIVE SUITE (iOS / Android / iPad)
+   ========================================================================== */
+
+/* ── 1. Tablet & Medium Screens (max-width: 1024px) ── */
+@media (max-width: 1024px) {
+    .container {
+        display: flex;
+        flex-direction: column !important;
+        height: 100vh !important;
+        overflow: hidden !important;
+    }
+
+    .sidebar {
+        width: 100% !important;
+        height: auto !important;
+        min-height: 52px !important;
+        flex: 0 0 auto !important;
+        position: relative !important;
+        border-right: none !important;
+        border-bottom: 2px solid #cbd5e1 !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+        z-index: 100 !important;
+        background: #ffffff !important;
+    }
+
+    .sidebar-menu {
+        flex-direction: row !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        width: 100% !important;
+        padding: 6px 10px !important;
+        gap: 6px !important;
+        white-space: nowrap !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important;
+    }
+
+    .sidebar-menu::-webkit-scrollbar {
+        display: none !important;
+    }
+
+    .sidebar button.nav-tab {
+        flex: 0 0 auto !important;
+        width: auto !important;
+        min-width: 110px !important;
+        padding: 6px 14px !important;
+        border-radius: 20px !important;
+        font-size: 13px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 6px !important;
+        background: #f1f5f9 !important;
+        border: 1px solid #e2e8f0 !important;
+        transition: all 0.2s ease !important;
+    }
+
+    .sidebar button.nav-tab.active {
+        background: linear-gradient(135deg, #1e3a8a, #2563eb) !important;
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        box-shadow: 0 3px 10px rgba(37,99,235,0.3) !important;
+        border-color: transparent !important;
+    }
+
+    .sidebar button.nav-tab.active .icon,
+    .sidebar button.nav-tab.active .text {
+        color: #ffffff !important;
+    }
+
+    .main-content {
+        flex: 1 !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        padding: 12px 14px !important;
+    }
+
+    .split-layout {
+        flex-direction: column !important;
+        gap: 14px !important;
+    }
+
+    .sidebar-form {
+        flex: none !important;
+        width: 100% !important;
+        max-height: none !important;
+        position: static !important;
+    }
+
+    .main-table {
+        width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+}
+
+/* ── 2. Mobile Screens (max-width: 768px) ── */
+@media (max-width: 768px) {
+    body {
+        font-size: 13px !important;
+    }
+
+    /* Chống phóng to tự động trên iOS khi focus input */
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    input[type="time"],
+    input[type="password"],
+    select,
+    textarea {
+        font-size: 16px !important;
+        min-height: 38px !important;
+    }
+
+    /* Hospital Banner */
+    .hospital-banner-global {
+        padding: 8px 12px !important;
+        flex-direction: column !important;
+        gap: 6px !important;
+        text-align: center !important;
+    }
+
+    .banner-left, .banner-right {
+        justify-content: center !important;
+        width: 100% !important;
+    }
+
+    .banner-clock {
+        font-size: 12px !important;
+        padding: 4px 8px !important;
+        text-align: center !important;
+    }
+
+    /* Navigation Bar */
+    .sidebar button.nav-tab {
+        min-width: 95px !important;
+        padding: 6px 10px !important;
+        font-size: 12px !important;
+    }
+
+    .sidebar button.nav-tab .icon {
+        font-size: 14px !important;
+    }
+
+    /* Mobile Form Toggle Button */
+    .mobile-toggle-form-btn {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 6px !important;
+        width: 100% !important;
+        padding: 10px 14px !important;
+        font-size: 13.5px !important;
+        font-weight: 700 !important;
+        color: #ffffff !important;
+        background: linear-gradient(135deg, #0284c7, #0369a1) !important;
+        border: none !important;
+        border-radius: 8px !important;
+        margin-bottom: 10px !important;
+        cursor: pointer !important;
+        box-shadow: 0 3px 8px rgba(2,132,199,0.3) !important;
+    }
+
+    /* Form Fields & Touch Targets */
+    .form-group {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 4px !important;
+        margin-bottom: 10px !important;
+    }
+
+    .form-group label {
+        width: 100% !important;
+        min-width: 0 !important;
+        font-weight: 600 !important;
+        font-size: 12.5px !important;
+        margin-bottom: 2px !important;
+    }
+
+    .checkbox-item {
+        padding: 8px 10px !important;
+        min-height: 40px !important;
+        border-radius: 6px !important;
+        margin-bottom: 5px !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        background: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+        box-sizing: border-box !important;
+    }
+
+    .checkbox-item input[type="checkbox"] {
+        width: 18px !important;
+        height: 18px !important;
+        margin: 0 !important;
+        cursor: pointer !important;
+    }
+
+    .checkbox-item span {
+        font-size: 13px !important;
+        line-height: 1.3 !important;
+    }
+
+    /* Buttons */
+    .btn {
+        min-height: 38px !important;
+        padding: 8px 14px !important;
+        font-size: 13px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 6px !important;
+    }
+
+    .btn-sm {
+        min-height: 32px !important;
+        padding: 4px 10px !important;
+        font-size: 12px !important;
+    }
+
+    /* Table Mobile Optimizations */
+    .main-table {
+        border-radius: 8px !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
+        background: #ffffff !important;
+    }
+
+    table {
+        min-width: 580px !important;
+    }
+
+    table th, table td {
+        padding: 7px 8px !important;
+        font-size: 12px !important;
+    }
+
+    /* Timeline Canvas on Mobile */
+    .timeline-res-side {
+        width: 115px !important;
+        min-width: 115px !important;
+        max-width: 115px !important;
+        padding: 6px 8px !important;
+    }
+
+    .timeline-resource-name {
+        font-size: 11.5px !important;
+    }
+
+    .timeline-card {
+        height: 36px !important;
+        padding: 2px 6px !important;
+    }
+
+    .timeline-card-title {
+        font-size: 10.5px !important;
+    }
+
+    .timeline-card-sub {
+        font-size: 9px !important;
+    }
+
+    /* Modals on Mobile */
+    #modal-protocol-editor > div,
+    #modal-admin-employee > div,
+    #strategyModal > div,
+    #custom-confirm-modal > div,
+    #modal-hdsd-viewer > div,
+    #modal-doc-lookup > div {
+        width: 95% !important;
+        max-width: 95% !important;
+        max-height: 90vh !important;
+        padding: 16px 14px !important;
+        border-radius: 12px !important;
+    }
+}
+
+/* ── 3. Small Mobile Devices (max-width: 480px) ── */
+@media (max-width: 480px) {
+    .sidebar button.nav-tab {
+        min-width: 80px !important;
+        padding: 5px 8px !important;
+        font-size: 11px !important;
+    }
+
+    .sidebar button.nav-tab .text {
+        font-size: 11px !important;
+    }
+
+    .tab-header-title {
+        font-size: 14px !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 8px !important;
+    }
+
+    .tab-header-title button {
+        width: 100% !important;
+    }
+
+    .filter-bar, .action-bar-group {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 6px !important;
+    }
+
+    .filter-bar select, .filter-bar input, .filter-bar button {
+        width: 100% !important;
+    }
+}

@@ -941,3 +941,20 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
      - Tự động nạp vào Dropdown `#pat-protocol-select` ở Tab Quản lý Bệnh nhân.
      - Lưu trữ bền vững trong **Dexie.js (IndexedDB)** và **LocalStorage**, tự động phát sự kiện đồng bộ đa tab `Live Sync Bus`.
 - **File sửa đổi**: `index.html`, `js/app.js`, `PM-xeplich-v3.md`.
+
+### Nâng Cấp: Tối Ưu Hóa Giao Diện Cho Điện Thoại & Máy Tính Bảng (28/08/2026)
+- **Mục tiêu**: Đảm bảo trải nghiệm người dùng hoàn hảo trên thiết bị di động (iPhone, Android) và máy tính bảng (iPad, Galaxy Tab).
+- **Tính Năng Triển Khai**:
+  1. **Thanh Điều Hướng Tabs Dạng Pill Vuốt Ngang (Horizontal Scroll Snap)**:
+     - Tự động chuyển đổi mượt mà sang thanh cuộn vuốt ngang trên màn hình `< 1024px` và `< 768px`.
+     - Ẩn thanh cuộn thô, nút bấm dạng Pill bo góc hiện đại với active highlight nổi bật.
+  2. **Layout & Form Nhập Liệu Cảm Ứng (Touch-First UI)**:
+     - Chuyển `.split-layout` sang dạng xếp chồng đơn cột với nút bấm **"➕ Thêm Mới / Nhập Liệu"** mở rộng/thu gọn thông minh.
+     - Nới rộng kích thước chạm cho Checkbox (`min-height: 40px`, padding thoải mái).
+     - Thiết lập `font-size: 16px` cho inputs trên mobile nhằm triệt tiêu hiện tượng iOS Safari tự động phóng to màn hình.
+  3. **Bảng Dữ Liệu & Timeline Trực Quan**:
+     - Bảng dữ liệu tự động chống tràn với thanh cuộn cảm ứng `-webkit-overflow-scrolling: touch`.
+     - Timeline tự động thu gọn cột tên tài nguyên xuống `115px` trên mobile để tối đa hóa không gian hiển thị ca thủ thuật.
+  4. **Cửa Sổ Modal Tự Động Thích Ứng (95% Viewport)**:
+     - Modal co giãn thông minh, cố định Header và Footer, cuộn nội dung mượt mà không bị bàn phím ảo che khuất.
+- **File sửa đổi**: `css/style.css`, `index.html`, `js/app.js`, `PM-xeplich-v3.md`.

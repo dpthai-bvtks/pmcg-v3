@@ -1052,30 +1052,23 @@
 
                                 <div class="form-group"><label>Phòng:</label><select id="pat-room"></select></div>
 
-                                <div class="form-group" style="margin-bottom: 10px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 8px 10px;">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                                        <label style="margin-bottom: 0; color: #1e40af; font-weight: 700; font-size: 12px; display: flex; align-items: center; gap: 4px;">
-                                            <span>🎯 Phác Đồ Mẫu (ICD-10):</span>
-                                        </label>
-                                        <button type="button" onclick="clearSelectedProcs()" style="background: none; border: none; color: #ef4444; font-size: 11px; font-weight: 600; cursor: pointer; text-decoration: underline; padding: 0;" title="Bỏ chọn toàn bộ thủ thuật">Bỏ chọn hết</button>
-                                    </div>
-                                    <select id="pat-protocol-select" onchange="applyClinicalProtocol(this.value)"
-                                        style="width: 100%; padding: 6px 8px; border: 1.5px solid #3b82f6; border-radius: 5px; font-size: 12px; font-weight: 600; color: #1e3a8a; background: #ffffff; outline: none; cursor: pointer;">
-                                        <option value="">-- Chọn Phác đồ gợi ý nhanh --</option>
-                                        <option value="M54.5">1. M54.5 - Đau cột sống thắt lưng (DC, TC, DX, Parafin)</option>
-                                        <option value="M54.3">2. M54.3 - Đau thần kinh tọa (DC, TC, DX, Parafin)</option>
-                                        <option value="M54.2">3. M54.2 - Đau vai gáy (DC, TC, DX, Parafin)</option>
-                                        <option value="M53.1">4. M53.1 - Hội Chứng Cổ Vai Cánh Tay (DC, TC, DX, Parafin)</option>
-                                        <option value="M75.0">5. M75.0 - Viêm quanh khớp vai (DC, TC, DX)</option>
-                                        <option value="M17_1">6. M17 - Thoái Hóa Khớp Gối 1 (DC, TC, DX, Sóng ngắn)</option>
-                                        <option value="M17_2">7. M17 - Thoái Hóa Khớp Gối 2 (TC, DX, Sóng ngắn)</option>
-                                        <option value="G51.0_1">8. G51.0 - Liệt Dây VII Ngoại Biên 1 (DC, TC, Hồng ngoại, Xoa bóp vùng)</option>
-                                        <option value="G51.0_2">9. G51.0 - Liệt Dây VII Ngoại Biên 2 (DC, TC, Hồng ngoại, XBBH)</option>
-                                        <option value="I69_1">10. I69 - Di Chứng Tai Biến 1 (DC, TC, DX, Tập trợ giúp)</option>
-                                        <option value="I69_2">11. I69 - Di Chứng Tai Biến 2 (DC, TC, Hồng ngoại, Tập trợ giúp)</option>
-                                        <option value="G56.0">12. G56.0 - Hội Chứng Ống Cổ Tay (TC, DX, Siêu âm)</option>
-                                        <option value="T9x_1">13. T9x - Di chứng gãy xương (Hồng ngoại, Tập trợ giúp / Kháng trở)</option>
-                                        <option value="T9x_2">14. T9x - Di chứng gãy xương sườn (Hồng ngoại / DX, Tập thở)</option>
+                                <div class="form-group">
+                                    <label>Phác đồ:</label>
+                                    <select id="pat-protocol-select" onchange="applyClinicalProtocol(this.value)">
+                                        <option value="">-- Chọn Phác đồ --</option>
+                                        <option value="1">Phác đồ 1: Điện châm, Thủy châm, Điện xung</option>
+                                        <option value="2">Phác đồ 2: Điện châm, Thủy châm, Điện xung, Parafin</option>
+                                        <option value="3">Phác đồ 3: Điện châm, Thủy châm, Điện xung, Sóng ngắn</option>
+                                        <option value="4">Phác đồ 4: Điện châm, Thủy châm, Hồng ngoại, Xoa bóp vùng</option>
+                                        <option value="5">Phác đồ 5: Thủy châm, Điện xung, Sóng ngắn</option>
+                                        <option value="6">Phác đồ 6: Điện châm, Thủy châm, Hồng ngoại, Xoa bóp bấm huyệt</option>
+                                        <option value="7">Phác đồ 7: Điện châm, Thủy châm, Điện xung, Tập trợ giúp</option>
+                                        <option value="8">Phác đồ 8: Điện châm, Thủy châm, Hồng ngoại, Tập trợ giúp</option>
+                                        <option value="9">Phác đồ 9: Thủy châm, Điện xung, Siêu âm</option>
+                                        <option value="10">Phác đồ 10: Hồng ngoại, Tập trợ giúp</option>
+                                        <option value="11">Phác đồ 11: Hồng ngoại, Tập kháng trở</option>
+                                        <option value="12">Phác đồ 12: Hồng ngoại, Tập thở</option>
+                                        <option value="13">Phác đồ 13: Điện xung, Tập thở</option>
                                     </select>
                                 </div>
 
@@ -2930,7 +2923,7 @@
 
                     <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.2.5</span></p>
 
-                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 15:02 28/08/2026</span></p>
+                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 15:15 28/08/2026</span></p>
 
                     <p><span class="f-icon">👨‍💻</span> <span>Thiết kế & Phát triển: <b>Bác sĩ Thái</b></span></p>
 

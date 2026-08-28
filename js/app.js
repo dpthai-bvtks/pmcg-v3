@@ -1468,6 +1468,13 @@ window.renderSttOrderControl = function (type, i, total) {
             const strB = String(b).trim().toLowerCase();
             if (strA === strB) return true;
             if (strA.includes(strB) || strB.includes(strA)) return true;
+
+            // Token-based matching: mọi từ trong b đều xuất hiện trong a (hoặc ngược lại)
+            const tokensB = strB.split(/\s+/).filter(Boolean);
+            if (tokensB.length >= 2 && tokensB.every(tok => strA.includes(tok))) return true;
+            const tokensA = strA.split(/\s+/).filter(Boolean);
+            if (tokensA.length >= 2 && tokensA.every(tok => strB.includes(tok))) return true;
+
             const procs = (window.dataCache && window.dataCache.proc) ? window.dataCache.proc : [];
             const procA = procs.find(p => (p.ten && p.ten.toLowerCase() === strA) || (p.vietTat && p.vietTat.toLowerCase() === strA));
             const procB = procs.find(p => (p.ten && p.ten.toLowerCase() === strB) || (p.vietTat && p.vietTat.toLowerCase() === strB));
@@ -2727,64 +2734,60 @@ window.renderSttOrderControl = function (type, i, total) {
 
 
         // ============================================================
-        // 🎯 CLINICAL PROTOCOLS ENGINE (14 Phác Đồ Mẫu YHCT - PHCN Chuẩn)
+        // 🎯 CLINICAL PROTOCOLS ENGINE (13 Phác Đồ Mẫu YHCT - PHCN Chuẩn)
         // ============================================================
         const CLINICAL_PROTOCOLS = {
-            'M54.5': {
-                name: 'Đau cột sống thắt lưng',
-                procs: ['điện châm', 'thủy châm', 'điện xung', 'parafin']
-            },
-            'M54.3': {
-                name: 'Đau thần kinh tọa',
-                procs: ['điện châm', 'thủy châm', 'điện xung', 'parafin']
-            },
-            'M54.2': {
-                name: 'Đau vai gáy',
-                procs: ['điện châm', 'thủy châm', 'điện xung', 'parafin']
-            },
-            'M53.1': {
-                name: 'Hội Chứng Cổ Vai Cánh Tay',
-                procs: ['điện châm', 'thủy châm', 'điện xung', 'parafin']
-            },
-            'M75.0': {
-                name: 'Viêm quanh khớp vai',
+            '1': {
+                name: 'Phác đồ 1',
                 procs: ['điện châm', 'thủy châm', 'điện xung']
             },
-            'M17_1': {
-                name: 'Thoái Hóa Khớp Gối (Phác đồ 1)',
+            '2': {
+                name: 'Phác đồ 2',
+                procs: ['điện châm', 'thủy châm', 'điện xung', 'parafin']
+            },
+            '3': {
+                name: 'Phác đồ 3',
                 procs: ['điện châm', 'thủy châm', 'điện xung', 'sóng ngắn']
             },
-            'M17_2': {
-                name: 'Thoái Hóa Khớp Gối (Phác đồ 2)',
-                procs: ['thủy châm', 'điện xung', 'sóng ngắn']
-            },
-            'G51.0_1': {
-                name: 'Liệt Dây Thần Kinh VII Ngoại Biên (Phác đồ 1)',
+            '4': {
+                name: 'Phác đồ 4',
                 procs: ['điện châm', 'thủy châm', 'hồng ngoại', 'xoa bóp vùng']
             },
-            'G51.0_2': {
-                name: 'Liệt Dây Thần Kinh VII Ngoại Biên (Phác đồ 2)',
+            '5': {
+                name: 'Phác đồ 5',
+                procs: ['thủy châm', 'điện xung', 'sóng ngắn']
+            },
+            '6': {
+                name: 'Phác đồ 6',
                 procs: ['điện châm', 'thủy châm', 'hồng ngoại', 'xoa bóp bấm huyệt']
             },
-            'I69_1': {
-                name: 'Di Chứng Tai Biến / Liệt Nửa Người (Phác đồ 1)',
+            '7': {
+                name: 'Phác đồ 7',
                 procs: ['điện châm', 'thủy châm', 'điện xung', 'tập trợ giúp']
             },
-            'I69_2': {
-                name: 'Di Chứng Tai Biến / Liệt Nửa Người (Phác đồ 2)',
+            '8': {
+                name: 'Phác đồ 8',
                 procs: ['điện châm', 'thủy châm', 'hồng ngoại', 'tập trợ giúp']
             },
-            'G56.0': {
-                name: 'Hội Chứng Ống Cổ Tay',
+            '9': {
+                name: 'Phác đồ 9',
                 procs: ['thủy châm', 'điện xung', 'siêu âm']
             },
-            'T9x_1': {
-                name: 'Di chứng gãy xương',
-                procs: ['hồng ngoại', 'tập trợ giúp', 'tập kháng trở']
+            '10': {
+                name: 'Phác đồ 10',
+                procs: ['hồng ngoại', 'tập trợ giúp']
             },
-            'T9x_2': {
-                name: 'Di chứng gãy xương sườn',
-                procs: ['hồng ngoại', 'điện xung', 'tập thở']
+            '11': {
+                name: 'Phác đồ 11',
+                procs: ['hồng ngoại', 'tập kháng trở']
+            },
+            '12': {
+                name: 'Phác đồ 12',
+                procs: ['hồng ngoại', 'tập thở']
+            },
+            '13': {
+                name: 'Phác đồ 13',
+                procs: ['điện xung', 'tập thở']
             }
         };
         window.CLINICAL_PROTOCOLS = CLINICAL_PROTOCOLS;
@@ -2797,7 +2800,11 @@ window.renderSttOrderControl = function (type, i, total) {
         window.clearSelectedProcs = clearSelectedProcs;
 
         function applyClinicalProtocol(protocolKey) {
-            if (!protocolKey || !CLINICAL_PROTOCOLS[protocolKey]) return;
+            if (!protocolKey) {
+                clearSelectedProcs();
+                return;
+            }
+            if (!CLINICAL_PROTOCOLS[protocolKey]) return;
             const pObj = CLINICAL_PROTOCOLS[protocolKey];
             const targetProcs = pObj.procs;
 

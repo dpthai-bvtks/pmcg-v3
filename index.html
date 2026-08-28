@@ -83,15 +83,18 @@
     <link rel="stylesheet" href="css/mobile.css?v=3.2.1">
 
     <!-- JS Thư viện Offline IndexedDB Dexie.js -->
-    <script src="js/dexie.min.js?v=3.2.1"></script>
+    <script src="js/dexie.min.js?v=3.2.2"></script>
+    <!-- JS Thư viện Bảo mật DOMPurify & Tìm kiếm mờ thông minh Fuse.js -->
+    <script src="js/purify.min.js?v=3.2.2"></script>
+    <script src="js/fuse.min.js?v=3.2.2"></script>
     <!-- JS Thư viện kéo thả nội bộ -->
-    <script src="js/sortable.min.js?v=3.2.1"></script>
+    <script src="js/sortable.min.js?v=3.2.2"></script>
     <!-- Thư viện Dòng thời gian Timeline Frappe Gantt -->
-    <link rel="stylesheet" href="css/frappe-gantt.css?v=3.2.1">
-    <script src="js/frappe-gantt.min.js?v=3.2.1"></script>
+    <link rel="stylesheet" href="css/frappe-gantt.css?v=3.2.2">
+    <script src="js/frappe-gantt.min.js?v=3.2.2"></script>
     <!-- Thư viện Xuất PDF pdfmake tiếng Việt -->
-    <script src="js/pdfmake.min.js?v=3.2.1"></script>
-    <script src="js/vfs_fonts.js?v=3.2.1"></script>
+    <script src="js/pdfmake.min.js?v=3.2.2"></script>
+    <script src="js/vfs_fonts.js?v=3.2.2"></script>
 
     <!-- Chart.js for Thống Kê & ExcelJS -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -2900,9 +2903,9 @@
 
                     <h4><span class="f-icon">⚙️</span> <span>THÔNG TIN HỆ THỐNG</span></h4>
 
-                    <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.2.1</span></p>
+                    <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.2.2</span></p>
 
-                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 16:05 27/08/2026</span></p>
+                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 11:30 28/08/2026</span></p>
 
                     <p><span class="f-icon">👨‍💻</span> <span>Thiết kế & Phát triển: <b>Bác sĩ Thái</b></span></p>
 
@@ -3244,18 +3247,18 @@
     <div id="sidebar-tooltip"></div>
 
     <!-- JavaScript Modules -->
-    <script src="js/offline-sync-engine.js?v=3.2.1"></script>
-    <script src="js/scheduler-engine.js?v=3.2.1"></script>
-    <script src="js/app.js?v=3.2.1"></script>
-    <script src="js/init.js?v=3.2.1"></script>
-    <script src="js/sync.js?v=3.2.1"></script>
-    <script src="js/thongke.js?v=3.2.1"></script>
+    <script src="js/offline-sync-engine.js?v=3.2.2"></script>
+    <script src="js/scheduler-engine.js?v=3.2.2"></script>
+    <script src="js/app.js?v=3.2.2"></script>
+    <script src="js/init.js?v=3.2.2"></script>
+    <script src="js/sync.js?v=3.2.2"></script>
+    <script src="js/thongke.js?v=3.2.2"></script>
 
     <!-- PWA Service Worker Registration -->
     <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=3.2.1')
+            navigator.serviceWorker.register('./sw.js?v=3.2.2')
                 .then(reg => console.log('[PWA] Service Worker đăng ký thành công! Scope:', reg.scope))
                 .catch(err => console.warn('[PWA] Service Worker đăng ký thất bại:', err));
         });

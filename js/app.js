@@ -50,6 +50,89 @@ var google = window.google;
 
 
 // =========================================================
+// 🛡️ BẢO MẬT DỮ LIỆU (DOMPURIFY) & 🔍 TÌM KIẾM MỜ (FUSE.JS)
+// =========================================================
+function sanitizeInput(dirty) {
+    if (!dirty) return '';
+    if (typeof DOMPurify !== 'undefined' && DOMPurify.sanitize) {
+        return DOMPurify.sanitize(String(dirty), {
+            ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'span', 'br', 'mark'],
+            ALLOWED_ATTR: ['style', 'class', 'title']
+        });
+    }
+    return String(dirty).replace(/[&<>"']/g, function (m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+    });
+}
+window.sanitizeInput = sanitizeInput;
+
+function removeVietnameseTones(str) {
+    if (!str) return '';
+    str = String(str);
+    str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
+    str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e");
+    str = str.replace(/ì|í|ị|ỉ|ĩ/g, "i");
+    str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o");
+    str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
+    str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
+    str = str.replace(/đ/g, "d");
+    str = str.replace(/À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ/g, "A");
+    str = str.replace(/È|É|Ẹ|Ẻ|Ẽ|Ê|Ề|Ế|Ệ|Ể|Ễ/g, "E");
+    str = str.replace(/Ì|Í|Ị|Ỉ|Ĩ/g, "I");
+    str = str.replace(/Ò|Ó|Ọ|Ỏ|Õ|Ô|Ồ|Ố|Ộ|Ổ|Ỗ|Ơ|Ờ|Ớ|Ợ|Ở|Ỡ/g, "O");
+    str = str.replace(/Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ/g, "U");
+    str = str.replace(/Ỳ|Ý|Ỵ|Ỷ|Ỹ/g, "Y");
+    str = str.replace(/Đ/g, "D");
+    return str.trim().toLowerCase();
+}
+window.removeVietnameseTones = removeVietnameseTones;
+
+function fuzzySearchList(list, query, keys = ['tenBN', 'phong', 'nvChinh', 'nvPhu', 'thuThuat', 'may', 'giuong']) {
+    if (!query || !list || !list.length) return list;
+    const cleanQuery = String(query).trim();
+    if (!cleanQuery) return list;
+
+    // Chuẩn bị danh sách kèm trường không dấu
+    const enrichedList = list.map(item => {
+        const enriched = { ...item };
+        keys.forEach(k => {
+            enriched[k + '_noTone'] = removeVietnameseTones(item[k]);
+        });
+        return enriched;
+    });
+
+    const searchKeys = [];
+    keys.forEach(k => {
+        searchKeys.push({ name: k, weight: 0.7 });
+        searchKeys.push({ name: k + '_noTone', weight: 0.9 });
+    });
+
+    if (typeof Fuse !== 'undefined') {
+        const fuse = new Fuse(enrichedList, {
+            keys: searchKeys,
+            threshold: 0.38,
+            distance: 100,
+            minMatchCharLength: 1,
+            ignoreLocation: true
+        });
+        const results = fuse.search(cleanQuery);
+        return results.map(r => r.item);
+    }
+
+    // Fallback nếu Fuse chưa sẵn sàng
+    const qLower = cleanQuery.toLowerCase();
+    const qNoTone = removeVietnameseTones(cleanQuery);
+    return list.filter(item => {
+        return keys.some(k => {
+            const val = String(item[k] || '').toLowerCase();
+            const valNoTone = removeVietnameseTones(item[k]);
+            return val.includes(qLower) || valNoTone.includes(qNoTone);
+        });
+    });
+}
+window.fuzzySearchList = fuzzySearchList;
+
+// =========================================================
 // GLOBAL HELPERS & DUAL-MODE TABLE REORDERING ENGINE
 // =========================================================
 function withLock(fn) {
@@ -5584,14 +5667,11 @@ window.renderSttOrderControl = function (type, i, total) {
                 return;
             }
 
-            // Bộ lọc tìm kiếm
-            const searchQuery = String(document.getElementById('schedule-search-input')?.value || '').trim().toLowerCase();
+            // Bộ lọc tìm kiếm mờ thông minh tiếng Việt (Fuse.js)
+            const searchQuery = String(document.getElementById('schedule-search-input')?.value || '').trim();
             let schedData = safeSched;
             if (searchQuery) {
-                schedData = safeSched.filter(row => {
-                    const txt = `${row.tenBN} ${row.phong} ${row.nvChinh} ${row.thuThuat} ${row.may} ${row.giuong}`.toLowerCase();
-                    return txt.includes(searchQuery);
-                });
+                schedData = fuzzySearchList(safeSched, searchQuery, ['tenBN', 'phong', 'nvChinh', 'nvPhu', 'thuThuat', 'may', 'giuong']);
             }
 
             // Cấu hình khung giờ và độ rộng mỗi slot (30 phút)
@@ -5732,11 +5812,12 @@ window.renderSttOrderControl = function (type, i, total) {
 
                 const totalLanes = Math.max(1, lanes.length);
                 const trackHeight = totalLanes * 40 + 8;
+                const safeGKey = sanitizeInput(gKey);
 
                 html += `
                     <div class="timeline-board-row">
                         <div class="timeline-res-side">
-                            <div class="timeline-resource-name" title="${gKey}">${timelineGroupBy === 'room' ? '🏥 ' : '👨‍⚕️ '}${gKey}</div>
+                            <div class="timeline-resource-name" title="${safeGKey}">${timelineGroupBy === 'room' ? '🏥 ' : '👨‍⚕️ '}${safeGKey}</div>
                             <div style="display:flex; gap:4px; flex-wrap:wrap;">
                                 <span class="timeline-resource-badge">${packedCards.length} ca</span>
                                 ${rvCount > 0 ? `<span class="timeline-resource-badge" style="background:#f5eef8; color:#7c3aed; font-weight:700;">${rvCount} RV</span>` : ''}
@@ -5768,18 +5849,26 @@ window.renderSttOrderControl = function (type, i, total) {
                     
                     let cardClass = isRV ? 'timeline-card-rv' : (isYHCT ? 'timeline-card-yhct' : 'timeline-card-phcn');
 
-                    const tooltipText = `Bệnh nhân: ${r.tenBN} (${r.namSinh || ''})&#10;Thủ thuật: ${r.thuThuat}&#10;Thời gian: ${r.gioDienRa} - ${r.gioKetThuc}&#10;Phòng: ${r.phong || ''} | Giường: ${r.giuong || ''}&#10;KTV: ${r.nvChinh || ''} ${r.nvPhu ? '(Phụ: ' + r.nvPhu + ')' : ''}&#10;Máy: ${r.may || ''}`;
+                    const safeTenBN = sanitizeInput(r.tenBN);
+                    const safeThuThuat = sanitizeInput(r.thuThuat);
+                    const safePhong = sanitizeInput(r.phong || '');
+                    const safeGiuong = sanitizeInput(r.giuong || '');
+                    const safeNV = sanitizeInput(r.nvChinh || '');
+                    const safeNVPhu = sanitizeInput(r.nvPhu || '');
+                    const safeMay = sanitizeInput(r.may || '');
+
+                    const tooltipText = `Bệnh nhân: ${safeTenBN} (${r.namSinh || ''})&#10;Thủ thuật: ${safeThuThuat}&#10;Thời gian: ${r.gioDienRa} - ${r.gioKetThuc}&#10;Phòng: ${safePhong} | Giường: ${safeGiuong}&#10;KTV: ${safeNV} ${safeNVPhu ? '(Phụ: ' + safeNVPhu + ')' : ''}&#10;Máy: ${safeMay}`;
 
                     html += `
                         <div class="timeline-card ${cardClass}" 
                              style="left: ${item.left}px; width: ${item.width}px; top: ${topPx}px;"
                              title="${tooltipText}">
                             <div class="timeline-card-title">
-                                <span style="overflow:hidden; text-overflow:ellipsis;">${r.tenBN}</span>
+                                <span style="overflow:hidden; text-overflow:ellipsis;">${safeTenBN}</span>
                                 ${isRV ? '<span class="rv-badge">RV</span>' : ''}
                             </div>
                             <div class="timeline-card-sub">
-                                <span>${r.thuThuat} • ${r.gioDienRa}-${r.gioKetThuc}${r.giuong ? ' • G.' + r.giuong : ''}</span>
+                                <span>${safeThuThuat} • ${r.gioDienRa}-${r.gioKetThuc}${safeGiuong ? ' • G.' + safeGiuong : ''}</span>
                             </div>
                         </div>
                     `;

@@ -823,3 +823,17 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
      - Cập nhật `sw.js` (Service Worker) bổ sung cache đệm tĩnh cho toàn bộ 5 tài nguyên mới.
      - Nâng cấp số phiên bản toàn hệ thống lên `3.2.1`, đồng bộ tham số `?v=3.2.1` trên tất cả liên kết tài nguyên.
 - **File tạo mới & sửa đổi**: `js/dexie.min.js`, `js/frappe-gantt.min.js`, `css/frappe-gantt.css`, `js/pdfmake.min.js`, `js/vfs_fonts.js`, `backend/src/hono.js`, `backend/src/index.js`, `backend/package.json`, `js/offline-sync-engine.js`, `js/app.js`, `css/style.css`, `index.html`, `sw.js`, `PM-xeplich-v3.md` (v3.2.1).
+
+### Cập nhật 28/08/2026 (v3.2.2)
+- **Triển Khai Giai Đoạn 1: Tích Hợp Bảo Mật XSS DOMPurify & Tìm Kiếm Mờ Thông Minh Tiếng Việt Fuse.js**:
+  1. **Bảo Mật XSS Y Tế Với DOMPurify (`js/purify.min.js`)**:
+     - Tích hợp thư viện bảo mật DOMPurify chuẩn công nghiệp (<22KB), tự lưu trữ nội bộ (self-hosted offline).
+     - Thiết lập hàm làm sạch toàn diện `sanitizeInput()` tự động lọc sạch mã độc XSS trong tên bệnh nhân, thủ thuật, máy móc, phòng bệnh và ghi chú trước khi render DOM hoặc lưu trữ IndexedDB.
+  2. **Tìm Kiếm Mờ Thông Minh Tiếng Việt Với Fuse.js (`js/fuse.min.js`)**:
+     - Tích hợp thư viện Fuzzy Search Fuse.js kết hợp thuật toán chuẩn hóa không dấu `removeVietnameseTones()`.
+     - Xây dựng hàm `fuzzySearchList()` hỗ trợ tìm kiếm siêu nhạy trên toàn bộ các trường (Tên BN, Phòng, KTV, Thủ thuật, Máy, Giường) ngay cả khi gõ không dấu, viết tắt hoặc gõ sai chính tả.
+     - Tích hợp trực tiếp vào thanh tìm kiếm Timeline Y Tế và Danh Sách Lịch Trình.
+  3. **Đồng Bộ Bộ Nhớ Đệm Offline & Cache Busting v3.2.2**:
+     - Bổ sung `js/purify.min.js` và `js/fuse.min.js` vào Service Worker `sw.js` (`pmcg-cache-v3.2.2`).
+     - Đồng bộ toàn bộ liên kết tài nguyên trên `index.html` lên tham số `?v=3.2.2`.
+- **File tạo mới & sửa đổi**: `js/purify.min.js`, `js/fuse.min.js`, `js/app.js`, `index.html`, `sw.js`, `PM-xeplich-v3.md` (v3.2.2).

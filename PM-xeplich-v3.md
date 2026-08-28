@@ -958,3 +958,15 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   4. **Cửa Sổ Modal Tự Động Thích Ứng (95% Viewport)**:
      - Modal co giãn thông minh, cố định Header và Footer, cuộn nội dung mượt mà không bị bàn phím ảo che khuất.
 - **File sửa đổi**: `css/style.css`, `index.html`, `js/app.js`, `PM-xeplich-v3.md`.
+
+### Nâng Cấp: Đồng Bộ Phác Đồ Đa Thiết Bị Qua Cloudflare D1 Backend (28/08/2026)
+- **Vấn đề xử lý**: Bác sĩ chỉnh sửa phác đồ trên máy tính (PC), nhưng khi mở trên điện thoại/máy tính bảng thì chưa thấy cập nhật do dữ liệu trước đó chỉ lưu trong LocalStorage của trình duyệt máy tính.
+- **Giải pháp triển khai**:
+  1. **Cloudflare D1 Backend (`backend/src/index.js`)**:
+     - Bổ sung 2 API `saveProtocolsData` và `getProtocolsData` ghi/đọc trực tiếp vào bảng `cai_dat` với key `clinical_protocols`.
+     - Tích hợp `protocols` tự động trong API khởi tạo hệ thống `getBootstrapData` (`/api/bootstrap`).
+     - Đưa `saveProtocolsData` vào danh sách `MUTATION_ACTIONS` để hỗ trợ sync webhook tức thì.
+  2. **Frontend (`js/app.js`)**:
+     - Mỗi khi Thêm / Sửa / Xóa phác đồ, gọi ngay `callApi('saveProtocolsData', [newList])` để cập nhật lên Cloudflare D1 Database.
+     - Hàm `loadBootstrapData()` tự động nạp phác đồ mới nhất từ Cloud và lưu vào bộ nhớ Offline Cache của từng thiết bị.
+- **File sửa đổi**: `backend/src/index.js`, `js/app.js`, `index.html`, `PM-xeplich-v3.md`.

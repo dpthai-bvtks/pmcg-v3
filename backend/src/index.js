@@ -313,7 +313,8 @@ function dispatchBackgroundSync(action, args, env, ctx) {
     "addMayMoc", "editMayMoc", "deleteMayMoc",
     "addPhong", "editPhong", "deletePhong",
     "addThuThuat", "editThuThuat", "deleteThuThuat",
-    "saveSystemSettings", "saveGeneralSettings"
+    "saveSystemSettings", "saveGeneralSettings",
+    "saveProtocolsData", "saveClinicalProtocols"
   ];
 
   if (!MUTATION_ACTIONS.includes(action)) return;
@@ -411,6 +412,14 @@ async function handleApiAction(action, args, env, request, ctx) {
       if (settingsObj.quick_links) {
         try {
           links = typeof settingsObj.quick_links === 'string' ? JSON.parse(settingsObj.quick_links) : settingsObj.quick_links;
+        } catch(e) {}
+      }
+
+      let protocolsList = [];
+      if (settingsObj.clinical_protocols || settingsObj.protocols) {
+        try {
+          const rawProtocols = settingsObj.clinical_protocols || settingsObj.protocols;
+          protocolsList = typeof rawProtocols === 'string' ? JSON.parse(rawProtocols) : rawProtocols;
         } catch(e) {}
       }
       const thu_thuat = (proceduresRes.results || []).map(p => ({
@@ -517,6 +526,8 @@ async function handleApiAction(action, args, env, request, ctx) {
         nhan_su: staffList,
         patients: patientList,
         benh_nhan: patientList,
+        protocols: protocolsList,
+        phac_do: protocolsList,
         schedule: scheduleRows,
         schedules: scheduleRows,
         lich_trinh: scheduleRows,
@@ -1473,6 +1484,30 @@ async function handleApiAction(action, args, env, request, ctx) {
         await db.batch(statements);
         await bumpDataVersion(db);
       }
+      return success(true);
+    }
+
+    // ============================================================
+    // 📋 PHÁC ĐỒ ĐIỀU TRỊ ĐỘNG (CLINICAL PROTOCOLS)
+    // ============================================================
+    case "getProtocolsData":
+    case "getClinicalProtocols": {
+      const rec = await db.prepare("SELECT value FROM cai_dat WHERE key = 'clinical_protocols'").first();
+      if (rec && rec.value) {
+        try {
+          const list = JSON.parse(rec.value);
+          if (Array.isArray(list) && list.length > 0) return success(list);
+        } catch(e) {}
+      }
+      return success([]);
+    }
+
+    case "saveProtocolsData":
+    case "saveClinicalProtocols": {
+      const protocols = args[0] || [];
+      const jsonStr = typeof protocols === 'string' ? protocols : JSON.stringify(protocols);
+      await db.prepare("INSERT INTO cai_dat (key, value) VALUES ('clinical_protocols', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(jsonStr).run();
+      await bumpDataVersion(db);
       return success(true);
     }
 

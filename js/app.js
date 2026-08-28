@@ -2203,6 +2203,11 @@ window.renderSttOrderControl = function (type, i, total) {
                             dataCache.pat = b.patients.filter(pt => pt && pt.ten);
                             if (typeof renderPatientsTable === 'function') renderPatientsTable();
                         }
+                        if (b.protocols && Array.isArray(b.protocols) && b.protocols.length > 0) {
+                            dataCache.protocols = b.protocols;
+                            if (typeof renderProtocolsTable === 'function') renderProtocolsTable();
+                            if (typeof renderProtocolSelectOptions === 'function') renderProtocolSelectOptions();
+                        }
                         if (b.settings) {
                             applySystemSettings(b.settings);
                         }
@@ -2267,6 +2272,23 @@ window.renderSttOrderControl = function (type, i, total) {
                             b.patients.forEach((pt, i) => { if (pt) pt.sheetIndex = i; });
                             dataCache.pat = b.patients.filter(pt => pt && pt.ten);
                             if (typeof renderPatientsTable === 'function') renderPatientsTable();
+                        }
+
+                        if (b.protocols && Array.isArray(b.protocols) && b.protocols.length > 0) {
+                            dataCache.protocols = b.protocols;
+                            try { localStorage.setItem('meds_protocols', JSON.stringify(b.protocols)); } catch(e) {}
+                            if (typeof renderProtocolsTable === 'function') renderProtocolsTable();
+                            if (typeof renderProtocolSelectOptions === 'function') renderProtocolSelectOptions();
+                        } else if (b.settings && b.settings.clinical_protocols) {
+                            try {
+                                const parsed = typeof b.settings.clinical_protocols === 'string' ? JSON.parse(b.settings.clinical_protocols) : b.settings.clinical_protocols;
+                                if (Array.isArray(parsed) && parsed.length > 0) {
+                                    dataCache.protocols = parsed;
+                                    try { localStorage.setItem('meds_protocols', JSON.stringify(parsed)); } catch(e) {}
+                                    if (typeof renderProtocolsTable === 'function') renderProtocolsTable();
+                                    if (typeof renderProtocolSelectOptions === 'function') renderProtocolSelectOptions();
+                                }
+                            } catch(e) {}
                         }
                     }
 
@@ -2796,6 +2818,16 @@ window.renderSttOrderControl = function (type, i, total) {
                     window.OfflineSyncEngine.broadcastLiveEvent('PROTOCOLS_UPDATED', { count: newList.length });
                 }
             } catch (e) {}
+
+            // ĐỒNG BỘ LÊN CLOUDFLARE D1 BACKEND ĐỂ MỌI THIẾT BỊ (ĐIỆN THOẠI/TABLET/PC) ĐỀU CÓ DỮ LIỆU
+            if (typeof callApi === 'function') {
+                callApi('saveProtocolsData', [newList], res => {
+                    console.log('[Protocols]: Đã đồng bộ phác đồ lên Cloudflare D1 Backend thành công!');
+                }, err => {
+                    console.warn('[Protocols]: Lưu D1 thất bại, dữ liệu lưu Offline:', err);
+                });
+            }
+
             renderProtocolsTable();
             renderProtocolSelectOptions();
         }

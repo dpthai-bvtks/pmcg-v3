@@ -5040,7 +5040,7 @@ window.renderSttOrderControl = function (type, i, total) {
 
 
         // ============================================================
-        // 📤 XUẤT LỊCH Y LỆNH EXCEL (THEO TỪNG PHÒNG & ĐỒNG BỘ CHUẨN PDF)
+        // 📤 XUẤT LỊCH Y LỆNH EXCEL (1 SHEET KÈM DROP-LIST LỌC PHÒNG, A-Z & RV ĐẦU BẢNG)
         // ============================================================
         function exportSchedule() {
             if (typeof XLSX === 'undefined') {
@@ -5055,239 +5055,244 @@ window.renderSttOrderControl = function (type, i, total) {
                 return alert("Chưa có dữ liệu lịch trình để xuất file Excel!");
             }
 
-            // 1. Phân nhóm ca thủ thuật theo từng Phòng Điều Trị
-            const roomMap = {};
-            safeSched.forEach(row => {
-                const roomName = String(row.phong || 'Chưa phân phòng').trim();
-                if (!roomMap[roomName]) roomMap[roomName] = [];
-                roomMap[roomName].push(row);
-            });
+            // Sắp xếp dữ liệu: Đưa bệnh nhân Ra viện (RV) lên trên cùng, sau đó xếp A-Z theo Tên Bệnh Nhân
+            safeSched.sort((a, b) => {
+                const dA = !!a.__isDischarged;
+                const dB = !!b.__isDischarged;
+                if (dA !== dB) return dA ? -1 : 1; // 🏃 Ra viện lên đầu bảng
 
-            const roomNames = Object.keys(roomMap).sort((a, b) => a.localeCompare(b, 'vi', { numeric: true }));
+                const nameA = String(a.tenBN || '').trim();
+                const nameB = String(b.tenBN || '').trim();
+                const nameCmp = nameA.localeCompare(nameB, 'vi', { sensitivity: 'base' });
+                if (nameCmp !== 0) return nameCmp;
 
-            // 2. Sắp xếp danh sách trong từng phòng: BỆNH NHÂN RA VIỆN LÊN ĐẦU TIÊN
-            roomNames.forEach(rName => {
-                roomMap[rName].sort((a, b) => {
-                    const dA = !!a.__isDischarged;
-                    const dB = !!b.__isDischarged;
-                    if (dA !== dB) return dA ? -1 : 1; // 🏃 Ra viện lên đầu
-                    const tA = String(a.gioDienRa || '');
-                    const tB = String(b.gioDienRa || '');
-                    if (tA !== tB) return tA.localeCompare(tB);
-                    return String(a.tenBN || '').localeCompare(String(b.tenBN || ''), 'vi');
-                });
+                const roomA = String(a.phong || '');
+                const roomB = String(b.phong || '');
+                const roomCmp = roomA.localeCompare(roomB, 'vi', { numeric: true });
+                if (roomCmp !== 0) return roomCmp;
+
+                return String(a.gioDienRa || '').localeCompare(String(b.gioDienRa || ''));
             });
 
             const wb = XLSX.utils.book_new();
 
-            // Helper tạo Sheet cho một danh sách ca (theo Phòng hoặc Tổng hợp)
-            function createRoomWorksheet(roomTitle, rows) {
-                const dischargedCount = rows.filter(r => r.__isDischarged).length;
-                const ws_data = [
-                    ["BỆNH VIỆN THAN - KHOÁNG SẢN CS2 - KHOA YHCT & PHCN"],
-                    [`BẢNG LỊCH TRÌNH ĐIỀU TRỊ THỦ THUẬT - ${roomTitle.toUpperCase()}`],
-                    [`Ngày thực hiện: ${displayDate}`],
-                    [""], // Dòng trống cách quãng
-                    ["STT", "Tên Bệnh Nhân", "Năm Sinh", "Thủ Thuật", "Bắt Đầu", "Kết Thúc", "KTV / Bác Sĩ", "Máy Móc"]
-                ];
+            // Xây dựng ma trận dữ liệu Excel (9 Cột có Cột Phòng Điều Trị)
+            const ws_data = [
+                ["BỆNH VIỆN THAN - KHOÁNG SẢN CS2 - KHOA YHCT & PHCN"],
+                ["BẢNG LỊCH TRÌNH ĐIỀU TRỊ THỦ THUẬT"],
+                [`Ngày thực hiện: ${displayDate}`],
+                [""], // Dòng trống cách quãng
+                ["STT", "Tên Bệnh Nhân", "Năm Sinh", "Phòng Điều Trị", "Thủ Thuật", "Bắt Đầu", "Kết Thúc", "KTV / Bác Sĩ", "Máy Móc"]
+            ];
 
-                rows.forEach((row, idx) => {
-                    let tenBNText = String(row.tenBN || '').trim();
-                    if (row.__isDischarged) tenBNText += ' (RV)';
-                    if (row.__dropped) tenBNText += ' (❌ Rớt)';
+            const dischargedCount = safeSched.filter(r => r.__isDischarged).length;
 
-                    ws_data.push([
-                        idx + 1,
-                        tenBNText,
-                        String(row.namSinh || '').trim(),
-                        String(row.thuThuat || '').trim(),
-                        String(row.gioDienRa || '').trim(),
-                        String(row.gioKetThuc || '').trim(),
-                        String(row.nvChinh || '').trim(),
-                        String(row.may || '--').trim()
-                    ]);
-                });
+            safeSched.forEach((row, idx) => {
+                let tenBNText = String(row.tenBN || '').trim();
+                if (row.__isDischarged) tenBNText += ' (RV)';
+                if (row.__dropped) tenBNText += ' (❌ Rớt)';
 
-                // Dòng tổng kết
-                ws_data.push([""]);
-                ws_data.push([`Tổng số: ${rows.length} ca thủ thuật ${dischargedCount > 0 ? '(' + dischargedCount + ' ca RV)' : ''}`]);
-
-                const ws = XLSX.utils.aoa_to_sheet(ws_data);
-
-                // Merge tiêu đề đầu bảng (Cột A đến H: c=0 đến c=7)
-                ws['!merges'] = [
-                    { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }, // Dòng 1
-                    { s: { r: 1, c: 0 }, e: { r: 1, c: 7 } }, // Dòng 2
-                    { s: { r: 2, c: 0 }, e: { r: 2, c: 7 } }, // Dòng 3
-                    { s: { r: ws_data.length - 1, c: 0 }, e: { r: ws_data.length - 1, c: 7 } } // Dòng tổng kết
-                ];
-
-                // Độ rộng cột (Autofit tối ưu không có cột Giường)
-                ws['!cols'] = [
-                    { wch: 6 },   // STT
-                    { wch: 28 },  // Tên Bệnh Nhân
-                    { wch: 11 },  // Năm Sinh
-                    { wch: 28 },  // Thủ Thuật
-                    { wch: 11 },  // Bắt Đầu
-                    { wch: 11 },  // Kết Thúc
-                    { wch: 20 },  // KTV / Bác Sĩ
-                    { wch: 18 }   // Máy Móc
-                ];
-
-                // Chiều cao dòng
-                ws['!rows'] = [];
-                ws['!rows'][0] = { hpt: 20 };
-                ws['!rows'][1] = { hpt: 26 };
-                ws['!rows'][2] = { hpt: 18 };
-                ws['!rows'][4] = { hpt: 25 }; // Header bảng
-                for (let r = 5; r < ws_data.length - 2; r++) {
-                    ws['!rows'][r] = { hpt: 22 }; // Các dòng dữ liệu
-                }
-
-                // Định dạng Style sắc nét bằng xlsx-js-style với DÒNG KẺ NGANG ĐẬM
-                try {
-                    const range = XLSX.utils.decode_range(ws['!ref']);
-                    for (let R = range.s.r; R <= range.e.r; R++) {
-                        // Tiêu đề dòng 1 (Tên bệnh viện)
-                        if (R === 0) {
-                            const addr = XLSX.utils.encode_cell({ r: 0, c: 0 });
-                            if (ws[addr]) {
-                                ws[addr].s = {
-                                    font: { name: "Arial", sz: 11, bold: true, color: { rgb: "1E3D2B" } },
-                                    alignment: { horizontal: "center", vertical: "center" }
-                                };
-                            }
-                            continue;
-                        }
-                        // Tiêu đề dòng 2 (Tên bảng & phòng)
-                        if (R === 1) {
-                            const addr = XLSX.utils.encode_cell({ r: 1, c: 0 });
-                            if (ws[addr]) {
-                                ws[addr].s = {
-                                    font: { name: "Arial", sz: 14, bold: true, color: { rgb: "059669" } },
-                                    alignment: { horizontal: "center", vertical: "center" }
-                                };
-                            }
-                            continue;
-                        }
-                        // Tiêu đề dòng 3 (Ngày thực hiện)
-                        if (R === 2) {
-                            const addr = XLSX.utils.encode_cell({ r: 2, c: 0 });
-                            if (ws[addr]) {
-                                ws[addr].s = {
-                                    font: { name: "Arial", sz: 10, italic: true, color: { rgb: "475569" } },
-                                    alignment: { horizontal: "center", vertical: "center" }
-                                };
-                            }
-                            continue;
-                        }
-                        // Dòng trống
-                        if (R === 3 || R === ws_data.length - 2) continue;
-
-                        // Tiêu đề cột bảng (Dòng 4)
-                        if (R === 4) {
-                            for (let C = 0; C <= 7; C++) {
-                                const addr = XLSX.utils.encode_cell({ r: 4, c: C });
-                                if (ws[addr]) {
-                                    ws[addr].s = {
-                                        fill: { fgColor: { rgb: "E8F8F5" } },
-                                        font: { name: "Arial", sz: 10.5, bold: true, color: { rgb: "1E3D2B" } },
-                                        alignment: { horizontal: "center", vertical: "center", wrapText: true },
-                                        border: {
-                                            top: { style: "medium", color: { rgb: "000000" } },
-                                            bottom: { style: "medium", color: { rgb: "000000" } },
-                                            left: { style: "thin", color: { rgb: "CBD5E1" } },
-                                            right: { style: "thin", color: { rgb: "CBD5E1" } }
-                                        }
-                                    };
-                                }
-                            }
-                            continue;
-                        }
-
-                        // Dòng tổng kết cuối bảng
-                        if (R === ws_data.length - 1) {
-                            const addr = XLSX.utils.encode_cell({ r: R, c: 0 });
-                            if (ws[addr]) {
-                                ws[addr].s = {
-                                    font: { name: "Arial", sz: 10, italic: true, color: { rgb: "64748B" } },
-                                    alignment: { horizontal: "left", vertical: "center" }
-                                };
-                            }
-                            continue;
-                        }
-
-                        // Các dòng dữ liệu bệnh nhân (R >= 5)
-                        const dataIdx = R - 5;
-                        const rowObj = rows[dataIdx];
-                        const isRV = rowObj && !!rowObj.__isDischarged;
-                        const centerCols = new Set([0, 2, 4, 5]); // STT, NamSinh, BatDau, KetThuc
-
-                        for (let C = 0; C <= 7; C++) {
-                            const addr = XLSX.utils.encode_cell({ r: R, c: C });
-                            if (!ws[addr]) continue;
-
-                            const alignH = centerCols.has(C) ? "center" : "left";
-                            const fontColor = isRV ? (C === 1 ? "7C3AED" : "1E293B") : (C === 4 ? "059669" : "1E293B");
-
-                            ws[addr].s = {
-                                fill: isRV ? { fgColor: { rgb: "F5EEF8" } } : (dataIdx % 2 === 1 ? { fgColor: { rgb: "F8FAFC" } } : undefined),
-                                font: {
-                                    name: "Arial",
-                                    sz: 10,
-                                    bold: isRV || C === 0 || C === 4 || C === 6,
-                                    color: { rgb: fontColor }
-                                },
-                                alignment: { horizontal: alignH, vertical: "center" },
-                                border: {
-                                    top: { style: "thin", color: { rgb: "334155" } },
-                                    bottom: { style: "medium", color: { rgb: "000000" } }, // Dòng kẻ ngang đậm ngăn cách rõ ràng
-                                    left: { style: "thin", color: { rgb: "CBD5E1" } },
-                                    right: { style: "thin", color: { rgb: "CBD5E1" } }
-                                }
-                            };
-                        }
-                    }
-                } catch (e) {
-                    console.warn("Lỗi style Excel:", e);
-                }
-
-                // Thiết lập trang in A4 ngang chuẩn
-                ws['!pageSetup'] = {
-                    paperSize: 9,          // A4
-                    orientation: 'landscape',
-                    fitToPage: true,
-                    fitToWidth: 1,
-                    fitToHeight: 0
-                };
-                ws['!margins'] = { left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 };
-
-                return ws;
-            }
-
-            // 3. Tạo Sheet riêng biệt cho từng Phòng Điều Trị
-            roomNames.forEach(rName => {
-                let safeSheetName = rName.replace(/[\\/?*\[\]:]/g, '_').substring(0, 30);
-                if (!safeSheetName) safeSheetName = "Phòng";
-                const ws = createRoomWorksheet(rName, roomMap[rName]);
-                XLSX.utils.book_append_sheet(wb, ws, safeSheetName);
+                ws_data.push([
+                    idx + 1,
+                    tenBNText,
+                    String(row.namSinh || '').trim(),
+                    String(row.phong || 'Chưa phân phòng').trim(),
+                    String(row.thuThuat || '').trim(),
+                    String(row.gioDienRa || '').trim(),
+                    String(row.gioKetThuc || '').trim(),
+                    String(row.nvChinh || '').trim(),
+                    String(row.may || '--').trim()
+                ]);
             });
 
-            // 4. Tạo thêm 1 Sheet "Tổng Hợp" ở đầu danh sách nếu có nhiều phòng
-            if (roomNames.length > 1) {
-                const allSorted = [];
-                roomNames.forEach(rName => {
-                    allSorted.push(...roomMap[rName]);
-                });
-                const wsAll = createRoomWorksheet("Tổng Hợp Tất Cả Phòng", allSorted);
-                wb.SheetNames.unshift("Tổng Hợp");
-                wb.Sheets["Tổng Hợp"] = wsAll;
+            const firstDataRow = 6; // Dòng 6 trong Excel (index 1-based)
+            const lastDataRow = safeSched.length + 5; // Dòng dữ liệu cuối cùng
+
+            // Dòng tổng kết tự động co giãn theo bộ lọc phòng bằng hàm SUBTOTAL(103)
+            ws_data.push([""]);
+            ws_data.push([
+                "TỔNG SỐ THỦ THUẬT:",
+                "",
+                "",
+                { t: 'n', f: `SUBTOTAL(103, B${firstDataRow}:B${lastDataRow})`, v: safeSched.length },
+                "ca thủ thuật (tự động cập nhật khi chọn phòng)",
+                "",
+                "",
+                "",
+                ""
+            ]);
+
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+
+            // 🎯 Kích hoạt Drop-list Filter (AutoFilter) tại dòng Header (A5:I${lastDataRow})
+            ws['!autofilter'] = { ref: `A5:I${lastDataRow}` };
+
+            // Merge các dòng tiêu đề (Cột A đến I: c=0 đến c=8)
+            ws['!merges'] = [
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } }, // Dòng 1: Tên bệnh viện
+                { s: { r: 1, c: 0 }, e: { r: 1, c: 8 } }, // Dòng 2: Tên bảng
+                { s: { r: 2, c: 0 }, e: { r: 2, c: 8 } }, // Dòng 3: Ngày thực hiện
+                { s: { r: ws_data.length - 1, c: 0 }, e: { r: ws_data.length - 1, c: 2 } }, // Dòng tổng: Cột A-C
+                { s: { r: ws_data.length - 1, c: 4 }, e: { r: ws_data.length - 1, c: 8 } }  // Dòng tổng: Cột E-I
+            ];
+
+            // Độ rộng tối ưu 9 cột
+            ws['!cols'] = [
+                { wch: 6 },   // STT
+                { wch: 28 },  // Tên Bệnh Nhân
+                { wch: 11 },  // Năm Sinh
+                { wch: 20 },  // Phòng Điều Trị (Có Drop-list)
+                { wch: 28 },  // Thủ Thuật
+                { wch: 11 },  // Bắt Đầu
+                { wch: 11 },  // Kết Thúc
+                { wch: 20 },  // KTV / Bác Sĩ
+                { wch: 18 }   // Máy Móc
+            ];
+
+            // Chiều cao dòng
+            ws['!rows'] = [];
+            ws['!rows'][0] = { hpt: 20 };
+            ws['!rows'][1] = { hpt: 26 };
+            ws['!rows'][2] = { hpt: 18 };
+            ws['!rows'][4] = { hpt: 26 }; // Header bảng
+            for (let r = 5; r < ws_data.length - 2; r++) {
+                ws['!rows'][r] = { hpt: 22 }; // Các dòng dữ liệu
+            }
+            ws['!rows'][ws_data.length - 1] = { hpt: 24 }; // Dòng tổng kết
+
+            // Định dạng Style chuyên nghiệp bằng xlsx-js-style
+            try {
+                const range = XLSX.utils.decode_range(ws['!ref']);
+                for (let R = range.s.r; R <= range.e.r; R++) {
+                    // Tiêu đề dòng 1 (Tên bệnh viện)
+                    if (R === 0) {
+                        const addr = XLSX.utils.encode_cell({ r: 0, c: 0 });
+                        if (ws[addr]) {
+                            ws[addr].s = {
+                                font: { name: "Arial", sz: 11, bold: true, color: { rgb: "1E3D2B" } },
+                                alignment: { horizontal: "center", vertical: "center" }
+                            };
+                        }
+                        continue;
+                    }
+                    // Tiêu đề dòng 2 (Tên bảng)
+                    if (R === 1) {
+                        const addr = XLSX.utils.encode_cell({ r: 1, c: 0 });
+                        if (ws[addr]) {
+                            ws[addr].s = {
+                                font: { name: "Arial", sz: 14, bold: true, color: { rgb: "059669" } },
+                                alignment: { horizontal: "center", vertical: "center" }
+                            };
+                        }
+                        continue;
+                    }
+                    // Tiêu đề dòng 3 (Ngày thực hiện)
+                    if (R === 2) {
+                        const addr = XLSX.utils.encode_cell({ r: 2, c: 0 });
+                        if (ws[addr]) {
+                            ws[addr].s = {
+                                font: { name: "Arial", sz: 10, italic: true, color: { rgb: "475569" } },
+                                alignment: { horizontal: "center", vertical: "center" }
+                            };
+                        }
+                        continue;
+                    }
+                    // Dòng trống
+                    if (R === 3 || R === ws_data.length - 2) continue;
+
+                    // Tiêu đề cột bảng (Dòng 4, index r=4)
+                    if (R === 4) {
+                        for (let C = 0; C <= 8; C++) {
+                            const addr = XLSX.utils.encode_cell({ r: 4, c: C });
+                            if (ws[addr]) {
+                                ws[addr].s = {
+                                    fill: { fgColor: { rgb: "E8F8F5" } },
+                                    font: { name: "Arial", sz: 10.5, bold: true, color: { rgb: "1E3D2B" } },
+                                    alignment: { horizontal: "center", vertical: "center", wrapText: true },
+                                    border: {
+                                        top: { style: "medium", color: { rgb: "000000" } },
+                                        bottom: { style: "medium", color: { rgb: "000000" } },
+                                        left: { style: "thin", color: { rgb: "CBD5E1" } },
+                                        right: { style: "thin", color: { rgb: "CBD5E1" } }
+                                    }
+                                };
+                            }
+                        }
+                        continue;
+                    }
+
+                    // Dòng tổng kết cuối bảng
+                    if (R === ws_data.length - 1) {
+                        for (let C = 0; C <= 8; C++) {
+                            const addr = XLSX.utils.encode_cell({ r: R, c: C });
+                            if (ws[addr]) {
+                                ws[addr].s = {
+                                    fill: { fgColor: { rgb: "FEF3C7" } },
+                                    font: { name: "Arial", sz: 11, bold: true, color: { rgb: "92400E" } },
+                                    alignment: { horizontal: C === 3 ? "center" : (C === 0 ? "right" : "left"), vertical: "center" },
+                                    border: {
+                                        top: { style: "medium", color: { rgb: "000000" } },
+                                        bottom: { style: "medium", color: { rgb: "000000" } },
+                                        left: { style: "thin", color: { rgb: "CBD5E1" } },
+                                        right: { style: "thin", color: { rgb: "CBD5E1" } }
+                                    }
+                                };
+                            }
+                        }
+                        continue;
+                    }
+
+                    // Các dòng dữ liệu bệnh nhân (R >= 5)
+                    const dataIdx = R - 5;
+                    const rowObj = safeSched[dataIdx];
+                    const isRV = rowObj && !!rowObj.__isDischarged;
+                    const centerCols = new Set([0, 2, 3, 5, 6]); // STT, NamSinh, Phong, BatDau, KetThuc
+
+                    for (let C = 0; C <= 8; C++) {
+                        const addr = XLSX.utils.encode_cell({ r: R, c: C });
+                        if (!ws[addr]) continue;
+
+                        const alignH = centerCols.has(C) ? "center" : "left";
+                        const fontColor = isRV ? (C === 1 ? "7C3AED" : "1E293B") : (C === 5 ? "059669" : "1E293B");
+
+                        ws[addr].s = {
+                            fill: isRV ? { fgColor: { rgb: "F5EEF8" } } : (dataIdx % 2 === 1 ? { fgColor: { rgb: "F8FAFC" } } : undefined),
+                            font: {
+                                name: "Arial",
+                                sz: 10,
+                                bold: isRV || C === 0 || C === 5 || C === 7,
+                                color: { rgb: fontColor }
+                            },
+                            alignment: { horizontal: alignH, vertical: "center" },
+                            border: {
+                                top: { style: "thin", color: { rgb: "CBD5E1" } },
+                                bottom: { style: "medium", color: { rgb: "000000" } }, // Dòng kẻ ngang đậm ngăn cách rõ ràng
+                                left: { style: "thin", color: { rgb: "CBD5E1" } },
+                                right: { style: "thin", color: { rgb: "CBD5E1" } }
+                            }
+                        };
+                    }
+                }
+            } catch (e) {
+                console.warn("Lỗi style Excel:", e);
             }
 
-            // 5. Xuất và tải file Excel
-            const fileName = `Lich_ThuThuat_TheoPhong_${displayDate.replace(/\//g, '-')}.xlsx`;
+            // Thiết lập trang in A4 ngang chuẩn
+            ws['!pageSetup'] = {
+                paperSize: 9,          // A4
+                orientation: 'landscape',
+                fitToPage: true,
+                fitToWidth: 1,
+                fitToHeight: 0
+            };
+            ws['!margins'] = { left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 };
+
+            XLSX.utils.book_append_sheet(wb, ws, "Lịch Trình");
+
+            // Xuất và tải file Excel
+            const fileName = `Lich_ThuThuat_${displayDate.replace(/\//g, '-')}.xlsx`;
             XLSX.writeFile(wb, fileName);
-            if (typeof showToast === 'function') showToast("📂 Đã xuất file Excel lịch trình theo từng phòng!");
+            if (typeof showToast === 'function') showToast("📂 Đã xuất file Excel lịch trình có bộ lọc phòng!");
         }
 
 

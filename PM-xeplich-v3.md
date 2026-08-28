@@ -863,3 +863,17 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   2. **Đồng Bộ Bộ Lọc Toàn Ứng Dụng**: Áp dụng đồng nhất cho Bảng Lịch Trình, Dòng Thời Gian Timeline, Bảng Bệnh Nhân và Modal Tra Cứu Văn Bản.
   3. **Nâng Cấp Cache Service Worker (`pmcg-cache-v3.2.4`)**: Cập nhật bộ nhớ đệm tĩnh, tự động kích hoạt phiên bản mới nhất ngay khi tải trang.
 - **File sửa đổi**: `js/app.js`, `index.html`, `sw.js`, `PM-xeplich-v3.md` (v3.2.4).
+
+### Cập nhật 28/08/2026 (v3.2.5)
+- **Tối Ưu Xuất File Excel In Ấn (1 Sheet Duy Nhất + Drop-list Lọc Phòng + Tự Động Đếm SUBTOTAL)**:
+  1. **Hợp Nhất 1 Sheet Gọn Gàng**: Không tách thành nhiều sheet rời rạc, gom toàn bộ lịch trình vào 1 sheet `"Lịch Trình"` duy nhất.
+  2. **Tích Hợp Drop-list Lọc Theo Phòng (`AutoFilter`)**:
+     - Thêm cột `"Phòng Điều Trị"` và kích hoạt bộ lọc Drop-list tự động của Excel tại dòng Header.
+     - Bác sĩ chỉ cần bấm vào mũi tên drop-down ở cột Phòng để chọn phòng bất kỳ ➔ Excel lập tức lọc danh sách thủ thuật của phòng đó.
+  3. **Tự Động Đếm Tổng Số Thủ Thuật Bằng Hàm `=SUBTOTAL(103, ...)`**: Dòng tổng kết dưới cùng tự động co giãn và đếm chính xác số lượng thủ thuật của phòng đang được chọn/lọc.
+  4. **Quy Tắc Sắp Xếp Chuẩn**:
+     - Đưa toàn bộ **Bệnh nhân Ra Viện `(RV)` lên TRÊN CÙNG** của bảng.
+     - Trong từng nhóm (RV và thường), sắp xếp theo thứ tự **A-Z theo Tên Bệnh Nhân** (chuẩn tiếng Việt).
+     - Giữ nguyên dòng kẻ ngang đậm phân cách giữa các dòng để in ấn rõ nét.
+  5. **Nâng Cấp Cache Service Worker (`pmcg-cache-v3.2.5`)**: Cập nhật bộ nhớ đệm tĩnh, tự động kích hoạt phiên bản mới nhất ngay khi tải trang.
+- **File sửa đổi**: `js/app.js`, `index.html`, `sw.js`, `PM-xeplich-v3.md` (v3.2.5).

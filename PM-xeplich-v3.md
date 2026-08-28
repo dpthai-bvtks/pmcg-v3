@@ -843,3 +843,13 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
      - Bổ sung `js/purify.min.js`, `js/fuse.min.js`, `js/chart.min.js`, `js/zod.min.js` vào Service Worker `sw.js` (`pmcg-cache-v3.2.2`).
      - Đồng bộ toàn bộ liên kết tài nguyên trên `index.html` lên tham số `?v=3.2.2`.
 - **File tạo mới & sửa đổi**: `js/purify.min.js`, `js/fuse.min.js`, `js/chart.min.js`, `js/zod.min.js`, `js/app.js`, `index.html`, `sw.js`, `PM-xeplich-v3.md` (v3.2.2).
+
+### Cập nhật 28/08/2026 (v3.2.3)
+- **Tối Ưu & Sửa Triệt Để Tìm Kiếm Tiếng Việt Không Dấu (NFD Unicode Normalization)**:
+  1. **Nâng Cấp Hàm `removeVietnameseTones()`**: Sử dụng chuẩn `normalize('NFD').replace(/[\u0300-\u036f]/g, '')` kết hợp chuyển `đ/Đ -> d`, hỗ trợ 100% tất cả các bộ gõ tiếng Việt (Unikey, EVKey, Windows IME, Gboard).
+  2. **Đồng Bộ Bộ Lọc Tìm Kiếm Bảng Lịch Trình (`filterSchedule()`) & Bảng Bệnh Nhân (`filterPatientTable()`)**:
+     - Áp dụng `fuzzySearchList()` và so khớp không dấu trực tiếp trên toàn bộ danh sách ca xếp lịch dạng Bảng và dạng Timeline.
+     - Khi gõ `vu viet tan`, hệ thống lập tức hiển thị bệnh nhân `VŨ VIỆT TÂN` và các ca thủ thuật liên quan mà không bị ẩn dòng.
+     - Đồng bộ tính năng tìm kiếm không dấu cho Modal Tra cứu văn bản y tế `filterDocLookupList()`.
+  3. **Nâng Cấp Cache Service Worker (`pmcg-cache-v3.2.3`)**: Cập nhật bộ nhớ đệm tĩnh, tự động kích hoạt phiên bản mới nhất ngay khi tải trang.
+- **File sửa đổi**: `js/app.js`, `index.html`, `sw.js`, `PM-xeplich-v3.md` (v3.2.3).

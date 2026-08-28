@@ -68,22 +68,13 @@ window.sanitizeInput = sanitizeInput;
 
 function removeVietnameseTones(str) {
     if (!str) return '';
-    str = String(str);
-    str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
-    str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e");
-    str = str.replace(/ì|í|ị|ỉ|ĩ/g, "i");
-    str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o");
-    str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
-    str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
-    str = str.replace(/đ/g, "d");
-    str = str.replace(/À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ/g, "A");
-    str = str.replace(/È|É|Ẹ|Ẻ|Ẽ|Ê|Ề|Ế|Ệ|Ể|Ễ/g, "E");
-    str = str.replace(/Ì|Í|Ị|Ỉ|Ĩ/g, "I");
-    str = str.replace(/Ò|Ó|Ọ|Ỏ|Õ|Ô|Ồ|Ố|Ộ|Ổ|Ỗ|Ơ|Ờ|Ớ|Ợ|Ở|Ỡ/g, "O");
-    str = str.replace(/Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ/g, "U");
-    str = str.replace(/Ỳ|Ý|Ỵ|Ỷ|Ỹ/g, "Y");
-    str = str.replace(/Đ/g, "D");
-    return str.trim().toLowerCase();
+    return String(str)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .replace(/Đ/g, 'd')
+        .trim()
+        .toLowerCase();
 }
 window.removeVietnameseTones = removeVietnameseTones;
 
@@ -91,6 +82,8 @@ function fuzzySearchList(list, query, keys = ['tenBN', 'phong', 'nvChinh', 'nvPh
     if (!query || !list || !list.length) return list;
     const cleanQuery = String(query).trim();
     if (!cleanQuery) return list;
+    const qLower = cleanQuery.toLowerCase();
+    const qNoTone = removeVietnameseTones(cleanQuery);
 
     // Chuẩn bị danh sách kèm trường không dấu
     const enrichedList = list.map(item => {
@@ -101,34 +94,40 @@ function fuzzySearchList(list, query, keys = ['tenBN', 'phong', 'nvChinh', 'nvPh
         return enriched;
     });
 
-    const searchKeys = [];
-    keys.forEach(k => {
-        searchKeys.push({ name: k, weight: 0.7 });
-        searchKeys.push({ name: k + '_noTone', weight: 0.9 });
-    });
-
+    let results = [];
     if (typeof Fuse !== 'undefined') {
+        const searchKeys = [];
+        keys.forEach(k => {
+            searchKeys.push({ name: k, weight: 0.7 });
+            searchKeys.push({ name: k + '_noTone', weight: 1.0 });
+        });
+
         const fuse = new Fuse(enrichedList, {
             keys: searchKeys,
-            threshold: 0.38,
+            threshold: 0.4,
             distance: 100,
             minMatchCharLength: 1,
             ignoreLocation: true
         });
-        const results = fuse.search(cleanQuery);
-        return results.map(r => r.item);
+
+        const fuseRes = fuse.search(qNoTone);
+        if (fuseRes && fuseRes.length) {
+            results = fuseRes.map(r => r.item);
+        }
     }
 
-    // Fallback nếu Fuse chưa sẵn sàng
-    const qLower = cleanQuery.toLowerCase();
-    const qNoTone = removeVietnameseTones(cleanQuery);
-    return list.filter(item => {
-        return keys.some(k => {
-            const val = String(item[k] || '').toLowerCase();
-            const valNoTone = removeVietnameseTones(item[k]);
-            return val.includes(qLower) || valNoTone.includes(qNoTone);
+    // Fallback sang Substring Matching không dấu & có dấu
+    if (!results.length) {
+        results = enrichedList.filter(item => {
+            return keys.some(k => {
+                const val = String(item[k] || '').toLowerCase();
+                const valNoTone = item[k + '_noTone'] || removeVietnameseTones(item[k]);
+                return val.includes(qLower) || valNoTone.includes(qNoTone);
+            });
         });
-    });
+    }
+
+    return results;
 }
 window.fuzzySearchList = fuzzySearchList;
 
@@ -3837,33 +3836,32 @@ window.renderSttOrderControl = function (type, i, total) {
         let patSearchTimeout;
 
         function filterPatientTable() {
-
             clearTimeout(patSearchTimeout);
-
             patSearchTimeout = setTimeout(function () {
-
-                const filter = document.getElementById("pat-search-input")?.value.toLowerCase() || '';
+                const rawFilter = document.getElementById("pat-search-input")?.value || '';
+                const filter = rawFilter.trim().toLowerCase();
+                const filterNoTone = removeVietnameseTones(rawFilter);
 
                 const table = document.getElementById("patients-table");
-
                 if (!table) return;
 
                 let sttCounter = 1;
-
                 Array.from(table.getElementsByTagName("tr")).slice(1).forEach(tr => {
-
                     const tds = tr.getElementsByTagName("td");
-
-                    let show = Array.from(tds).slice(1, tds.length - 1).some(td => (td.textContent || td.innerText).toLowerCase().includes(filter));
-
+                    let show = false;
+                    if (!filter) {
+                        show = true;
+                    } else {
+                        show = Array.from(tds).slice(1, tds.length - 1).some(td => {
+                            const text = (td.textContent || td.innerText || '').toLowerCase();
+                            const textNoTone = removeVietnameseTones(text);
+                            return text.includes(filter) || textNoTone.includes(filterNoTone);
+                        });
+                    }
                     tr.style.display = show ? "" : "none";
-
                     if (show && tds[0]) tds[0].innerText = sttCounter++;
-
                 });
-
-            }, 300);
-
+            }, 150);
         }
 
 
@@ -4472,15 +4470,12 @@ window.renderSttOrderControl = function (type, i, total) {
 
 
 
-        // 1. Hàm lọc dữ liệu (Đã thêm khiên chống sập JS)
-
+        // 1. Hàm lọc dữ liệu (Đã tích hợp Fuse.js & Tìm kiếm tiếng Việt không dấu chuẩn xác 100%)
         function filterSchedule() {
-
-            const q = document.getElementById('schedule-search-input')?.value.toLowerCase() || '';
-
-
-
-            // 🛡️ LỚP KHIÊN 2: Nếu dữ liệu chưa kịp tải về, tự động ép nó thành mảng rỗng [] để không bị sập hàm .filter()
+            const rawQ = document.getElementById('schedule-search-input')?.value || '';
+            const q = rawQ.trim();
+            const qLower = q.toLowerCase();
+            const qNoTone = removeVietnameseTones(q);
 
             const safeData = window.currentScheduleData || [];
             const cleanedUnscheduled = reconcileUnscheduledData(window.lastUnscheduledData || []);
@@ -4504,32 +4499,13 @@ window.renderSttOrderControl = function (type, i, total) {
 
             const displayData = [...safeData.map(row => ({ ...row, __dropped: false })), ...droppedData];
 
-
-
-            schedFilteredData = displayData.filter(row => {
-
-                if (!row) return false;
-
-                // Bắt lỗi an toàn khi trích xuất giá trị
-
-                try {
-
-                    const str = Object.values(row).join(' ').toLowerCase();
-
-                    return str.includes(q);
-
-                } catch (e) {
-
-                    return false;
-
-                }
-
-            });
+            if (!q) {
+                schedFilteredData = displayData;
+            } else {
+                schedFilteredData = fuzzySearchList(displayData, q, ['tenBN', 'phong', 'nvChinh', 'nvPhu', 'thuThuat', 'may', 'giuong', 'namSinh']);
+            }
 
             filteredSchedData = schedFilteredData;
-
-
-
             schedCurrentPage = 1;
 
             renderSchedPage();
@@ -4537,7 +4513,6 @@ window.renderSttOrderControl = function (type, i, total) {
             if (document.getElementById('schedule-gantt-wrap')?.style.display !== 'none') {
                 renderScheduleGanttTimeline();
             }
-
         }
 
 
@@ -10677,7 +10652,9 @@ window.renderDocLookupTableUI = function(docs) {
 };
 
 window.filterDocLookupList = function() {
-    const query = (document.getElementById('doc-search-input')?.value || '').toLowerCase().trim();
+    const rawQuery = document.getElementById('doc-search-input')?.value || '';
+    const query = rawQuery.toLowerCase().trim();
+    const queryNoTone = removeVietnameseTones(rawQuery);
     const agency = document.getElementById('doc-filter-agency')?.value || '';
 
     const filtered = (window.cachedDocuments || []).filter(doc => {
@@ -10685,7 +10662,10 @@ window.filterDocLookupList = function() {
         const title = (doc.title || doc.tenVanBan || '').toLowerCase();
         const ag = (doc.agency || doc.coQuan || '').toLowerCase();
 
-        const matchQuery = !query || docNum.includes(query) || title.includes(query) || ag.includes(query);
+        const allText = `${docNum} ${title} ${ag}`;
+        const allTextNoTone = removeVietnameseTones(allText);
+
+        const matchQuery = !query || allText.includes(query) || allTextNoTone.includes(queryNoTone);
         const matchAgency = !agency || (doc.agency || doc.coQuan || '').includes(agency);
 
         return matchQuery && matchAgency;

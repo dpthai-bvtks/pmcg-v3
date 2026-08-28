@@ -104,6 +104,7 @@ function blockStaff(staffName, start, end, khoangCach, staffTimeline, staffSetup
 function clonePatients(patients) {
   return patients.map(p => ({
     ...p,
+    pId: p.pId,
     pending: p.pending ? [...p.pending] : [],
     busy: p.busy ? p.busy.map(b => [b[0], b[1]]) : []
   }));
@@ -112,7 +113,7 @@ function clonePatients(patients) {
 function mutate(rawPatients, randFn, droppedNames) {
   let patients = clonePatients(rawPatients);
   if (droppedNames && droppedNames.size > 0 && randFn() < 0.6) {
-    const idx = patients.findIndex(p => droppedNames.has(p.name));
+    const idx = patients.findIndex(p => droppedNames.has(p.pId || (p.name + '_' + (p.ns || '') + '_' + (p.room || ''))));
     if (idx > 0) { const [p] = patients.splice(idx, 1); patients.unshift(p); return patients; }
   }
   const op = Math.floor(randFn() * 5);
@@ -245,7 +246,7 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
     (db.roomBeds[phong] || []).forEach(giuong => { bedTracker[phong][giuong] = []; });
   }
 
-  let patients = db.rawPatients.map(p => ({ ...p, pending: [...p.pending], failed: false, busy: p.busy ? p.busy.map(b => [...b]) : [], loaiBN: p.loaiBN, buoiDieuTri: p.buoiDieuTri }));
+  let patients = db.rawPatients.map(p => ({ ...p, pId: p.pId, pending: [...p.pending], failed: false, busy: p.busy ? p.busy.map(b => [...b]) : [], loaiBN: p.loaiBN, buoiDieuTri: p.buoiDieuTri }));
 
   existingSched.forEach(row => {
     const gioDienRaStr = String(row[5] || row.GIODIENRA || row.gioDienRa || '');
@@ -286,7 +287,8 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
       const patObj = patients.find(p => {
         const pName = String(p.name || '').toUpperCase().trim();
         const pNs = String(p.ns || p.namSinh || '').trim();
-        return pName === patName && (!patNs || !pNs || patNs === pNs);
+        const pRoom = String(p.room || p.phong || '').trim();
+        return pName === patName && (!patNs || !pNs || patNs === pNs) && (!phong || !pRoom || phong === pRoom);
       });
       if (patObj) {
         patObj.busy.push([gioStart, gioEnd + 1]);
@@ -317,7 +319,7 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
     p.pending.forEach(tenThuThuat => {
       if (!staffBySkill[tenThuThuat.toLowerCase()]) {
         const tenGoc = thuThuatInfo[tenThuThuat.toLowerCase()]?.[8] || tenThuThuat;
-        tempDropList.push({ bn: p.name, ns: p.ns, tt: tenGoc, room: p.room, staff: "Trống", reason: "HỦY SỚM: Không có nhân sự có kỹ năng này" });
+        tempDropList.push({ pId: p.pId, bn: p.name, ns: p.ns, tt: tenGoc, room: p.room, staff: "Trống", reason: "HỦY SỚM: Không có nhân sự có kỹ năng này" });
       } else valid.push(tenThuThuat);
     });
 
@@ -543,7 +545,7 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
         }
 
         results.push({
-          NGAY: ngayXep, HOTEN: patient.name, NAMSINH: patient.ns, PHONG: targetRoom,
+          NGAY: ngayXep, HOTEN: patient.name, NAMSINH: patient.ns, PHONG: targetRoom, pId: patient.pId,
           DICHVU: tenGoc, GIODIENRA: m2t(tNow), GIOKETTHUC: m2t(gioKetThuc),
           "NV CHÍNH": nvChinh, "NV PHỤ": nvPhu, MAY: selectedMachine, GIUONG: selectedBed || "",
           t_sort: tNow, PRIO: patient.leave !== 9999
@@ -739,7 +741,7 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
 
   patients.forEach(p => p.pending.forEach(tenTT => {
     const tenGoc = thuThuatInfo[tenTT.toLowerCase()]?.[8] || tenTT;
-    tempDropList.push({ bn: p.name, ns: p.ns, tt: tenGoc, room: p.room, staff: "Trống", reason: "Thiếu nhân sự/Máy hoặc hết giờ" });
+    tempDropList.push({ pId: p.pId, bn: p.name, ns: p.ns, tt: tenGoc, room: p.room, staff: "Trống", reason: "Thiếu nhân sự/Máy hoặc hết giờ" });
   }));
 
   isBackfill = true;
@@ -747,18 +749,18 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
   const resultsByPatient = new Map();
   for (const r of results) {
     const nv = r["NV CHÍNH"];
-    const bn = r.HOTEN;
+    const patKey = r.pId ? r.pId : (r.HOTEN + "_" + (r.NAMSINH || '') + "_" + (r.PHONG || ''));
     if (!resultsByStaff.has(nv)) resultsByStaff.set(nv, []);
     resultsByStaff.get(nv).push(r);
-    if (!resultsByPatient.has(bn)) resultsByPatient.set(bn, []);
-    resultsByPatient.get(bn).push(r);
+    if (!resultsByPatient.has(patKey)) resultsByPatient.set(patKey, []);
+    resultsByPatient.get(patKey).push(r);
   }
 
   const finalDropList = [];
   for (const rotItem of tempDropList) {
     let saved = false;
     const tenTT = rotItem.tt, tenBN = rotItem.bn, phong = rotItem.room || '';
-    const pat = patients.find(p => p.name === tenBN);
+    const pat = patients.find(p => (rotItem.pId && p.pId === rotItem.pId) || (p.name === tenBN && p.ns === rotItem.ns && p.room === phong));
     const infoRot = thuThuatInfo[tenTT.toLowerCase()] || ["Thủ công", 15, 5, "PHCN", 1, 0, [], 5];
     const isYHCT = String(infoRot[3] || "").trim().toUpperCase() === "YHCT";
     const yhctEndLimit = weights.yhctEnd !== undefined ? Number(weights.yhctEnd) : 10;
@@ -807,10 +809,15 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
             if (!staffTimeline[ktvThayThe]) staffTimeline[ktvThayThe] = [];
             staffTimeline[ktvThayThe].push([timeStart, timeEnd]); staffTimeline[ktvThayThe] = mergeTimeline(staffTimeline[ktvThayThe]);
             
-            const newRes = { NGAY: ngayXep, HOTEN: tenBN, NAMSINH: rotItem.ns || "", PHONG: phong, DICHVU: tenTT, GIODIENRA: m2t(timeStart), GIOKETTHUC: m2t(timeStart + tgCanThiet), "NV CHÍNH": bacSi, "NV PHỤ": "", MAY: infoRot[0] || "Thủ công", GIUONG: "", t_sort: timeStart, PRIO: false };
+            const newRes = {
+              NGAY: ngayXep, HOTEN: pat.name, NAMSINH: pat.ns || rotItem.ns || "", PHONG: pat.room || phong, pId: pat.pId,
+              DICHVU: tenTT, GIODIENRA: m2t(timeStart), GIOKETTHUC: m2t(timeStart + tgCanThiet),
+              "NV CHÍNH": bacSi, "NV PHỤ": "", MAY: infoRot[0] || "Thủ công", GIUONG: "", t_sort: timeStart, PRIO: false
+            };
             results.push(newRes);
-            if (!resultsByPatient.has(tenBN)) resultsByPatient.set(tenBN, []);
-            resultsByPatient.get(tenBN).push(newRes);
+            const newPatKey = pat.pId ? pat.pId : (pat.name + "_" + (pat.ns || '') + "_" + (pat.room || ''));
+            if (!resultsByPatient.has(newPatKey)) resultsByPatient.set(newPatKey, []);
+            resultsByPatient.get(newPatKey).push(newRes);
 
             if (!staffTimeline[bacSi]) staffTimeline[bacSi] = [];
             staffTimeline[bacSi].push([timeStart, timeStart + tgCanThiet]); staffTimeline[bacSi] = mergeTimeline(staffTimeline[bacSi]);
@@ -841,7 +848,7 @@ function runBestIteration(db, dateVal, existingSched = [], scenario = 1, crowded
 
   if (best.rot.length === 0) return best;
 
-  let droppedNames = new Set(best.rot.map(r => r.bn));
+  let droppedNames = new Set(best.rot.map(r => r.pId || (r.bn + '_' + (r.ns || '') + '_' + (r.room || ''))));
   const T_initial = 4.0, T_min = 1.0, alpha = 0.65;
   let T = T_initial, noImprove = 0;
 
@@ -855,7 +862,7 @@ function runBestIteration(db, dateVal, existingSched = [], scenario = 1, crowded
       if (current.score < best.score) {
         best = current;
         if (best.rot.length === 0) return best;
-        droppedNames = new Set(best.rot.map(r => r.bn));
+        droppedNames = new Set(best.rot.map(r => r.pId || (r.bn + '_' + (r.ns || '') + '_' + (r.room || ''))));
         noImprove = 0;
       } else { noImprove++; }
     } else { noImprove++; }
@@ -1053,11 +1060,13 @@ async function buildBaseDbFromD1(db) {
     const seen = new Set();
     const forcedDrops = [];
 
-    patList.forEach(p => {
+    patList.forEach((p, idx) => {
       const pName = String(p.ten || p.name || p[1] || "").trim().toUpperCase();
       if (!pName) return;
       const pNs = String(p.namSinh || p.age || p[2] || "").trim();
-      const key = pName + "_" + pNs;
+      const pRoom = String(p.phong || p[7] || "").trim();
+      const pId = p.id || (pName + "_" + pNs + "_" + pRoom + "_" + idx);
+      const key = pId;
       if (seen.has(key)) return;
       seen.add(key);
 
@@ -1072,8 +1081,9 @@ async function buildBaseDbFromD1(db) {
             if (!r) return false;
             const rName = String(r.tenBN || r.HOTEN || r[1] || '').toUpperCase().trim();
             const rNs = String(r.namSinh || r.NAMSINH || r[2] || '').trim();
+            const rRoom = String(r.phong || r.PHONG || r[3] || '').trim();
             const rGio = String(r.gioDienRa || r.GIODIENRA || r[5] || '');
-            return rName === pName && (!pNs || !rNs || pNs === rNs) && rGio !== '❌ Rớt' && rGio !== '--';
+            return rName === pName && (!pNs || !rNs || pNs === rNs) && (!pRoom || !rRoom || pRoom === rRoom) && rGio !== '❌ Rớt' && rGio !== '--';
           })
           .map(r => String(r.thuThuat || r.DICHVU || r[4] || '').trim().toLowerCase());
 
@@ -1107,7 +1117,7 @@ async function buildBaseDbFromD1(db) {
         const tenGoc = info ? (info[8] || "").toLowerCase() : tenLower;
         const vietTat = info ? (info[9] || "").toLowerCase() : "";
         if (skipList.includes(tenLower) || skipList.includes(tenGoc) || skipList.includes(vietTat)) {
-          forcedDrops.push({ bn: pName, ns: pNs, room: p.phong || p[7] || "", tt: tenThuThuat, reason: "Tạm ngưng thủ thuật (Khoa báo nghỉ)" });
+          forcedDrops.push({ pId: pId, bn: pName, ns: pNs, room: pRoom, tt: tenThuThuat, reason: "Tạm ngưng thủ thuật (Khoa báo nghỉ)" });
           return false;
         }
         return true;
@@ -1117,10 +1127,11 @@ async function buildBaseDbFromD1(db) {
       const buoiDieuTri = p.buoi_dieu_tri || p.buoiDieuTri || p[10] || "Sang";
 
       database.rawPatients.push({
+        pId: pId,
         name: pName,
         ns: pNs,
         ngayVao: p.ngayVao || p[3] || "",
-        room: p.phong || p[7] || "",
+        room: pRoom,
         arrive: gioVao,
         leave: t2m(leaveRaw) || 9999,
         busy: busySlots,
@@ -1213,11 +1224,16 @@ async function buildBaseDbFromD1(db) {
     });
 
     baseDb.rawPatients = [];
-    (payload.final_pats || []).forEach(bn => {
+    (payload.final_pats || []).forEach((bn, idx) => {
       const readyTime = (bn.gioVao ? t2m(bn.gioVao) : 0) + 1;
+      const pName = String(bn.ten).toUpperCase();
+      const pNs = bn.ns || "";
+      const pRoom = bn.phong || "";
+      const pId = bn.id || (pName + "_" + pNs + "_" + pRoom + "_" + idx);
       baseDb.rawPatients.push({
-        name: String(bn.ten).toUpperCase(),
-        ns: bn.ns,
+        pId: pId,
+        name: pName,
+        ns: pNs,
         ngayVao: bn.ngayVao || "",
         room: "PHONG_CHUNG_T7",
         arrive: readyTime,

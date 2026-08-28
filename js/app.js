@@ -1483,7 +1483,8 @@ window.renderSttOrderControl = function (type, i, total) {
             const schedCountMap = {};
 
             schedData.forEach(row => {
-                const key = String(row.tenBN || '').toUpperCase().trim() + "_" + String(row.namSinh || '').trim();
+                const rowRoom = String(row.phong || row.PHONG || row[3] || '').trim();
+                const key = String(row.tenBN || '').toUpperCase().trim() + "_" + String(row.namSinh || '').trim() + (rowRoom ? "_" + rowRoom : "");
                 if (!schedCountMap[key]) schedCountMap[key] = [];
                 schedCountMap[key].push(String(row.thuThuat || '').trim());
             });
@@ -1492,13 +1493,14 @@ window.renderSttOrderControl = function (type, i, total) {
             unschedData.forEach(d => {
                 const patName = String(d.bn || d.tenBN || '').toUpperCase().trim();
                 const patNS = String(d.ns || d.namSinh || '').trim();
-                const key = patName + "_" + patNS;
+                const patRoom = String(d.phong || d.room || '').trim();
+                const key = patName + "_" + patNS + (patRoom ? "_" + patRoom : "");
                 const dropProc = String(d.tt || d.thuThuat || '').trim();
                 const dropSig = key + "|" + dropProc.toLowerCase();
                 if (seenDropKeys.has(dropSig)) return;
                 seenDropKeys.add(dropSig);
 
-                const patObj = activePatList.find(p => String(p.ten || '').toUpperCase().trim() === patName && String(p.namSinh || '').trim() === patNS);
+                const patObj = activePatList.find(p => String(p.ten || '').toUpperCase().trim() === patName && String(p.namSinh || '').trim() === patNS && (!patRoom || String(p.phong || '').trim() === patRoom));
                 const reqProcs = patObj && patObj.thuThuat ? patObj.thuThuat.split(',').map(x => x.trim()).filter(Boolean) : [];
                 const schedProcsForPat = schedCountMap[key] || [];
 
@@ -3481,11 +3483,14 @@ window.renderSttOrderControl = function (type, i, total) {
                     if (!r) return false;
                     const rName = String(r.tenBN || r.HOTEN || r[1] || '').toUpperCase().trim();
                     const rNS = String(r.namSinh || r.NAMSINH || r[2] || '').trim();
+                    const rRoom = String(r.phong || r.PHONG || r[3] || '').trim();
+                    const patRoom = String(item.phong || '').trim();
                     const isSameName = rName === patName;
                     const isSameNS = !patNS || !rNS || patNS === rNS;
+                    const isSameRoom = !patRoom || !rRoom || patRoom === rRoom;
                     const gio = String(r.gioDienRa || r.GIODIENRA || r[5] || '');
                     const isNotDropped = !r.__dropped && gio !== '❌ Rớt' && gio !== '--';
-                    return isSameName && isSameNS && isNotDropped;
+                    return isSameName && isSameNS && isSameRoom && isNotDropped;
                 });
 
                 const missingProcs = [];

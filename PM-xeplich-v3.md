@@ -877,3 +877,14 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
      - Giữ nguyên dòng kẻ ngang đậm phân cách giữa các dòng để in ấn rõ nét.
   5. **Nâng Cấp Cache Service Worker (`pmcg-cache-v3.2.5`)**: Cập nhật bộ nhớ đệm tĩnh, tự động kích hoạt phiên bản mới nhất ngay khi tải trang.
 - **File sửa đổi**: `js/app.js`, `index.html`, `sw.js`, `PM-xeplich-v3.md` (v3.2.5).
+
+### Khắc Phục Lỗi Xếp Lịch Cho Bệnh Nhân Trùng Tên (28/08/2026)
+- **Vấn đề phát hiện**:
+  - Khi khoa có 2 bệnh nhân trùng họ tên (ví dụ: `Nguyễn Thị Giới` - 1962 phòng Hà Chip chỉ có 2 thủ thuật DC, DX và `Nguyễn Thị Giới` - 1950 phòng Lê Hiền có 3 thủ thuật DC, TC, DX), thuật toán xếp lịch và hồi phục ca rớt (Backfill) trước đó tìm bệnh nhân chỉ dựa trên trường `name` (`patients.find(p => p.name === tenBN)`).
+  - Hậu quả: Các ca thủ thuật (như `thủy châm`) của bệnh nhân thứ hai bị gán nhầm sang cho bệnh nhân thứ nhất, khiến bệnh nhân 1962 bị xếp dôi lên thành 4 thủ thuật.
+- **Giải pháp xử lý triệt để**:
+  1. **Định Danh Bệnh Nhân Độc Nhất (`pId`)**: Gán mã định danh duy nhất cho từng hồ sơ bệnh nhân trong `SchedulerEngine` (`buildDbFromCache`, `runSaturdayScheduling`).
+  2. **So Khớp Toàn Diện Đa Trường (Tên + Năm Sinh + Phòng Điều Trị)**:
+     - Khắc phục toàn bộ các điểm tra cứu trong `SchedulerEngine` (giai đoạn tối ưu hóa, giai đoạn hồi phục ca rớt Backfill, đột biến Mutate, và lọc ca đã xếp `existingSched`).
+     - Đồng bộ hàm `setUnscheduledData()` và `renderPatientsTable()` trong `js/app.js` để nhãn trạng thái "Đã đủ" và ca rớt được phân định chính xác tuyệt đối.
+- **File sửa đổi**: `js/scheduler-engine.js`, `js/app.js`, `index.html`, `PM-xeplich-v3.md`.

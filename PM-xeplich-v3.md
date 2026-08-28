@@ -853,3 +853,13 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
      - Đồng bộ tính năng tìm kiếm không dấu cho Modal Tra cứu văn bản y tế `filterDocLookupList()`.
   3. **Nâng Cấp Cache Service Worker (`pmcg-cache-v3.2.3`)**: Cập nhật bộ nhớ đệm tĩnh, tự động kích hoạt phiên bản mới nhất ngay khi tải trang.
 - **File sửa đổi**: `js/app.js`, `index.html`, `sw.js`, `PM-xeplich-v3.md` (v3.2.3).
+
+### Cập nhật 28/08/2026 (v3.2.4)
+- **Chuẩn Hóa Thuật Toán Tìm Kiếm Đa Từ Khóa Không Dấu (Tokenized Multi-Word Vietnamese Search)**:
+  1. **Loại Bỏ Hoàn Toàn Lỗi Bắt Nhầm Tên (False Positives)**:
+     - Tách từ khóa tìm kiếm thành các tokens độc lập (`vu`, `viet`, `tan`), yêu cầu mọi token phải cùng xuất hiện trong dòng dữ liệu.
+     - Khắc phục triệt để việc tìm `vu viet tan` bị dính các bệnh nhân không liên quan như `TỰ TIẾN MẠNH`.
+     - Giờ đây, tìm `vu viet tan` sẽ **chỉ trả về chính xác 100% bệnh nhân `VŨ VIỆT TÂN`**.
+  2. **Đồng Bộ Bộ Lọc Toàn Ứng Dụng**: Áp dụng đồng nhất cho Bảng Lịch Trình, Dòng Thời Gian Timeline, Bảng Bệnh Nhân và Modal Tra Cứu Văn Bản.
+  3. **Nâng Cấp Cache Service Worker (`pmcg-cache-v3.2.4`)**: Cập nhật bộ nhớ đệm tĩnh, tự động kích hoạt phiên bản mới nhất ngay khi tải trang.
+- **File sửa đổi**: `js/app.js`, `index.html`, `sw.js`, `PM-xeplich-v3.md` (v3.2.4).

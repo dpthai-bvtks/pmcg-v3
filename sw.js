@@ -1,9 +1,9 @@
 /**
- * SERVICE WORKER CHO PHẦN MỀM XẾP LỊCH YHCT - PHCN (T.I.M.E.S System v3.2.3)
+ * SERVICE WORKER CHO PHẦN MỀM XẾP LỊCH YHCT - PHCN (T.I.M.E.S System v3.2.4)
  * Quản lý Cache đệm tĩnh, cho phép mở App ngoại tuyến (Offline-first) và tải tức thì.
  */
 
-const CACHE_NAME = 'pmcg-cache-v3.2.3';
+const CACHE_NAME = 'pmcg-cache-v3.2.4';
 const STATIC_ASSETS = [
   './',
   './index.html',

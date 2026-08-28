@@ -1467,14 +1467,16 @@ window.renderSttOrderControl = function (type, i, total) {
             const strA = String(a).trim().toLowerCase();
             const strB = String(b).trim().toLowerCase();
             if (strA === strB) return true;
+            if (strA.includes(strB) || strB.includes(strA)) return true;
             const procs = (window.dataCache && window.dataCache.proc) ? window.dataCache.proc : [];
             const procA = procs.find(p => (p.ten && p.ten.toLowerCase() === strA) || (p.vietTat && p.vietTat.toLowerCase() === strA));
             const procB = procs.find(p => (p.ten && p.ten.toLowerCase() === strB) || (p.vietTat && p.vietTat.toLowerCase() === strB));
             if (procA && procB && procA.ten && procB.ten && procA.ten.toLowerCase() === procB.ten.toLowerCase()) return true;
-            if (procA && (procA.ten.toLowerCase() === strB || (procA.vietTat && procA.vietTat.toLowerCase() === strB))) return true;
-            if (procB && (procB.ten.toLowerCase() === strA || (procB.vietTat && procB.vietTat.toLowerCase() === strA))) return true;
+            if (procA && (procA.ten.toLowerCase() === strB || (procA.vietTat && procA.vietTat.toLowerCase() === strB) || procA.ten.toLowerCase().includes(strB))) return true;
+            if (procB && (procB.ten.toLowerCase() === strA || (procB.vietTat && procB.vietTat.toLowerCase() === strA) || procB.ten.toLowerCase().includes(strA))) return true;
             return false;
         }
+        window.matchProc = matchProc;
 
         function reconcileUnscheduledData(inputList) {
             const schedData = window.currentScheduleData || [];
@@ -2725,9 +2727,107 @@ window.renderSttOrderControl = function (type, i, total) {
 
 
         // ============================================================
+        // 🎯 CLINICAL PROTOCOLS ENGINE (14 Phác Đồ Mẫu YHCT - PHCN Chuẩn)
+        // ============================================================
+        const CLINICAL_PROTOCOLS = {
+            'M54.5': {
+                name: 'Đau cột sống thắt lưng',
+                procs: ['điện châm', 'thủy châm', 'điện xung', 'parafin']
+            },
+            'M54.3': {
+                name: 'Đau thần kinh tọa',
+                procs: ['điện châm', 'thủy châm', 'điện xung', 'parafin']
+            },
+            'M54.2': {
+                name: 'Đau vai gáy',
+                procs: ['điện châm', 'thủy châm', 'điện xung', 'parafin']
+            },
+            'M53.1': {
+                name: 'Hội Chứng Cổ Vai Cánh Tay',
+                procs: ['điện châm', 'thủy châm', 'điện xung', 'parafin']
+            },
+            'M75.0': {
+                name: 'Viêm quanh khớp vai',
+                procs: ['điện châm', 'thủy châm', 'điện xung']
+            },
+            'M17_1': {
+                name: 'Thoái Hóa Khớp Gối (Phác đồ 1)',
+                procs: ['điện châm', 'thủy châm', 'điện xung', 'sóng ngắn']
+            },
+            'M17_2': {
+                name: 'Thoái Hóa Khớp Gối (Phác đồ 2)',
+                procs: ['thủy châm', 'điện xung', 'sóng ngắn']
+            },
+            'G51.0_1': {
+                name: 'Liệt Dây Thần Kinh VII Ngoại Biên (Phác đồ 1)',
+                procs: ['điện châm', 'thủy châm', 'hồng ngoại', 'xoa bóp vùng']
+            },
+            'G51.0_2': {
+                name: 'Liệt Dây Thần Kinh VII Ngoại Biên (Phác đồ 2)',
+                procs: ['điện châm', 'thủy châm', 'hồng ngoại', 'xoa bóp bấm huyệt']
+            },
+            'I69_1': {
+                name: 'Di Chứng Tai Biến / Liệt Nửa Người (Phác đồ 1)',
+                procs: ['điện châm', 'thủy châm', 'điện xung', 'tập trợ giúp']
+            },
+            'I69_2': {
+                name: 'Di Chứng Tai Biến / Liệt Nửa Người (Phác đồ 2)',
+                procs: ['điện châm', 'thủy châm', 'hồng ngoại', 'tập trợ giúp']
+            },
+            'G56.0': {
+                name: 'Hội Chứng Ống Cổ Tay',
+                procs: ['thủy châm', 'điện xung', 'siêu âm']
+            },
+            'T9x_1': {
+                name: 'Di chứng gãy xương',
+                procs: ['hồng ngoại', 'tập trợ giúp', 'tập kháng trở']
+            },
+            'T9x_2': {
+                name: 'Di chứng gãy xương sườn',
+                procs: ['hồng ngoại', 'điện xung', 'tập thở']
+            }
+        };
+        window.CLINICAL_PROTOCOLS = CLINICAL_PROTOCOLS;
 
+        function clearSelectedProcs() {
+            document.querySelectorAll('.pat-proc-cb').forEach(cb => { cb.checked = false; });
+            const sel = document.getElementById('pat-protocol-select');
+            if (sel) sel.value = '';
+        }
+        window.clearSelectedProcs = clearSelectedProcs;
+
+        function applyClinicalProtocol(protocolKey) {
+            if (!protocolKey || !CLINICAL_PROTOCOLS[protocolKey]) return;
+            const pObj = CLINICAL_PROTOCOLS[protocolKey];
+            const targetProcs = pObj.procs;
+
+            // Bỏ chọn trước khi áp dụng
+            document.querySelectorAll('.pat-proc-cb').forEach(cb => { cb.checked = false; });
+
+            let matchedCount = 0;
+            document.querySelectorAll('.pat-proc-cb').forEach(cb => {
+                const cbVal = String(cb.value || '').trim();
+                const isMatch = targetProcs.some(target => matchProc(cbVal, target));
+                if (isMatch) {
+                    cb.checked = true;
+                    matchedCount++;
+                    const parent = cb.closest('.checkbox-item') || cb.parentElement;
+                    if (parent) {
+                        parent.style.transition = 'background-color 0.3s';
+                        parent.style.backgroundColor = '#dbeafe';
+                        setTimeout(() => { parent.style.backgroundColor = ''; }, 600);
+                    }
+                }
+            });
+
+            if (typeof window.showToast === 'function') {
+                window.showToast(`🎯 Đã áp dụng: ${pObj.name} (${matchedCount} thủ thuật)`);
+            }
+        }
+        window.applyClinicalProtocol = applyClinicalProtocol;
+
+        // ============================================================
         // 💉 2. THỦ THUẬT
-
         // ============================================================
 
         function toggleAllSkills(checkbox, system) {

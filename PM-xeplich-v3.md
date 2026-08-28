@@ -904,3 +904,26 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   2. **Hàng Đợi Đồng Bộ Ngoại Tuyến (`syncQueue`)**:
      - Tự động lưu trữ các tác vụ khi offline và xả hàng đợi lên Cloudflare D1 khi có mạng trở lại.
 - **File sửa đổi**: `js/scheduler-engine.js`, `js/offline-sync-engine.js`, `js/sync.js`, `js/app.js`, `index.html`, `PM-xeplich-v3.md`.
+
+### Tích Hợp Hệ Thống 14 Phác Đồ Mẫu YHCT - PHCN Chuẩn Của Khoa (28/08/2026)
+- **Mục tiêu**: Tiết kiệm 80% thời gian nhập liệu, chuẩn hóa quy trình chỉ định y lệnh theo mã chẩn đoán ICD-10 thực tế tại Bệnh viện.
+- **14 Phác Đồ Lâm Sàng Chuẩn Được Tích Hợp**:
+  1. `M54.5` - **Đau cột sống thắt lưng**: Điện châm, Thủy châm, Điện xung, Parafin
+  2. `M54.3` - **Đau thần kinh tọa**: Điện châm, Thủy châm, Điện xung, Parafin
+  3. `M54.2` - **Đau vai gáy**: Điện châm, Thủy châm, Điện xung, Parafin
+  4. `M53.1` - **Hội Chứng Cổ Vai Cánh Tay**: Điện châm, Thủy châm, Điện xung, Parafin
+  5. `M75.0` - **Viêm quanh khớp vai**: Điện châm, Thủy châm, Điện xung
+  6. `M17 (PĐ 1)` - **Thoái Hóa Khớp Gối 1**: Điện châm, Thủy châm, Điện xung, Sóng ngắn
+  7. `M17 (PĐ 2)` - **Thoái Hóa Khớp Gối 2**: Thủy châm, Điện xung, Sóng ngắn
+  8. `G51.0 (PĐ 1)` - **Liệt Dây VII Ngoại Biên 1**: Điện châm, Thủy châm, Hồng ngoại, Xoa bóp vùng
+  9. `G51.0 (PĐ 2)` - **Liệt Dây VII Ngoại Biên 2**: Điện châm, Thủy châm, Hồng ngoại, Xoa bóp bấm huyệt
+  10. `I69 (PĐ 1)` - **Di Chứng Tai Biến 1**: Điện châm, Thủy châm, Điện xung, Tập trợ giúp
+  11. `I69 (PĐ 2)` - **Di Chứng Tai Biến 2**: Điện châm, Thủy châm, Hồng ngoại, Tập trợ giúp
+  12. `G56.0` - **Hội Chứng Ống Cổ Tay**: Thủy châm, Điện xung, Siêu âm
+  13. `T9x (PĐ 1)` - **Di chứng gãy xương**: Hồng ngoại, Tập trợ giúp / Tập kháng trở
+  14. `T9x (PĐ 2)` - **Di chứng gãy xương sườn**: Hồng ngoại / Điện xung, Tập thở
+- **Cơ Chế Tương Tác**:
+  - Khi Bác sĩ chọn 1 phác đồ trong Dropdown ➔ Hệ thống tự động xóa trắng và tick chọn chính xác các checkbox thủ thuật tương ứng trong cả hai cột **💊 YHCT** và **⚙️ PHCN**.
+  - Tích hợp nút "Bỏ chọn hết" để tiện thao tác lại.
+  - Bác sĩ vẫn hoàn toàn có thể click chọn thêm hoặc bớt thủ thuật linh hoạt theo từng ca bệnh cụ thể.
+- **File sửa đổi**: `index.html`, `js/app.js`, `PM-xeplich-v3.md`.

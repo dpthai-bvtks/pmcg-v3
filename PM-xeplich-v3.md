@@ -921,7 +921,8 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   11. **Phác đồ 11**: Hồng ngoại, Tập kháng trở
   12. **Phác đồ 12**: Hồng ngoại, Tập thở
   13. **Phác đồ 13**: Điện xung, Tập thở
-- **Cơ Chế Tương Tác**:
+- **Cơ Chế Tương Tác & Phân Biệt Từ Khóa Chuyên Khoa**:
   - Khi chọn phác đồ trong Dropdown ➔ Hệ thống tự động tick chọn chính xác các checkbox thủ thuật tương ứng trong cả hai cột **💊 YHCT** và **⚙️ PHCN** với thuật toán Token-based Matching thông minh.
+  - **Khắc phục triệt để bắt nhầm từ khóa**: Phân biệt tuyệt đối giữa `Điện châm` thông thường và `Điện châm liệt` (khi chọn Điện châm sẽ không bị tick nhầm vào Điện châm liệt và ngược lại).
   - Bác sĩ vẫn hoàn toàn có thể click chọn thêm hoặc bớt thủ thuật linh hoạt theo từng ca bệnh cụ thể.
 - **File sửa đổi**: `index.html`, `js/app.js`, `PM-xeplich-v3.md`.

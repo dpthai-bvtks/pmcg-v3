@@ -1467,20 +1467,32 @@ window.renderSttOrderControl = function (type, i, total) {
             const strA = String(a).trim().toLowerCase();
             const strB = String(b).trim().toLowerCase();
             if (strA === strB) return true;
-            if (strA.includes(strB) || strB.includes(strA)) return true;
 
-            // Token-based matching: mọi từ trong b đều xuất hiện trong a (hoặc ngược lại)
-            const tokensB = strB.split(/\s+/).filter(Boolean);
-            if (tokensB.length >= 2 && tokensB.every(tok => strA.includes(tok))) return true;
-            const tokensA = strA.split(/\s+/).filter(Boolean);
-            if (tokensA.length >= 2 && tokensA.every(tok => strB.includes(tok))) return true;
-
+            // 1. Tra cứu database theo mã viết tắt hoặc tên đầy đủ (chính xác 100%)
             const procs = (window.dataCache && window.dataCache.proc) ? window.dataCache.proc : [];
             const procA = procs.find(p => (p.ten && p.ten.toLowerCase() === strA) || (p.vietTat && p.vietTat.toLowerCase() === strA));
             const procB = procs.find(p => (p.ten && p.ten.toLowerCase() === strB) || (p.vietTat && p.vietTat.toLowerCase() === strB));
             if (procA && procB && procA.ten && procB.ten && procA.ten.toLowerCase() === procB.ten.toLowerCase()) return true;
-            if (procA && (procA.ten.toLowerCase() === strB || (procA.vietTat && procA.vietTat.toLowerCase() === strB) || procA.ten.toLowerCase().includes(strB))) return true;
-            if (procB && (procB.ten.toLowerCase() === strA || (procB.vietTat && procB.vietTat.toLowerCase() === strA) || procB.ten.toLowerCase().includes(strA))) return true;
+            if (procA && (procA.ten.toLowerCase() === strB || (procA.vietTat && procA.vietTat.toLowerCase() === strB))) return true;
+            if (procB && (procB.ten.toLowerCase() === strA || (procB.vietTat && procB.vietTat.toLowerCase() === strA))) return true;
+
+            // 2. Kiểm tra phân biệt từ khóa đặc biệt để tránh bắt nhầm (vd: 'liệt', 'vùng', 'bấm huyệt', 'kháng trở', 'trợ giúp', 'thở')
+            const distinctKeywords = ['liệt', 'vùng', 'bấm huyệt', 'kháng trở', 'trợ giúp', 'thở'];
+            for (const kw of distinctKeywords) {
+                const hasA = strA.includes(kw) || (procA && procA.ten && procA.ten.toLowerCase().includes(kw));
+                const hasB = strB.includes(kw) || (procB && procB.ten && procB.ten.toLowerCase().includes(kw));
+                if (hasA !== hasB) return false;
+            }
+
+            // 3. Substring match an toàn (sau khi đã loại trừ các keyword phân biệt)
+            if (strA.includes(strB) || strB.includes(strA)) return true;
+
+            // 4. Token-based matching: các token chính của b đều nằm trong a
+            const tokensB = strB.split(/\s+/).filter(tok => tok.length > 1);
+            if (tokensB.length >= 2 && tokensB.every(tok => strA.includes(tok))) return true;
+            const tokensA = strA.split(/\s+/).filter(tok => tok.length > 1);
+            if (tokensA.length >= 2 && tokensA.every(tok => strB.includes(tok))) return true;
+
             return false;
         }
         window.matchProc = matchProc;

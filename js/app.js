@@ -2763,11 +2763,11 @@ window.renderSttOrderControl = function (type, i, total) {
             },
             '7': {
                 name: 'Phác đồ 7',
-                procs: ['điện châm', 'thủy châm', 'điện xung', 'tập trợ giúp']
+                procs: ['điện châm liệt', 'thủy châm', 'điện xung', 'tập trợ giúp']
             },
             '8': {
                 name: 'Phác đồ 8',
-                procs: ['điện châm', 'thủy châm', 'hồng ngoại', 'tập trợ giúp']
+                procs: ['điện châm liệt', 'thủy châm', 'hồng ngoại', 'tập trợ giúp']
             },
             '9': {
                 name: 'Phác đồ 9',

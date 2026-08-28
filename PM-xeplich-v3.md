@@ -914,8 +914,8 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   4. **Phác đồ 4**: Điện châm, Thủy châm, Hồng ngoại, Xoa bóp vùng
   5. **Phác đồ 5**: Thủy châm, Điện xung, Sóng ngắn
   6. **Phác đồ 6**: Điện châm, Thủy châm, Hồng ngoại, Xoa bóp bấm huyệt
-  7. **Phác đồ 7**: Điện châm, Thủy châm, Điện xung, Tập trợ giúp
-  8. **Phác đồ 8**: Điện châm, Thủy châm, Hồng ngoại, Tập trợ giúp
+  7. **Phác đồ 7**: Điện châm liệt, Thủy châm, Điện xung, Tập trợ giúp
+  8. **Phác đồ 8**: Điện châm liệt, Thủy châm, Hồng ngoại, Tập trợ giúp
   9. **Phác đồ 9**: Thủy châm, Điện xung, Siêu âm
   10. **Phác đồ 10**: Hồng ngoại, Tập trợ giúp
   11. **Phác đồ 11**: Hồng ngoại, Tập kháng trở

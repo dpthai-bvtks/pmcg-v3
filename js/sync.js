@@ -179,7 +179,23 @@
             if (typeof loadMachines === 'function') loadMachines();
             if (typeof loadStaff === 'function') loadStaff();
             if (typeof loadRooms === 'function') loadRooms();
+            if (typeof renderPatientsTable === 'function') renderPatientsTable();
+            if (typeof filterSchedule === 'function') filterSchedule();
         } catch(e) {}
+    }
+
+    // ⚡ Lắng nghe BroadcastChannel từ OfflineSyncEngine để đồng bộ tức thì giữa các tab (0ms)
+    if (typeof OfflineSyncEngine !== 'undefined' && OfflineSyncEngine.registerLiveListener) {
+        OfflineSyncEngine.registerLiveListener(function(type, payload, timestamp) {
+            if (type === 'PATIENTS_UPDATED' || type === 'CACHE_UPDATED' || type === 'SCHEDULE_GENERATED') {
+                syncRefreshData();
+                showSyncToast('⚡ Đã đồng bộ tức thì từ cửa sổ làm việc khác!');
+            } else if (type === 'NETWORK_ONLINE') {
+                showSyncToast('🟢 Đã kết nối mạng trở lại!');
+            } else if (type === 'NETWORK_OFFLINE') {
+                showSyncToast('🟡 Thiết bị đang ngoại tuyến. Dữ liệu được lưu trong Dexie.');
+            }
+        });
     }
 
     function doPoll() {

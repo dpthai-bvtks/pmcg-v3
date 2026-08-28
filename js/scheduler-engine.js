@@ -615,7 +615,7 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
     return count;
   }
 
-  function sortPatientPriority(a, b) {
+  function sortPatientPriority(a, b, curTime) {
     const aType = a.loaiBN || 'NoiTru';
     const bType = b.loaiBN || 'NoiTru';
     if (aType !== bType) {
@@ -623,6 +623,14 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
     }
     if (a.leave_pri !== b.leave_pri) return a.leave_pri - b.leave_pri;
     if (a.leave !== b.leave) return a.leave - b.leave;
+
+    // ✨ TỐI ƯU HÓA LIỀN MẠCH (Flow Continuity): Ưu tiên bệnh nhân đang dở dang và vừa xong ca trước (0 <= gap <= 15 phút)
+    if (curTime !== undefined) {
+      const isFreshA = (a.lastScheduledEnd && a.lastScheduledEnd > 0 && curTime >= a.lastScheduledEnd && (curTime - a.lastScheduledEnd) <= 15) ? 0 : 1;
+      const isFreshB = (b.lastScheduledEnd && b.lastScheduledEnd > 0 && curTime >= b.lastScheduledEnd && (curTime - b.lastScheduledEnd) <= 15) ? 0 : 1;
+      if (isFreshA !== isFreshB) return isFreshA - isFreshB;
+    }
+
     const groupA = (!a._isNew || a.arrive <= 660) ? 0 : 1;
     const groupB = (!b._isNew || b.arrive <= 660) ? 0 : 1;
     if (groupA !== groupB) return groupA - groupB;
@@ -651,7 +659,7 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
           isFirstTryAtTNow = false;
         }
         eligible.sort((a, b) => {
-          const base = sortPatientPriority(a, b); if (base !== 0) return base;
+          const base = sortPatientPriority(a, b, tNow); if (base !== 0) return base;
           if (a.has_yhct !== b.has_yhct) return a.has_yhct - b.has_yhct;
           if (a.has_toan_tg !== b.has_toan_tg) return a.has_toan_tg - b.has_toan_tg;
           if (a._feasible !== b._feasible) return b._feasible - a._feasible;

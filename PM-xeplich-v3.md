@@ -888,3 +888,19 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
      - Khắc phục toàn bộ các điểm tra cứu trong `SchedulerEngine` (giai đoạn tối ưu hóa, giai đoạn hồi phục ca rớt Backfill, đột biến Mutate, và lọc ca đã xếp `existingSched`).
      - Đồng bộ hàm `setUnscheduledData()` và `renderPatientsTable()` trong `js/app.js` để nhãn trạng thái "Đã đủ" và ca rớt được phân định chính xác tuyệt đối.
 - **File sửa đổi**: `js/scheduler-engine.js`, `js/app.js`, `index.html`, `PM-xeplich-v3.md`.
+
+### Giai Đoạn 3: Tối Ưu Thuật Toán Xếp Lịch & Đồng Bộ Thời Gian Thực Live Sync (28/08/2026)
+- **Nâng Cấp Thuật Toán CSP & Simulated Annealing (`js/scheduler-engine.js`)**:
+  1. **Tối Ưu Hóa Liền Mạch (Flow Continuity & Gap Minimization)**:
+     - Thêm cơ chế ưu tiên cao cho bệnh nhân đang làm dở liệu trình và vừa kết thúc ca trước đó trong khoảng 0-15 phút.
+     - Giúp bệnh nhân được làm liên tục các thủ thuật mà không phải ngồi chờ rảnh rỗi nhiều tiếng.
+  2. **Ưu Tiên Nhân Sự Phụ Trách Phòng (Room Staff Affinity)**:
+     - Tự động ưu tiên Bác sĩ và KTV phụ trách chính phòng bệnh của bệnh nhân.
+  3. **Cân Bằng Tải Khối Lượng Công Việc**:
+     - Phân bổ đều thời lượng thực hiện giữa các KTV và Bác sĩ trong ngày.
+- **Hệ Thống Đồng Bộ Trực Tuyến Live Sync Bus (`js/offline-sync-engine.js` & `js/sync.js`)**:
+  1. **Kênh Phát Sóng Thời Gian Thực (`BroadcastChannel`)**:
+     - Đồng bộ tức thì 0ms giữa tất cả các Tab và Cửa sổ trình duyệt đang mở khi có bất kỳ thay đổi nào (thêm/sửa bệnh nhân, xếp lịch).
+  2. **Hàng Đợi Đồng Bộ Ngoại Tuyến (`syncQueue`)**:
+     - Tự động lưu trữ các tác vụ khi offline và xả hàng đợi lên Cloudflare D1 khi có mạng trở lại.
+- **File sửa đổi**: `js/scheduler-engine.js`, `js/offline-sync-engine.js`, `js/sync.js`, `js/app.js`, `index.html`, `PM-xeplich-v3.md`.

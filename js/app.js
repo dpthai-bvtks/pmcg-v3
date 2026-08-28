@@ -834,6 +834,13 @@ window.renderSttOrderControl = function (type, i, total) {
                 cleanup();
 
                 if (result && result.status === 'success') {
+                    if (task && task.isMutation) {
+                        try {
+                            if (window.OfflineSyncEngine && typeof window.OfflineSyncEngine.broadcastLiveEvent === 'function') {
+                                window.OfflineSyncEngine.broadcastLiveEvent('CACHE_UPDATED', { functionName, timestamp: Date.now() });
+                            }
+                        } catch(e) {}
+                    }
                     if (onSuccess) {
                         try { onSuccess(result.data); } catch(e) { console.error(`Error in onSuccess handler for ${functionName}:`, e); }
                     }
@@ -4852,6 +4859,11 @@ window.renderSttOrderControl = function (type, i, total) {
                     localStorage.setItem('meds_success', JSON.stringify(sched));
                     localStorage.setItem('meds_unscheduled', JSON.stringify(unsch));
 
+                    if (window.OfflineSyncEngine && typeof window.OfflineSyncEngine.saveCache === 'function') {
+                        window.OfflineSyncEngine.saveCache('meds_success', sched);
+                        window.OfflineSyncEngine.broadcastLiveEvent('SCHEDULE_GENERATED', { date: dateVal, schedCount, unschCount });
+                    }
+
                     res.innerHTML = '<div class="alert alert-success" style="margin-top:10px">Xếp thành công: <b>' + schedCount + '</b> ca. Rớt: <b>' + unschCount + '</b> ca. <span style="margin-left:15px; color:#555; font-size:13px;">(⏱ <b>' + timeTaken + ' giây</b>)</span></div>';
                     
                     // Hiển thị Popup kết quả tức thì
@@ -4930,6 +4942,11 @@ window.renderSttOrderControl = function (type, i, total) {
 
                         localStorage.setItem('meds_schedule_date', dateVal);
                         localStorage.setItem('meds_success', JSON.stringify(mergedSched));
+
+                        if (window.OfflineSyncEngine && typeof window.OfflineSyncEngine.saveCache === 'function') {
+                            window.OfflineSyncEngine.saveCache('meds_success', mergedSched);
+                            window.OfflineSyncEngine.broadcastLiveEvent('SCHEDULE_GENERATED', { date: dateVal, addedCount });
+                        }
 
                         const backendSched = mergedSched.map(x => [ x.ngay || dateVal, x.tenBN || '', x.namSinh || '', x.phong || '', x.thuThuat || '', x.gioDienRa || '', x.gioKetThuc || '', x.nvChinh || '', x.nvPhu || '', x.may || '', x.giuong || '' ]);
                         callApi('saveSchedule', [dateVal, backendSched], null, null);

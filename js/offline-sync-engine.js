@@ -221,12 +221,103 @@ window.OfflineSyncEngine = (function () {
     reader.readAsText(file);
   }
 
+  // ==========================================
+  // ⚡ REAL-TIME LIVE SYNC BUS (BroadcastChannel)
+  // ==========================================
+  let liveBus = null;
+  const liveListeners = new Set();
+
+  try {
+    if (typeof window.BroadcastChannel !== 'undefined') {
+      liveBus = new window.BroadcastChannel('pmcg_live_bus');
+      liveBus.onmessage = function (event) {
+        if (!event || !event.data) return;
+        const { type, payload, timestamp } = event.data;
+        console.log(`[LiveSync Bus] Nhận sự kiện '${type}' lúc ${new Date(timestamp).toLocaleTimeString()}`);
+        liveListeners.forEach(listener => {
+          try {
+            listener(type, payload, timestamp);
+          } catch (e) {
+            console.warn('[LiveSync Listener Error]:', e);
+          }
+        });
+      };
+      console.log('[LiveSync Bus] Kênh phát sóng thời gian thực BroadcastChannel đã kích hoạt!');
+    }
+  } catch (e) {
+    console.warn('[LiveSync Bus] Trình duyệt không hỗ trợ BroadcastChannel:', e);
+  }
+
+  /**
+   * Phát tín hiệu sự kiện thay đổi dữ liệu tới tất cả các Tab / Cửa sổ khác
+   */
+  function broadcastLiveEvent(type, payload = null) {
+    try {
+      if (liveBus) {
+        liveBus.postMessage({
+          type: type,
+          payload: payload,
+          timestamp: Date.now()
+        });
+      }
+    } catch (e) {
+      console.warn('[LiveSync Broadcast Error]:', e);
+    }
+  }
+
+  /**
+   * Đăng ký nhận sự kiện đồng bộ thời gian thực từ các Tab khác
+   */
+  function registerLiveListener(callback) {
+    if (typeof callback === 'function') {
+      liveListeners.add(callback);
+      return () => liveListeners.delete(callback);
+    }
+    return () => {};
+  }
+
+  /**
+   * Đẩy tác vụ vào hàng đợi đồng bộ ngoại tuyến (syncQueue)
+   */
+  async function enqueueSyncAction(action, payload) {
+    try {
+      if (dexieDb && dexieDb.syncQueue) {
+        await dexieDb.syncQueue.add({ action, payload, timestamp: Date.now() });
+      } else {
+        const db = await openRawDB();
+        if (db) {
+          const tx = db.transaction('syncQueue', 'readwrite');
+          tx.objectStore('syncQueue').add({ action, payload, timestamp: Date.now() });
+        }
+      }
+    } catch (e) {
+      console.warn('[enqueueSyncAction error]:', e);
+    }
+  }
+
+  /**
+   * Lắng nghe trạng thái Online để tự động đồng bộ
+   */
+  if (typeof window !== 'undefined') {
+    window.addEventListener('online', () => {
+      console.log('[Network] Thiết bị đã trực tuyến trở lại! Đang chuẩn bị đồng bộ nền...');
+      broadcastLiveEvent('NETWORK_ONLINE', { online: true });
+    });
+    window.addEventListener('offline', () => {
+      console.log('[Network] Thiết bị đang ngoại tuyến. Hệ thống chuyển sang chế độ tự chủ Dexie Offline.');
+      broadcastLiveEvent('NETWORK_OFFLINE', { online: false });
+    });
+  }
+
   return {
     saveCache,
     getCache,
     bulkSaveHistory,
     exportEmergencyBackupData,
     importEmergencyBackupData,
+    broadcastLiveEvent,
+    registerLiveListener,
+    enqueueSyncAction,
     getDexieDB: () => dexieDb
   };
 })();

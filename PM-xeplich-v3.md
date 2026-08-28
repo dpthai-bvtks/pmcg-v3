@@ -926,3 +926,18 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   - **Khắc phục triệt để bắt nhầm từ khóa**: Phân biệt tuyệt đối giữa `Điện châm` thông thường và `Điện châm liệt` (khi chọn Điện châm sẽ không bị tick nhầm vào Điện châm liệt và ngược lại).
   - Bác sĩ vẫn hoàn toàn có thể click chọn thêm hoặc bớt thủ thuật linh hoạt theo từng ca bệnh cụ thể.
 - **File sửa đổi**: `index.html`, `js/app.js`, `PM-xeplich-v3.md`.
+
+### Nâng Cấp: Bảng Quản Lý & Tùy Chỉnh Phác Đồ Riêng Của Khoa (28/08/2026)
+- **Mục tiêu**: Cho phép từng khoa phòng / đơn vị bệnh viện tự do tạo mới, chỉnh sửa, xóa và sắp xếp các phác đồ điều trị riêng của đơn vị mình mà không bị giới hạn cố định.
+- **Tính Năng Triển Khai**:
+  1. **Bảng Quản Lý Phác Đồ Trong Tab Thủ Thuật (`#tab-procedures`)**:
+     - Nằm ngay dưới bảng danh mục thủ thuật.
+     - Hiển thị danh sách các phác đồ kèm badge các thủ thuật tương ứng.
+     - Hỗ trợ đổi thứ tự STT (kéo thả ☰ và nút ▲/▼) và nút `Sửa` / `Xóa`.
+  2. **Modal Cấu Hình Phác Đồ (`#modal-protocol-editor`)**:
+     - Nhập tên phác đồ tùy ý.
+     - Tick chọn các thủ thuật từ danh mục thực tế của đơn vị (chia 2 cột YHCT và PHCN).
+  3. **Đồng Bộ Tự Động Toàn Diện**:
+     - Tự động nạp vào Dropdown `#pat-protocol-select` ở Tab Quản lý Bệnh nhân.
+     - Lưu trữ bền vững trong **Dexie.js (IndexedDB)** và **LocalStorage**, tự động phát sự kiện đồng bộ đa tab `Live Sync Bus`.
+- **File sửa đổi**: `index.html`, `js/app.js`, `PM-xeplich-v3.md`.

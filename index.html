@@ -669,6 +669,31 @@
                             </table>
                         </div>
                     </div>
+
+                    <!-- BẢNG QUẢN LÝ PHÁC ĐỒ ĐIỀU TRỊ -->
+                    <div style="margin-top: 25px; border-top: 2px solid #cbd5e1; padding-top: 18px;">
+                        <div class="tab-header-title" style="font-size: 15px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="display: flex; align-items: center; gap: 6px;">📋 QUẢN LÝ PHÁC ĐỒ ĐIỀU TRỊ CỦA KHOA</span>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="openProtocolModal(-1)" style="font-size: 12px; padding: 6px 14px; font-weight: 600; cursor: pointer;">➕ Thêm Phác Đồ Mới</button>
+                        </div>
+                        <div class="main-table" style="max-height: 450px; overflow-y: auto;">
+                            <table id="protocols-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 70px;">STT</th>
+                                        <th style="width: 170px;">Tên Phác Đồ</th>
+                                        <th>Gói Thủ Thuật Tương Ứng</th>
+                                        <th style="width: 130px; text-align: center;">Thao Tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="protocols-list">
+                                    <tr>
+                                        <td colspan="4" align="center">Đang tải danh sách phác đồ...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="tab-content" id="tab-staff">
@@ -2923,7 +2948,7 @@
 
                     <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.2.5</span></p>
 
-                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 15:23 28/08/2026</span></p>
+                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 15:40 28/08/2026</span></p>
 
                     <p><span class="f-icon">👨‍💻</span> <span>Thiết kế & Phát triển: <b>Bác sĩ Thái</b></span></p>
 
@@ -3048,6 +3073,52 @@
                     style="flex:1; background:#95a5a6; color:#fff; border:none; padding:10px; border-radius:6px; cursor:pointer; font-weight:bold;">Hủy bỏ</button>
                 <button id="confirm-ok-btn"
                     style="flex:1; background:#8e44ad; color:#fff; border:none; padding:10px; border-radius:6px; cursor:pointer; font-weight:bold;">Đồng ý</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL QUẢN LÝ PHÁC ĐỒ ĐIỀU TRỊ -->
+    <div id="modal-protocol-editor"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
+        <div
+            style="background: #fff; padding: 22px 24px; border-radius: 12px; width: 550px; max-width: 95%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 25px rgba(0,0,0,0.25);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+                <h3 id="modal-protocol-title" style="margin: 0; color: #1e3a8a; font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                    <span>📋 Thêm Phác Đồ Mới</span>
+                </h3>
+                <button type="button" onclick="closeProtocolModal()" style="background: none; border: none; font-size: 22px; color: #64748b; cursor: pointer; line-height: 1;">&times;</button>
+            </div>
+            
+            <input type="hidden" id="protocol-edit-index" value="-1">
+            
+            <div style="overflow-y: auto; flex: 1; padding-right: 5px; margin-bottom: 15px;">
+                <div style="margin-bottom: 14px;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px; color: #334155;">Tên Phác Đồ / Mã Chẩn Đoán:</label>
+                    <input type="text" id="protocol-name-input"
+                        style="width: 100%; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 13.5px; outline: none;"
+                        placeholder="VD: Phác đồ 1, Đau thần kinh tọa, Thoái hóa khớp...">
+                </div>
+
+                <div style="margin-bottom: 10px;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px; color: #334155;">Chọn các thủ thuật trong phác đồ:</label>
+                    <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; background: #f8fafc;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div>
+                                <h4 style="margin: 0 0 6px 0; color: #dc2626; font-size: 12.5px; border-bottom: 1.5px solid #fee2e2; padding-bottom: 4px;">💊 YHCT</h4>
+                                <div id="modal-protocol-procs-yhct" style="max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;"></div>
+                            </div>
+                            <div>
+                                <h4 style="margin: 0 0 6px 0; color: #2563eb; font-size: 12.5px; border-bottom: 1.5px solid #dbeafe; padding-bottom: 4px;">⚙️ PHCN</h4>
+                                <div id="modal-protocol-procs-phcn" style="max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+                <button type="button" onclick="closeProtocolModal()" class="btn btn-secondary" style="padding: 8px 16px; font-weight: 600; cursor: pointer;">Đóng</button>
+                <button type="button" onclick="saveProtocolFromModal()" class="btn btn-success" style="padding: 8px 20px; font-weight: 600; cursor: pointer;">💾 Lưu Phác Đồ</button>
             </div>
         </div>
     </div>

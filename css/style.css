@@ -5067,60 +5067,194 @@ transition: box-shadow 0.3s;
 
     /* Buttons */
     .btn {
-        min-height: 38px !important;
-        padding: 8px 14px !important;
-        font-size: 13px !important;
+        min-height: 34px !important;
+        padding: 6px 12px !important;
+        font-size: 12.5px !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        gap: 6px !important;
+        gap: 5px !important;
     }
 
     .btn-sm {
-        min-height: 32px !important;
-        padding: 4px 10px !important;
-        font-size: 12px !important;
+        min-height: 26px !important;
+        height: 26px !important;
+        padding: 2px 8px !important;
+        font-size: 11px !important;
     }
 
-    /* Table Mobile Optimizations */
+    /* ── TỐI ƯU CÁC BẢNG DỮ LIỆU TRÊN MOBILE CHẾ ĐỘ DỌC ── */
     .main-table {
         border-radius: 8px !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
         background: #ffffff !important;
+        max-height: 480px !important;
+        overflow: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        margin-top: 6px !important;
+        border: 1px solid #cbd5e1 !important;
     }
 
-    table {
-        min-width: 580px !important;
+    .main-table table {
+        min-width: 520px !important;
+        width: 100% !important;
+        font-size: 11px !important;
+        border-collapse: collapse !important;
     }
 
-    table th, table td {
-        padding: 7px 8px !important;
-        font-size: 12px !important;
+    .main-table table th {
+        font-size: 10.5px !important;
+        padding: 5px 6px !important;
+        white-space: nowrap !important;
+        background: #f1f5f9 !important;
+        color: #334155 !important;
+        font-weight: 700 !important;
+        border-bottom: 2px solid #cbd5e1 !important;
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 10 !important;
+    }
+
+    .main-table table td {
+        font-size: 11px !important;
+        padding: 4px 6px !important;
+        line-height: 1.3 !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+    }
+
+    /* Ghim cố định cột STT hoặc Tên bên trái khi cuộn ngang */
+    .main-table table th:first-child,
+    .main-table table td:first-child {
+        position: sticky !important;
+        left: 0 !important;
+        z-index: 15 !important;
+        background: #ffffff !important;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.06) !important;
+    }
+    .main-table table th:first-child {
+        background: #f1f5f9 !important;
+        z-index: 25 !important;
+    }
+
+    .badge {
+        font-size: 10px !important;
+        padding: 1px 5px !important;
+        margin: 1px 2px !important;
+        border-radius: 8px !important;
+        display: inline-block !important;
+        line-height: 1.3 !important;
+    }
+
+    /* ── BẢNG CHẤM CÔNG & THỐNG KÊ TRÊN MOBILE ── */
+    #tab-chamcong.active,
+    #tab-thongke.active {
+        display: flex !important;
+        flex-direction: column !important;
+        height: auto !important;
+        min-height: calc(100vh - 140px) !important;
+        padding: 4px !important;
+    }
+
+    .chamcong-card-wrapper,
+    .thongke-card-wrapper {
+        min-height: calc(100vh - 150px) !important;
+        height: auto !important;
+        flex: 1 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        padding: 6px !important;
+    }
+
+    #table-chamcong-container,
+    .table-chamcong-scroll {
+        min-height: calc(100vh - 230px) !important;
+        max-height: calc(100vh - 230px) !important;
+        height: calc(100vh - 230px) !important;
+        overflow: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        border-radius: 6px !important;
+        border: 1px solid #cbd5e1 !important;
+        background: #ffffff !important;
+        flex: 1 !important;
+    }
+
+    #table-chamcong {
+        min-width: 860px !important;
+        font-size: 11px !important;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+    }
+
+    /* Ghim cố định cột Tên Nhân Viên cho Bảng Chấm Công */
+    #table-chamcong thead tr:first-child th:first-child,
+    #table-chamcong thead tr:nth-child(2) th:first-child,
+    #table-chamcong tbody tr td:first-child {
+        position: sticky !important;
+        left: 0 !important;
+        z-index: 35 !important;
+        background: #ffffff !important;
+        min-width: 105px !important;
+        max-width: 125px !important;
+        width: 115px !important;
+        font-weight: 700 !important;
+        font-size: 11px !important;
+        text-align: left !important;
+        padding: 3px 5px !important;
+        box-shadow: 2px 0 6px rgba(0,0,0,0.12) !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+
+    #table-chamcong thead tr:first-child th:first-child {
+        background: #275d38 !important;
+        color: #ffffff !important;
+        z-index: 45 !important;
+    }
+
+    #table-chamcong thead th {
+        font-size: 9.5px !important;
+        height: 20px !important;
+        padding: 0 1px !important;
+    }
+
+    #table-chamcong tbody td {
+        height: 24px !important;
+        padding: 0 1px !important;
+    }
+
+    #table-chamcong .cc-input-text {
+        font-size: 11px !important;
+        height: 22px !important;
+        line-height: 22px !important;
+        text-align: center !important;
+        padding: 0 !important;
+        width: 100% !important;
     }
 
     /* Timeline Canvas on Mobile */
     .timeline-res-side {
-        width: 115px !important;
-        min-width: 115px !important;
-        max-width: 115px !important;
-        padding: 6px 8px !important;
+        width: 110px !important;
+        min-width: 110px !important;
+        max-width: 110px !important;
+        padding: 4px 6px !important;
     }
 
     .timeline-resource-name {
-        font-size: 11.5px !important;
+        font-size: 11px !important;
     }
 
     .timeline-card {
-        height: 36px !important;
-        padding: 2px 6px !important;
+        height: 34px !important;
+        padding: 2px 4px !important;
     }
 
     .timeline-card-title {
-        font-size: 10.5px !important;
+        font-size: 10px !important;
     }
 
     .timeline-card-sub {
-        font-size: 9px !important;
+        font-size: 8.5px !important;
     }
 
     /* Modals on Mobile */
@@ -5141,20 +5275,20 @@ transition: box-shadow 0.3s;
 /* ── 3. Small Mobile Devices (max-width: 480px) ── */
 @media (max-width: 480px) {
     .sidebar button.nav-tab {
-        min-width: 80px !important;
+        min-width: 78px !important;
         padding: 5px 8px !important;
         font-size: 11px !important;
     }
 
     .sidebar button.nav-tab .text {
-        font-size: 11px !important;
+        font-size: 10.5px !important;
     }
 
     .tab-header-title {
-        font-size: 14px !important;
+        font-size: 13.5px !important;
         flex-direction: column !important;
         align-items: flex-start !important;
-        gap: 8px !important;
+        gap: 6px !important;
     }
 
     .tab-header-title button {
@@ -5164,7 +5298,7 @@ transition: box-shadow 0.3s;
     .filter-bar, .action-bar-group {
         flex-direction: column !important;
         align-items: stretch !important;
-        gap: 6px !important;
+        gap: 5px !important;
     }
 
     .filter-bar select, .filter-bar input, .filter-bar button {

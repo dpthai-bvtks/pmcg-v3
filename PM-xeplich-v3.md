@@ -983,3 +983,18 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   - Tự động đẩy phác đồ từ LocalStorage lên `cai_dat` (key `clinical_protocols`) ngay khi ứng dụng khởi động trên PC.
   - Khi mở trên Điện thoại / Máy tính bảng, dữ liệu phác đồ đám mây được kéo về và cập nhật tức thì.
 - **File sửa đổi**: `index.html`, `js/app.js`, `css/style.css`, `backend/src/index.js`, `PM-xeplich-v3.md`.
+
+### Nâng Cấp: Khắc Phục Bảng Chấm Công & Tinh Gọn Toàn Bộ Bảng Trên Mobile Chế Độ Dọc (28/08/2026)
+- **Vấn đề xử lý**:
+  1. Bảng Chấm công (`#tab-chamcong`) trên điện thoại bị co về 0px chiều cao do cơ chế Flexbox container bị xung đột khi chuyển sang màn hình nhỏ.
+  2. Các bảng dữ liệu (Bệnh nhân, Thủ thuật, Phác đồ, Nhân sự...) trên điện thoại ở chế độ dọc (portrait) bị quá to, thô, chiếm nhiều diện tích và khó theo dõi khi cuộn ngang.
+- **Giải pháp triển khai**:
+  1. **Bảng Chấm Công & Thống Kê (`#tab-chamcong`, `#tab-thongke`)**:
+     - Thiết lập chiều cao chuẩn `calc(100vh - 140px)` và vùng cuộn bảng `calc(100vh - 230px)`.
+     - **Ghim cố định cột Tên Nhân Viên bên trái (`position: sticky; left: 0; z-index: 35;`)**: Khi vuốt ngang xem các ngày 1-31 trong tháng, tên nhân viên luôn giữ cố định ở bên trái giúp quan sát cực kỳ dễ dàng.
+     - Ô nhập chấm công `.cc-input-text` được thu gọn `height: 22px`, font `11px`, căn giữa chuẩn xác.
+  2. **Toàn Bộ Các Bảng Dữ Liệu Khác (Chế Độ Dọc)**:
+     - Giảm kích thước font xuống `11px - 11.5px`, padding ô `4px 6px` thanh thoát và thoáng mắt.
+     - Ghim cố định cột STT / Tên bên trái khi cuộn ngang.
+     - Tinh gọn nút bấm Sửa / Xóa (`height: 26px`, `font-size: 10.5px`).
+- **File sửa đổi**: `css/style.css`, `index.html`, `PM-xeplich-v3.md`.

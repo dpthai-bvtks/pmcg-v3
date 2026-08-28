@@ -21,6 +21,8 @@ const STATIC_ASSETS = [
   './js/dexie.min.js',
   './js/purify.min.js',
   './js/fuse.min.js',
+  './js/chart.min.js',
+  './js/zod.min.js',
   './js/sortable.min.js',
   './js/frappe-gantt.min.js',
   './js/pdfmake.min.js',

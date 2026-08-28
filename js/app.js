@@ -133,6 +133,43 @@ function fuzzySearchList(list, query, keys = ['tenBN', 'phong', 'nvChinh', 'nvPh
 window.fuzzySearchList = fuzzySearchList;
 
 // =========================================================
+// 🛡️ DATA VALIDATION SCHEMAS (ZOD ENGINE)
+// =========================================================
+(function initMedicalSchemas() {
+    try {
+        const _z = (typeof Zod !== 'undefined' && Zod.z) ? Zod.z : (typeof z !== 'undefined' ? z : null);
+        if (_z) {
+            window.MedicalSchemas = {
+                patient: _z.object({
+                    ten: _z.string().min(1, 'Tên bệnh nhân không được để trống'),
+                    namSinh: _z.union([_z.string(), _z.number()]).optional(),
+                    phong: _z.string().optional(),
+                    giuong: _z.string().optional(),
+                    thuThuat: _z.union([_z.string(), _z.array(_z.any())]).optional()
+                }),
+                scheduleRow: _z.object({
+                    tenBN: _z.string().min(1, 'Tên bệnh nhân không được để trống'),
+                    thuThuat: _z.string().min(1, 'Thủ thuật không được để trống'),
+                    gioDienRa: _z.string().regex(/^\d{1,2}:\d{2}$/, 'Giờ bắt đầu không hợp lệ (HH:MM)'),
+                    gioKetThuc: _z.string().regex(/^\d{1,2}:\d{2}$/, 'Giờ kết thúc không hợp lệ (HH:MM)'),
+                    phong: _z.string().optional(),
+                    nvChinh: _z.string().optional(),
+                    may: _z.string().optional()
+                }),
+                validatePatient: function (data) {
+                    return this.patient.safeParse(data);
+                },
+                validateScheduleRow: function (data) {
+                    return this.scheduleRow.safeParse(data);
+                }
+            };
+        }
+    } catch (e) {
+        console.warn('Lỗi khởi tạo Zod schemas:', e);
+    }
+})();
+
+// =========================================================
 // GLOBAL HELPERS & DUAL-MODE TABLE REORDERING ENGINE
 // =========================================================
 function withLock(fn) {

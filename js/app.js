@@ -3584,6 +3584,21 @@ window.renderSttOrderControl = function (type, i, total) {
 
             ten = ten.trim().toLowerCase().replace(/(?:^|\s)\S/g, a => a.toUpperCase());
 
+            // 🛡️ Kiểm soát tính toàn vẹn dữ liệu bằng Zod Schema Engine
+            if (window.MedicalSchemas && typeof window.MedicalSchemas.validatePatient === 'function') {
+                const zRes = window.MedicalSchemas.validatePatient({
+                    ten: ten,
+                    namSinh: nam,
+                    phong: phong,
+                    thuThuat: tt
+                });
+                if (!zRes.success) {
+                    window._savePatientLock = false;
+                    const errDetail = zRes.error?.issues?.[0]?.message || 'Dữ liệu không hợp lệ';
+                    return alert('⚠️ ' + errDetail);
+                }
+            }
+
             // Khóa form và nút lưu
             const btnSave = document.getElementById('btn-save-pat');
             if (btnSave) { btnSave.disabled = true; btnSave.innerText = 'Đang lưu...'; }

@@ -195,13 +195,9 @@ window.moveRowDown = function (type, index) {
 };
 
 window.renderSttOrderControl = function (type, i, total) {
-    const upDisabled = (i === 0) ? 'disabled style="opacity:0.25; cursor:not-allowed;"' : '';
-    const downDisabled = (i >= total - 1) ? 'disabled style="opacity:0.25; cursor:not-allowed;"' : '';
-    return `<div class="stt-order-cell">
-        <span class="drag-handle-btn" title="Bấm giữ kéo thả để di chuyển">☰</span>
-        <button type="button" class="btn-order-arrow" ${upDisabled} onclick="event.preventDefault(); event.stopPropagation(); window.moveRowUp('${type}', ${i})" title="Di chuyển lên 1 dòng">▲</button>
-        <button type="button" class="btn-order-arrow" ${downDisabled} onclick="event.preventDefault(); event.stopPropagation(); window.moveRowDown('${type}', ${i})" title="Di chuyển xuống 1 dòng">▼</button>
-        <span style="font-weight:700; margin-left:2px;">${i + 1}</span>
+    return `<div class="stt-order-cell" style="display:inline-flex; align-items:center; justify-content:center; gap:5px;">
+        <span class="drag-handle-btn" title="Bấm giữ kéo thả ☰ để sắp xếp thứ tự" style="cursor:grab; user-select:none; font-size:14px; color:#475569; padding:2px 4px; border-radius:4px; transition:background 0.2s;">☰</span>
+        <span style="font-weight:700; min-width:18px; text-align:center;">${i + 1}</span>
     </div>`;
 };
 
@@ -687,13 +683,9 @@ window.moveRowDown = function (type, index) {
 };
 
 window.renderSttOrderControl = function (type, i, total) {
-    const upDisabled = (i === 0) ? 'disabled style="opacity:0.25; cursor:not-allowed;"' : '';
-    const downDisabled = (i >= total - 1) ? 'disabled style="opacity:0.25; cursor:not-allowed;"' : '';
-    return `<div class="stt-order-cell">
-        <span class="drag-handle-btn" title="Bấm giữ kéo thả để di chuyển">☰</span>
-        <button type="button" class="btn-order-arrow" ${upDisabled} onclick="event.preventDefault(); event.stopPropagation(); window.moveRowUp('${type}', ${i})" title="Di chuyển lên 1 dòng">▲</button>
-        <button type="button" class="btn-order-arrow" ${downDisabled} onclick="event.preventDefault(); event.stopPropagation(); window.moveRowDown('${type}', ${i})" title="Di chuyển xuống 1 dòng">▼</button>
-        <span style="font-weight:700; margin-left:2px;">${i + 1}</span>
+    return `<div class="stt-order-cell" style="display:inline-flex; align-items:center; justify-content:center; gap:5px;">
+        <span class="drag-handle-btn" title="Bấm giữ kéo thả ☰ để sắp xếp thứ tự" style="cursor:grab; user-select:none; font-size:14px; color:#475569; padding:2px 4px; border-radius:4px; transition:background 0.2s;">☰</span>
+        <span style="font-weight:700; min-width:18px; text-align:center;">${i + 1}</span>
     </div>`;
 };
 
@@ -2055,6 +2047,14 @@ window.renderSttOrderControl = function (type, i, total) {
 
                         if (targetTab === 'tab-thongke' && typeof loadThongKeData === 'function') {
                             loadThongKeData();
+                        }
+
+                        if (targetTab === 'tab-admin') {
+                            if (typeof loadSystemSettings === 'function') loadSystemSettings();
+                            if (typeof switchAdminSection === 'function') {
+                                const activeSubBtn = document.querySelector('.admin-nav-btn.active') || document.getElementById('nav-btn-settings');
+                                switchAdminSection('admin-sec-settings', activeSubBtn);
+                            }
                         }
 
                         // Cập nhật URL hash để hỗ trợ chia sẻ / mở trực tiếp tab
@@ -8716,7 +8716,18 @@ window.renderSttOrderControl = function (type, i, total) {
         }
 
         function loadSystemSettings() {
-            // Already loaded by getBootstrapData via applySystemSettings
+            const cachedStr = localStorage.getItem('times_bootstrap_cache');
+            if (cachedStr) {
+                try {
+                    const b = JSON.parse(cachedStr);
+                    if (b && b.settings) applySystemSettings(b.settings);
+                    else applySystemSettings({});
+                } catch(e) {
+                    applySystemSettings({});
+                }
+            } else {
+                applySystemSettings({});
+            }
         }
 
         // ============================================================
@@ -10077,8 +10088,21 @@ window.renderSttOrderControl = function (type, i, total) {
 
         // --- USER MENU DROPDOWN LOGIC ---
         function goToAdminTab() {
-            window.location.hash = '#tab-admin';
-            document.getElementById('user-dropdown-menu').style.display = 'none';
+            const tabBtn = document.querySelector('.nav-tab[data-tab="tab-admin"]');
+            if (tabBtn) {
+                tabBtn.click();
+            } else {
+                document.querySelectorAll('.tab-content, .page').forEach(c => c.classList.remove('active'));
+                const targetEl = document.getElementById('tab-admin');
+                if (targetEl) targetEl.classList.add('active');
+                if (typeof switchAdminSection === 'function') {
+                    const activeSubBtn = document.querySelector('.admin-nav-btn.active') || document.getElementById('nav-btn-settings');
+                    switchAdminSection('admin-sec-settings', activeSubBtn);
+                }
+                try { history.replaceState(null, '', '#tab=tab-admin'); } catch(e) {}
+            }
+            const dropMenu = document.getElementById('user-dropdown-menu');
+            if (dropMenu) dropMenu.style.display = 'none';
             const arrow = document.getElementById('user-dropdown-arrow');
             if (arrow) arrow.style.transform = 'rotate(0deg)';
         }
@@ -11351,6 +11375,7 @@ window.saveDocListToServer = function() {
 // ============================================================
 
 window.switchMobileNav = function(tabId, el) {
+    if (tabId === 'tab-settings') tabId = 'tab-admin';
     if (el) {
         document.querySelectorAll('.mobile-nav-item').forEach(btn => btn.classList.remove('active'));
         el.classList.add('active');
@@ -11359,7 +11384,17 @@ window.switchMobileNav = function(tabId, el) {
     if (desktopTabBtn) {
         desktopTabBtn.click();
     } else {
-        window.location.hash = '#' + tabId;
+        document.querySelectorAll('.tab-content, .page').forEach(c => c.classList.remove('active'));
+        const targetEl = document.getElementById(tabId);
+        if (targetEl) targetEl.classList.add('active');
+        if (tabId === 'tab-admin') {
+            if (typeof loadSystemSettings === 'function') loadSystemSettings();
+            if (typeof switchAdminSection === 'function') {
+                const activeSubBtn = document.querySelector('.admin-nav-btn.active') || document.getElementById('nav-btn-settings');
+                switchAdminSection('admin-sec-settings', activeSubBtn);
+            }
+        }
+        try { history.replaceState(null, '', '#tab=' + tabId); } catch(e) {}
     }
     window.toggleMobileDrawer(false);
 };
@@ -11384,6 +11419,7 @@ window.toggleMobileDrawer = function(forceState) {
 };
 
 window.openTabFromDrawer = function(tabId) {
+    if (tabId === 'tab-settings') tabId = 'tab-admin';
     window.toggleMobileDrawer(false);
     const mobileBottomBtn = document.querySelector(`.mobile-nav-item[data-tab="${tabId}"]`);
     if (mobileBottomBtn) {
@@ -11396,7 +11432,17 @@ window.openTabFromDrawer = function(tabId) {
     if (desktopTabBtn) {
         desktopTabBtn.click();
     } else {
-        window.location.hash = '#' + tabId;
+        document.querySelectorAll('.tab-content, .page').forEach(c => c.classList.remove('active'));
+        const targetEl = document.getElementById(tabId);
+        if (targetEl) targetEl.classList.add('active');
+        if (tabId === 'tab-admin') {
+            if (typeof loadSystemSettings === 'function') loadSystemSettings();
+            if (typeof switchAdminSection === 'function') {
+                const activeSubBtn = document.querySelector('.admin-nav-btn.active') || document.getElementById('nav-btn-settings');
+                switchAdminSection('admin-sec-settings', activeSubBtn);
+            }
+        }
+        try { history.replaceState(null, '', '#tab=' + tabId); } catch(e) {}
     }
 };
 

@@ -1011,3 +1011,16 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
      - Menu quản trị trên mobile chuyển thành dạng thanh Pill cuộn ngang (`overflow-x: auto`) cực kỳ gọn gàng.
      - Khung cấu hình hệ thống chiếm trọn 100% bề ngang, hiển thị đầy đủ các thông số kèm giá trị mặc định chuẩn (Giờ chốt sổ 16:20, Giờ lố YHCT 5p, Phạt rớt ca 10000, Phạt tăng ca 2, Phạt lệch tải 0.1).
 - **File sửa đổi**: `js/app.js`, `index.html`, `css/style.css`, `PM-xeplich-v3.md`.
+
+### Nâng Cấp: Loại Bỏ Mũi Tên Sắp Xếp (Chỉ Giữ ☰) & Sửa Dứt Điểm Tab Cài Đặt Hệ Thống Trên Mobile (29/08/2026)
+- **Vấn đề xử lý**:
+  1. Nút bấm mũi tên ▲/▼ chiếm diện tích ở cột STT của tất cả các bảng dữ liệu, gây vướng và rối mắt.
+  2. Nút "Cài Đặt Hệ Thống" trong menu ngăn kéo (Drawer) trên điện thoại gọi nhầm `openTabFromDrawer('tab-settings')` (thay vì `'tab-admin'`), đồng thời thanh menu desktop thiếu nút `data-tab="tab-admin"`, dẫn đến khi bấm vào trang bị rỗng hoàn toàn.
+- **Giải pháp triển khai**:
+  1. **Loại Bỏ Hoàn Toàn Mũi Tên ▲/▼ (Chỉ Giữ Icon ☰ & STT)**:
+     - Tinh gọn hàm `renderSttOrderControl` trên tất cả các bảng (Thủ thuật, Phác đồ, Nhân sự, Máy móc, Phòng bệnh...).
+     - Chỉ hiển thị duy nhất icon kéo thả `☰` và số thứ tự `STT` (hỗ trợ kéo thả SortableJS mượt mà trên cả PC và cảm ứng điện thoại/tablet).
+  2. **Sửa Dứt Điểm Điều Hướng Cài Đặt Hệ Thống**:
+     - Sửa toàn bộ đường dẫn gọi `openTabFromDrawer('tab-admin')`, `switchMobileNav`, `goToAdminTab` và thêm nút `data-tab="tab-admin"` vào Sidebar Menu.
+     - Tự động kích hoạt section `admin-sec-settings` và nạp dữ liệu mặc định đầy đủ khi người dùng mở tab Cài đặt hệ thống trên mọi thiết bị.
+- **File sửa đổi**: `index.html`, `js/app.js`, `css/style.css`, `PM-xeplich-v3.md`.

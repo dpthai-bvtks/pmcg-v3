@@ -10718,10 +10718,16 @@ window.saveAIAutoTrainConfig = function() {
 };
 
 window.calibrateAIFromHistory = async function() {
-    if (window.showGlobalLoading) window.showGlobalLoading("Đang tải dữ liệu từ bảng lịch sử Cloudflare D1 để huấn luyện AI...");
+    if (window.showGlobalLoading) window.showGlobalLoading("Đang tải toàn bộ dữ liệu từ bảng lịch sử Cloudflare D1 để huấn luyện AI...");
 
     const executeTraining = (historyRows) => {
         try {
+            if (!Array.isArray(historyRows) || historyRows.length === 0) {
+                if (window.hideGlobalLoading) window.hideGlobalLoading();
+                showCustomAlert("Thông báo", "Không tải được dữ liệu lịch sử từ Cloudflare D1. Vui lòng kiểm tra lại kết nối mạng!");
+                return;
+            }
+
             let model = null;
             if (window.AIScheduler && typeof window.AIScheduler.trainFromHistory === 'function') {
                 model = window.AIScheduler.trainFromHistory(historyRows);
@@ -10752,42 +10758,52 @@ window.calibrateAIFromHistory = async function() {
         }
     };
 
-    // 1. Gọi trực tiếp API getLichSu lấy toàn bộ dữ liệu từ bảng lich_su của D1 Cloudflare
-    if (typeof callApi === 'function') {
-        callApi('getLichSu', [], (res) => {
+    async function fetchDirectly() {
+        try {
+            const apiUrl = (typeof getApiUrl === 'function') ? getApiUrl() : 'https://pmcg-api.dpthai-ttytmk.workers.dev/';
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'getLichSu', args: [] })
+            });
+            const json = await response.json();
             let rows = [];
-            if (res && res.data) {
-                if (Array.isArray(res.data.rows)) rows = res.data.rows;
-                else if (Array.isArray(res.data.history)) rows = res.data.history;
-                else if (Array.isArray(res.data)) rows = res.data;
+            if (json && json.data) {
+                if (Array.isArray(json.data.rows)) rows = json.data.rows;
+                else if (Array.isArray(json.data.history)) rows = json.data.history;
+                else if (Array.isArray(json.data)) rows = json.data;
             }
-
-            if (!rows || rows.length === 0) {
-                // Fallback nếu D1 trả về rỗng: Quét từ local cache
-                if (window.dataCache && Array.isArray(window.dataCache.history)) rows = window.dataCache.history;
-            }
-
-            if (rows && rows.length > 0) {
-                try {
-                    localStorage.setItem('times_history_cache', JSON.stringify(rows));
-                } catch(e) {}
-            }
-
             executeTraining(rows);
-        }, (err) => {
-            console.warn('[AI] Lỗi gọi API D1 getLichSu, nạp từ bộ nhớ cache:', err);
-            let localRows = [];
-            try {
-                const hStr = localStorage.getItem('times_history_cache');
-                if (hStr) localRows = JSON.parse(hStr);
-            } catch(e) {}
-            if (!localRows.length && window.dataCache && Array.isArray(window.dataCache.history)) {
-                localRows = window.dataCache.history;
-            }
-            executeTraining(localRows);
-        });
-    } else {
-        executeTraining([]);
+        } catch (e) {
+            console.error('[AI] Lỗi fetch trực tiếp:', e);
+            executeTraining([]);
+        }
+    }
+
+    try {
+        if (typeof callApi === 'function') {
+            callApi('getLichSu', [], (res) => {
+                let rows = [];
+                if (res) {
+                    if (Array.isArray(res.rows)) rows = res.rows;
+                    else if (Array.isArray(res.history)) rows = res.history;
+                    else if (Array.isArray(res.data)) rows = res.data;
+                    else if (Array.isArray(res)) rows = res;
+                }
+                if (rows && rows.length > 0) {
+                    executeTraining(rows);
+                } else {
+                    fetchDirectly();
+                }
+            }, (err) => {
+                console.warn('[AI] callApi getLichSu error, fetching directly:', err);
+                fetchDirectly();
+            });
+        } else {
+            fetchDirectly();
+        }
+    } catch(err) {
+        fetchDirectly();
     }
 };
 

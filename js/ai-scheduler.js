@@ -194,6 +194,48 @@ window.AIScheduler = (function () {
   }
 
   /**
+   * 🔄 Tự động quét và hiệu chỉnh mô hình AI từ bộ nhớ dữ liệu hiện tại
+   */
+  function calibrateFromAppContext() {
+    let historyRows = [];
+
+    // Đọc từ dataCache
+    if (typeof window !== 'undefined' && window.dataCache) {
+      if (Array.isArray(window.dataCache.history)) historyRows = historyRows.concat(window.dataCache.history);
+      if (Array.isArray(window.dataCache.schedule)) historyRows = historyRows.concat(window.dataCache.schedule);
+      if (Array.isArray(window.dataCache.lich_trinh)) historyRows = historyRows.concat(window.dataCache.lich_trinh);
+    }
+
+    if (typeof window !== 'undefined' && Array.isArray(window.currentScheduleData)) {
+      historyRows = historyRows.concat(window.currentScheduleData);
+    }
+
+    // Đọc từ localStorage cache
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const bStr = localStorage.getItem('times_bootstrap_cache');
+        if (bStr) {
+          const bObj = JSON.parse(bStr);
+          if (bObj && Array.isArray(bObj.schedule)) historyRows = historyRows.concat(bObj.schedule);
+          if (bObj && Array.isArray(bObj.history)) historyRows = historyRows.concat(bObj.history);
+        }
+        const cachedHistory = localStorage.getItem('times_history_cache');
+        if (cachedHistory) {
+          const parsed = JSON.parse(cachedHistory);
+          if (Array.isArray(parsed)) historyRows = historyRows.concat(parsed);
+        }
+        const mStr = localStorage.getItem('meds_success');
+        if (mStr) {
+          const mObj = JSON.parse(mStr);
+          if (Array.isArray(mObj)) historyRows = historyRows.concat(mObj);
+        }
+      }
+    } catch(e) {}
+
+    return trainFromHistory(historyRows);
+  }
+
+  /**
    * ⏰ Tự động kiểm tra và huấn luyện AI theo khung giờ chỉ định hàng ngày
    */
   function checkAutoTrain() {

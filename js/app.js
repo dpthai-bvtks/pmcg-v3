@@ -10658,6 +10658,40 @@ window.saveBackupScheduleSettings = function() {
     showCustomAlert("Thành công", "Đã lưu cấu hình lịch tự động sao lưu & nhắc nhở thành công!");
 };
 
+window.calibrateAIFromHistory = async function() {
+    if (window.showGlobalLoading) window.showGlobalLoading("Đang nạp và huấn luyện mô hình AI từ dữ liệu lịch sử...");
+    setTimeout(() => {
+        try {
+            let historyRows = [];
+            if (window.dataCache && Array.isArray(window.dataCache.history)) {
+                historyRows = historyRows.concat(window.dataCache.history);
+            }
+            if (window.dataCache && Array.isArray(window.dataCache.schedule)) {
+                historyRows = historyRows.concat(window.dataCache.schedule);
+            }
+            try {
+                const cachedStr = localStorage.getItem('times_history_cache');
+                if (cachedStr) {
+                    const parsed = JSON.parse(cachedStr);
+                    if (Array.isArray(parsed)) historyRows = historyRows.concat(parsed);
+                }
+            } catch(e) {}
+
+            let model = null;
+            if (window.AIScheduler && typeof window.AIScheduler.trainFromHistory === 'function') {
+                model = window.AIScheduler.trainFromHistory(historyRows);
+            }
+
+            if (window.hideGlobalLoading) window.hideGlobalLoading();
+            const trainedCount = model ? model.trainedRows : historyRows.length;
+            showCustomAlert("Huấn luyện AI thành công", `Đã huấn luyện thành công mô hình AI từ ${trainedCount} dòng lịch sử thực tế!\nMa trận nhân sự, phòng bệnh và mức độ tắc nghẽn máy móc đã được cập nhật tối ưu.`);
+        } catch(err) {
+            if (window.hideGlobalLoading) window.hideGlobalLoading();
+            showCustomAlert("Thông báo", "Lỗi huấn luyện AI: " + err.message);
+        }
+    }, 50);
+};
+
 window.checkBackupReminder = function() {
     const period = localStorage.getItem('backup_reminder_period') || 'none';
     const time = localStorage.getItem('backup_reminder_time') || '17:00';

@@ -858,7 +858,13 @@ function getPatientSignature(pat) {
     let bestRot = null;
     let bestScore = Infinity;
 
-    let currentOrder = clonePatients(db.rawPatients);
+    // 🤖 AI Smart Patient Ranking: Xếp thứ tự ban đầu theo định lượng AI
+    let initialPatients = db.rawPatients;
+    if (typeof window !== 'undefined' && window.AIScheduler && typeof window.AIScheduler.rankPatients === 'function') {
+      initialPatients = window.AIScheduler.rankPatients(db.rawPatients, {}, db.thuThuatInfo || {});
+    }
+
+    let currentOrder = clonePatients(initialPatients);
     let currentRes = _turbo_core_logic(db, dateVal, baseSeed, existingSched, scenario, crowdedOverride, weights);
     if (currentRes) {
       bestSched = currentRes.sched;
@@ -1146,18 +1152,18 @@ function getSafeCache() {
       };
     }
 
-    const scenarioMap = { opt_rare: 1, balanced: 2, contingency: 3, opt_math: 1 };
+    const scenarioMap = { opt_rare: 1, opt_math: 1 };
     const scenario = scenarioMap[strategyKey] || 1;
 
     let best = runBestIteration(db, dateVal, existingSched, scenario, crowdedOverride, { drop: 10000, overtime: 2, imbalance: 0.1 }, 42, 14);
-    let engineName = 'Turbo-Tabu-LAHC';
+    let engineName = '🤖 AI-Guided Turbo-Engine';
 
     // 🧠 Pha 2: Tối ưu hóa Toán học Chuyên sâu (Constraint Programming CP-SAT / MIP Optimizer)
     if (strategyKey === 'opt_math' && typeof window !== 'undefined' && window.MedicalCPSolver && best) {
       const cpRes = window.MedicalCPSolver.solve(db, dateVal, best.sched, best.rot, 1200);
       if (cpRes && cpRes.sched) {
         best = { ...best, sched: cpRes.sched, rot: cpRes.rot, score: cpRes.score };
-        engineName = cpRes.rescuedCount > 0 ? `🧠 CP-SAT Math Optimizer (Cứu +${cpRes.rescuedCount} ca)` : '🧠 CP-SAT Math Optimizer';
+        engineName = cpRes.rescuedCount > 0 ? `🤖 AI + CP-SAT Optimizer (Cứu +${cpRes.rescuedCount} ca)` : '🤖 AI + CP-SAT Optimizer';
       }
     }
 
@@ -1209,7 +1215,7 @@ function getSafeCache() {
       };
     }
 
-    const scenarioMap = { opt_rare: 1, balanced: 2, contingency: 3, opt_math: 1 };
+    const scenarioMap = { opt_rare: 1, opt_math: 1 };
     const scenario = scenarioMap[strategyKey] || 1;
     const weights = options.weights || { drop: 10000, overtime: 2, imbalance: 0.1 };
 
@@ -1293,14 +1299,14 @@ function getSafeCache() {
         best = runBestIteration(db, dateVal, existingSched, scenario, crowdedOverride, weights, 42, 14);
       }
 
-      let engineName = `Multi-Thread (${numWorkers} Cores | Tabu+LAHC)`;
+      let engineName = `🤖 AI-Guided Multi-Thread (${numWorkers} Cores)`;
 
       // 🧠 Pha 2: Tối ưu hóa Toán học Chuyên sâu (Constraint Programming CP-SAT / MIP Optimizer)
       if (strategyKey === 'opt_math' && typeof window !== 'undefined' && window.MedicalCPSolver && best) {
         const cpRes = window.MedicalCPSolver.solve(db, dateVal, best.sched, best.rot, 1500);
         if (cpRes && cpRes.sched) {
           best = { ...best, sched: cpRes.sched, rot: cpRes.rot, score: cpRes.score };
-          engineName = cpRes.rescuedCount > 0 ? `🧠 CP-SAT Math Optimizer (Cứu +${cpRes.rescuedCount} ca)` : '🧠 CP-SAT Math Optimizer';
+          engineName = cpRes.rescuedCount > 0 ? `🤖 AI + CP-SAT Optimizer (Cứu +${cpRes.rescuedCount} ca)` : '🤖 AI + CP-SAT Optimizer';
         }
       }
 

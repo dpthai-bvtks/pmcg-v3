@@ -848,109 +848,40 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
   return { sched: results, rot: finalDropList, score: scoreVal, staff: staffLoad, proc: localProcCount, tl: staffTimeline, ca: staffShifts };
 }
 
-function getPatientSignature(patients) {
-  if (!patients) return '';
-  const len = Math.min(patients.length, 25);
-  let sig = '';
-  for (let i = 0; i < len; i++) {
-    const p = patients[i];
-    sig += (p.pId || p.name || i) + (p.pending ? (':' + p.pending.length) : '') + ';';
-  }
-  return sig;
-}
-
-function runBestIteration(db, dateVal, existingSched = [], scenario = 1, crowdedOverride = -1, weights = { drop: 10000, overtime: 2, imbalance: 0.1 }, baseSeed = 42, maxSteps = 14) {
-  let rand = createSeededRandom(baseSeed);
+function runBestIteration(db, dateVal, existingSched = [], scenario = 1, crowdedOverride = -1, weights = { drop: 10000, overtime: 2, imbalance: 0.1 }) {
+  let rand = createSeededRandom(42);
   let currentPatients = clonePatients(db.rawPatients);
   let current = _turbo_core_logic({ ...db, rawPatients: currentPatients }, dateVal, 0, existingSched, scenario, crowdedOverride, weights);
   let best = current;
 
   if (best.rot.length === 0) return best;
 
-  const tabuSet = new Set();
-  const tabuQueue = [];
-  const MAX_TABU = 30;
-
-  const LAHC_L = 5;
-  const lahcBuffer = new Array(LAHC_L).fill(current.score);
-  let lahcIdx = 0;
-
   let droppedNames = new Set(best.rot.map(r => r.pId || (r.bn + '_' + (r.ns || '') + '_' + (r.room || ''))));
-  const T_initial = 4.0, T_min = 0.4, alpha = 0.72;
-  let T = T_initial, steps = 0, noImprove = 0;
+  const T_initial = 4.0, T_min = 1.0, alpha = 0.65;
+  let T = T_initial, noImprove = 0;
 
-  while (T > T_min && steps < maxSteps && noImprove < 4) {
-    steps++;
+  while (T > T_min && noImprove < 1) {
     const neighborPatients = mutate(currentPatients, rand, droppedNames);
-    const sig = getPatientSignature(neighborPatients);
-    const isTabu = tabuSet.has(sig);
-
-    const neighbor = _turbo_core_logic({ ...db, rawPatients: neighborPatients }, dateVal, (baseSeed + steps * 17) % 10000, existingSched, scenario, crowdedOverride, weights);
-
-    if (isTabu && neighbor.score >= best.score) {
-      T *= alpha;
-      continue;
-    }
-
-    tabuSet.add(sig);
-    tabuQueue.push(sig);
-    if (tabuQueue.length > MAX_TABU) {
-      const oldSig = tabuQueue.shift();
-      tabuSet.delete(oldSig);
-    }
-
+    const neighbor = _turbo_core_logic({ ...db, rawPatients: neighborPatients }, dateVal, 0, existingSched, scenario, crowdedOverride, weights);
     const delta = neighbor.score - current.score;
-    const lateScore = lahcBuffer[lahcIdx];
-    const acceptLAHC = neighbor.score <= lateScore;
-    const acceptSA = delta < 0 || (rand() < Math.exp(-delta / Math.max(T, 0.1)));
-
-    if (acceptLAHC || acceptSA) {
-      current = neighbor;
-      currentPatients = neighborPatients;
-      lahcBuffer[lahcIdx] = current.score;
-      lahcIdx = (lahcIdx + 1) % LAHC_L;
-
+    const accept = delta < 0 || (rand() < Math.exp(-delta / T));
+    if (accept) {
+      current = neighbor; currentPatients = neighborPatients;
       if (current.score < best.score) {
         best = current;
         if (best.rot.length === 0) return best;
         droppedNames = new Set(best.rot.map(r => r.pId || (r.bn + '_' + (r.ns || '') + '_' + (r.room || ''))));
         noImprove = 0;
-      } else {
-        noImprove++;
-      }
-    } else {
-      lahcBuffer[lahcIdx] = current.score;
-      lahcIdx = (lahcIdx + 1) % LAHC_L;
-      noImprove++;
-    }
+      } else { noImprove++; }
+    } else { noImprove++; }
     T *= alpha;
   }
 
   if (best.rot.length > 0) {
-    const divResult = _turbo_core_logic({ ...db, rawPatients: clonePatients(db.rawPatients) }, dateVal, baseSeed + 101, existingSched, scenario, crowdedOverride, weights);
-    if (divResult.score < best.score) best = divResult;
+    const result = _turbo_core_logic({ ...db, rawPatients: clonePatients(db.rawPatients) }, dateVal, 101, existingSched, scenario, crowdedOverride, weights);
+    if (result.score < best.score) best = result;
   }
-
   return best;
-}
-
-function compactTimelineGaps(formattedSched, db) {
-  if (!formattedSched || formattedSched.length < 2) return formattedSched;
-  
-  const list = formattedSched.map(item => ({ ...item }));
-  
-  const patientAppointments = new Map();
-  list.forEach(item => {
-    const key = (item.tenBN || '').toUpperCase() + '_' + (item.namSinh || '') + '_' + (item.phong || '');
-    if (!patientAppointments.has(key)) patientAppointments.set(key, []);
-    patientAppointments.get(key).push(item);
-  });
-
-  patientAppointments.forEach(arr => {
-    arr.sort((a, b) => t2m(a.gioDienRa) - t2m(b.gioDienRa));
-  });
-
-  return list;
 }
 
 async function buildBaseDbFromD1(db) {
@@ -989,61 +920,31 @@ async function buildBaseDbFromD1(db) {
     const tgNhanVien = parseInt(r.tg_thuc_hien) || 5;
     const tgMay = parseInt(r.tg_thu_thuat) || 15;
     const khoangCach = parseInt(r.khoang_cach) || tgNhanVien;
-    const canRutMay = r.can_rut_may === 1 || r.can_rut_may === "1" || r.can_rut_may === true ? 1 : 0;
-    const canNguoiPhu = r.can_nguoi_phu === 1 || r.can_nguoi_phu === "1" || r.can_nguoi_phu === true ? 1 : 0;
-    const dsPhu = parseStringOrJsonArray(r.ds_phu);
-
-    database.thuThuatInfo[r.ten.toLowerCase()] = [
+    const dsPhu = parseStringOrJsonArray(r.ds_nguoi_phu);
+    database.thuThuatInfo[String(r.ten_thu_thuat).trim().toLowerCase()] = [
       r.may || "Thủ công",
       Math.max(1, tgMay),
       Math.max(1, tgNhanVien),
       r.he || "PHCN",
-      canRutMay,
-      canNguoiPhu,
+      (r.can_rut_may === 1 || r.can_rut_may === '1' || r.can_rut_may === 'Có' || r.can_rut_may === true) ? 1 : 0,
+      (r.can_nguoi_phu === 1 || r.can_nguoi_phu === '1' || r.can_nguoi_phu === 'Có' || r.can_nguoi_phu === true) ? 1 : 0,
       dsPhu,
       khoangCach,
-      r.ten,
+      String(r.ten_thu_thuat).trim(),
       r.viet_tat || ""
     ];
   });
 
   (roomsRes.results || []).forEach(r => {
     const soGiuong = parseInt(r.so_giuong) || 15;
-    const bedStr = (r.danh_sach_giuong || "").trim();
-    database.roomBeds[r.name] = (bedStr && bedStr !== 'None')
+    const bedStr = r.danh_sach_giuong ? String(r.danh_sach_giuong).trim() : "";
+    database.roomBeds[r.ten_phong] = (bedStr && bedStr !== 'None')
       ? bedStr.split(",").map(x => x.trim()).filter(Boolean)
-      : Array.from({ length: soGiuong }, (_, i) => "Giường " + (i + 1));
+      : Array.from({ length: soGiuong }, (_, i) => `Giường ${i + 1}`);
 
-    const bsList = parseStringOrJsonArray(r.bac_si);
-    const ktvList = parseStringOrJsonArray(r.ktv);
-    database.roomStaff[r.name] = [...new Set([...bsList, ...ktvList].map(x => database.replacementMap[x] || x))];
-  });
-
-  database.rawPatients = (patientsRes.results || []).map((p, idx) => {
-    const pName = p.name.toUpperCase();
-    const pNs = p.age || "";
-    const pRoom = p.room || "";
-    const pId = p.id || (pName + "_" + pNs + "_" + pRoom + "_" + idx);
-    const gioVao = isEmptyTime(p.gio_vao) ? 420 : t2m(p.gio_vao);
-    const busyRaw = p.gio_ban || "";
-    const busySlots = busyRaw ? String(busyRaw).split(",").filter(b => b.includes("-")).map(b => [t2m(b.split("-")[0]), t2m(b.split("-")[1]) + 1]) : [];
-    busySlots.push([0, gioVao + 1]);
-
-    const procs = parseStringOrJsonArray(p.procedures);
-    return {
-      pId: pId,
-      name: pName,
-      ns: pNs,
-      ngayVao: p.ngay_vao || "",
-      room: pRoom,
-      arrive: gioVao,
-      leave: t2m(p.leave_time) || 9999,
-      busy: busySlots,
-      pending: procs,
-      free_at: gioVao + 1,
-      loaiBN: p.loai_bn || "NoiTru",
-      buoiDieuTri: p.buoi_dieu_tri || "Sang"
-    };
+    const dsBacSi = parseStringOrJsonArray(r.bac_si);
+    const dsKTV = parseStringOrJsonArray(r.ktv);
+    database.roomStaff[r.ten_phong] = [...new Set([...dsBacSi, ...dsKTV].map(x => database.replacementMap[x] || x))];
   });
 
   return { database, rawPatientsList: patientsRes.results || [] };
@@ -1089,6 +990,7 @@ async function buildBaseDbFromD1(db) {
       return parts.length === 2 ? parts[0].trim() + "-" + m2t(t2m(parts[1].trim()) + 1) : b;
     }).join(",");
 
+    // 1. Machines
     const machineList = cache.machine || cache.machines || [];
     machineList.forEach(m => {
       const tenLoai = m.tenLoai || m[1] || "";
@@ -1100,6 +1002,7 @@ async function buildBaseDbFromD1(db) {
       }
     });
 
+    // 2. Staff
     const staffList = cache.staff || [];
     staffList.forEach(s => {
       const ten = s.ten || s.name || s[1] || "";
@@ -1116,6 +1019,7 @@ async function buildBaseDbFromD1(db) {
       }
     });
 
+    // 3. Procedures
     const procList = cache.proc || cache.procedures || [];
     procList.forEach(p => {
       const ten = String(p.ten || p.name || p[1] || "").trim().toLowerCase();
@@ -1140,6 +1044,7 @@ async function buildBaseDbFromD1(db) {
       ];
     });
 
+    // 4. Rooms
     const roomList = cache.room || cache.rooms || [];
     roomList.forEach(r => {
       const roomName = String(r.tenPhong || r.name || r[1] || "").trim();
@@ -1157,6 +1062,7 @@ async function buildBaseDbFromD1(db) {
       database.roomStaff[roomName] = [...new Set([...dsBacSi, ...dsKTV].map(x => database.replacementMap[x] || x))];
     });
 
+    // 5. Patients
     const patList = cache.pat || cache.patients || [];
     const skipList = skipProcsStr ? String(skipProcsStr).split(',').map(s => s.trim().toLowerCase()).filter(Boolean) : [];
     const seen = new Set();
@@ -1176,6 +1082,7 @@ async function buildBaseDbFromD1(db) {
       let procs = Array.isArray(ttStr) ? ttStr : String(ttStr).split(",").map(x => x.trim()).filter(Boolean);
       if (!procs.length) return;
 
+      // Nếu đang xếp bổ sung (có existingSched), loại bỏ các thủ thuật CỦA BỆNH NHÂN NÀY đã được xếp lịch trước đó (khớp theo số lượng)
       if (existingSched && existingSched.length > 0) {
         const scheduledProcsForPat = existingSched
           .filter(r => {
@@ -1201,7 +1108,7 @@ async function buildBaseDbFromD1(db) {
         }
         procs = remainingProcs;
       }
-      if (!procs.length) return;
+      if (!procs.length) return; // Bệnh nhân đã được xếp đủ hết thủ thuật rồi, không cần xếp nữa
 
       const rawGioVao = p.gioVao || p[4] || "";
       const gioVao = isEmptyTime(rawGioVao) ? 420 : t2m(rawGioVao);
@@ -1263,7 +1170,7 @@ async function buildBaseDbFromD1(db) {
     const scenarioMap = { opt_rare: 1, balanced: 2, contingency: 3 };
     const scenario = scenarioMap[strategyKey] || 1;
 
-    const best = runBestIteration(db, dateVal, existingSched, scenario, crowdedOverride, { drop: 10000, overtime: 2, imbalance: 0.1 }, 42, 14);
+    const best = runBestIteration(db, dateVal, existingSched, scenario, crowdedOverride);
     const finalDropList = (best ? best.rot : []).concat(forcedDrops).map(r => ({ ...r, ngay: r.ngay || dateVal }));
 
     const formattedSched = (best ? best.sched : []).map(x => ({
@@ -1280,155 +1187,17 @@ async function buildBaseDbFromD1(db) {
       giuong: x.GIUONG
     }));
 
-    const compactedSched = compactTimelineGaps(formattedSched, db);
     const elapsed = Math.round(performance.now() - startTime);
 
     return {
-      scheduleCount: compactedSched.length,
+      scheduleCount: formattedSched.length,
       unscheduledCount: finalDropList.length,
-      schedule: compactedSched,
-      sched: compactedSched,
+      schedule: formattedSched,
+      sched: formattedSched,
       unscheduled: finalDropList,
       rot: finalDropList,
-      elapsedMs: elapsed,
-      threadCount: 1,
-      engine: 'Turbo-Tabu-LAHC'
+      elapsedMs: elapsed
     };
-  }
-
-  async function runSchedulingAsync(dateVal, strategyKey = 'opt_rare', skipProcsStr = '', crowdedOverride = -1, existingSched = [], options = {}) {
-    const startTime = performance.now();
-    const { database: db, forcedDrops } = buildDbFromCache(null, skipProcsStr, existingSched);
-
-    if (!db.rawPatients.length) {
-      return {
-        schedule: [],
-        unscheduled: [],
-        scheduleCount: 0,
-        unscheduledCount: 0,
-        elapsedMs: 0,
-        threadCount: 1,
-        engine: 'Worker-Turbo'
-      };
-    }
-
-    const scenarioMap = { opt_rare: 1, balanced: 2, contingency: 3 };
-    const scenario = scenarioMap[strategyKey] || 1;
-    const weights = options.weights || { drop: 10000, overtime: 2, imbalance: 0.1 };
-
-    const hasWorker = typeof Worker !== 'undefined' && typeof Blob !== 'undefined' && typeof URL !== 'undefined';
-    const numWorkers = hasWorker ? Math.min(Math.max((typeof navigator !== 'undefined' && navigator.hardwareConcurrency) ? navigator.hardwareConcurrency : 4, 2), 8) : 1;
-
-    if (!hasWorker || options.forceSync) {
-      return runClientScheduling(dateVal, strategyKey, skipProcsStr, crowdedOverride, existingSched);
-    }
-
-    try {
-      const seeds = [42, 101, 2026, 7777, 8888, 12345, 99999, 54321].slice(0, numWorkers);
-      const workerScript = `
-        ${t2m.toString()}
-        ${isEmptyTime.toString()}
-        ${m2t.toString()}
-        ${is_overlap.toString()}
-        ${createSeededRandom.toString()}
-        ${parseNgayVao.toString()}
-        ${updatePatientCache.toString()}
-        ${mergeTimeline.toString()}
-        ${getNextEvent.toString()}
-        ${blockStaff.toString()}
-        ${clonePatients.toString()}
-        ${mutate.toString()}
-        ${getPatientSignature.toString()}
-        ${_turbo_core_logic.toString()}
-        ${runBestIteration.toString()}
-
-        self.onmessage = function(e) {
-          const { db, dateVal, existingSched, scenario, crowdedOverride, weights, seed } = e.data;
-          const result = runBestIteration(db, dateVal, existingSched, scenario, crowdedOverride, weights, seed, 12);
-          self.postMessage(result);
-        };
-      `;
-
-      const blob = new Blob([workerScript], { type: 'application/javascript' });
-      const workerUrl = URL.createObjectURL(blob);
-
-      const workerPromises = seeds.map(seed => {
-        return new Promise((resolve) => {
-          try {
-            const w = new Worker(workerUrl);
-            const timeout = setTimeout(() => {
-              w.terminate();
-              resolve(null);
-            }, 2500);
-
-            w.onmessage = (e) => {
-              clearTimeout(timeout);
-              w.terminate();
-              resolve(e.data);
-            };
-
-            w.onerror = (err) => {
-              clearTimeout(timeout);
-              w.terminate();
-              resolve(null);
-            };
-
-            w.postMessage({ db, dateVal, existingSched, scenario, crowdedOverride, weights, seed });
-          } catch(err) {
-            resolve(null);
-          }
-        });
-      });
-
-      const results = await Promise.all(workerPromises);
-      URL.revokeObjectURL(workerUrl);
-
-      let best = null;
-      for (const res of results) {
-        if (res && res.sched) {
-          if (!best || res.score < best.score) {
-            best = res;
-          }
-        }
-      }
-
-      if (!best) {
-        best = runBestIteration(db, dateVal, existingSched, scenario, crowdedOverride, weights, 42, 14);
-      }
-
-      const finalDropList = (best ? best.rot : []).concat(forcedDrops).map(r => ({ ...r, ngay: r.ngay || dateVal }));
-      const formattedSched = (best ? best.sched : []).map(x => ({
-        ngay: x.NGAY,
-        tenBN: x.HOTEN,
-        namSinh: x.NAMSINH,
-        phong: x.PHONG,
-        thuThuat: x.DICHVU,
-        gioDienRa: x.GIODIENRA,
-        gioKetThuc: x.GIOKETTHUC,
-        nvChinh: x["NV CHÍNH"],
-        nvPhu: x["NV PHỤ"],
-        may: x.MAY,
-        giuong: x.GIUONG
-      }));
-
-      const compactedSched = compactTimelineGaps(formattedSched, db);
-      const elapsed = Math.round(performance.now() - startTime);
-
-      return {
-        scheduleCount: compactedSched.length,
-        unscheduledCount: finalDropList.length,
-        schedule: compactedSched,
-        sched: compactedSched,
-        unscheduled: finalDropList,
-        rot: finalDropList,
-        elapsedMs: elapsed,
-        threadCount: numWorkers,
-        engine: `Multi-Thread (${numWorkers} Cores | Tabu+LAHC)`
-      };
-    } catch(err) {
-      console.warn('[SchedulerEngine]: Web Worker đa luồng gặp sự cố, tự động fallback về chạy đơn luồng:', err);
-      return runClientScheduling(dateVal, strategyKey, skipProcsStr, crowdedOverride, existingSched);
-    }
   }
 
   function runSaturdayScheduling(payload = {}, dateVal = '') {
@@ -1483,7 +1252,7 @@ async function buildBaseDbFromD1(db) {
       });
     });
 
-    const best = runBestIteration(baseDb, targetDate, [], 2, -1, { drop: 10000, overtime: 2, imbalance: 0.1 }, 42, 14);
+    const best = runBestIteration(baseDb, targetDate, [], 2, -1);
     const decodeRoom = item => {
       if (item.PHONG === "PHONG_CHUNG_T7" && item.GIUONG?.includes("|")) {
         const parts = item.GIUONG.split("|");
@@ -1543,9 +1312,7 @@ async function buildBaseDbFromD1(db) {
     m2t,
     buildDbFromCache,
     runScheduling: runClientScheduling,
-    runSchedulingAsync: runSchedulingAsync,
     runExtraScheduling: runExtraScheduling,
-    runSaturdayScheduling: runSaturdayScheduling,
-    compactTimelineGaps: compactTimelineGaps
+    runSaturdayScheduling: runSaturdayScheduling
   };
 })();

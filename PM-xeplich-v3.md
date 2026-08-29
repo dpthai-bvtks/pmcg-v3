@@ -1024,3 +1024,21 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
      - Sửa toàn bộ đường dẫn gọi `openTabFromDrawer('tab-admin')`, `switchMobileNav`, `goToAdminTab` và thêm nút `data-tab="tab-admin"` vào Sidebar Menu.
      - Tự động kích hoạt section `admin-sec-settings` và nạp dữ liệu mặc định đầy đủ khi người dùng mở tab Cài đặt hệ thống trên mọi thiết bị.
 - **File sửa đổi**: `index.html`, `js/app.js`, `css/style.css`, `PM-xeplich-v3.md`.
+
+### Nâng Cấp: Thuật Toán Xếp Lịch Nhóm 2 (Web Worker Đa Luồng, Tabu Search, LAHC & Nén Khe Hở Lịch) (29/08/2026)
+- **Mục tiêu**:
+  - Tối ưu hóa toàn diện bộ động cơ xếp lịch cốt lõi, quét tìm nghiệm tốt gấp 8-10 lần trong cùng thời gian ~0.15s, triệt tiêu tỷ lệ rớt ca (đặc biệt các ca khó nhiều thủ thuật), nén khe hở thời gian và không làm đơ giao diện.
+- **Giải pháp triển khai**:
+  1. **Sao lưu an toàn**:
+     - Lưu bản sao lưu nguyên vẹn của động cơ trước đó vào `js/scheduler-engine.v3.2.5.bak.js`.
+  2. **Tích hợp Metaheuristics Tiên Tiến (Tabu Search + Late Acceptance Hill Climbing)**:
+     - **Tabu List (Bộ nhớ cấm lặp)**: Quản lý hàng đợi FIFO 30 trạng thái hoán vị gần nhất, kết hợp tiêu chuẩn Aspiration Criterion (vượt cấm nếu điểm số vượt trội) giúp thuật toán không bị kẹt ở cực tiểu cục bộ.
+     - **Late Acceptance Hill Climbing (LAHC Buffer L=5)**: Chấp nhận các giải pháp trung gian theo bộ đệm lịch sử điểm số, cho phép thuật toán dễ dàng nhảy qua các nút thắt tắc nghẽn giờ cao điểm.
+     - **Smart Guided Mutation**: Tự động ưu tiên xếp các bệnh nhân bị rớt ca và các gói $\ge 3$ thủ thuật vào các khung giờ vàng trong ngày.
+  3. **Đa Luồng Web Worker Song Song (`navigator.hardwareConcurrency`)**:
+     - Hàm `runSchedulingAsync()` tự động phát hiện số lõi CPU của thiết bị (2 đến 8 luồng) và khởi chạy song song các hạt giống ngẫu nhiên độc lập (`42`, `101`, `2026`, `7777`, `8888`...).
+     - Gom kết quả từ tất cả các luồng và chọn ra phương án có điểm phạt thấp nhất.
+     - Có sẵn cơ chế tự động Fallback chạy đồng bộ nếu thiết bị không hỗ trợ Worker.
+  4. **Thuật Toán Nén Khe Hở Thời Gian (`compactTimelineGaps`)**:
+     - Quét và dồn các khoảng trống nhàn rỗi 5-15 phút giữa các ca bệnh của cùng bệnh nhân/nhân sự/phòng bệnh, giúp các y bác sĩ và bệnh nhân hoàn thành lịch điều trị sớm hơn.
+- **File sửa đổi**: `js/scheduler-engine.js`, `js/app.js`, `index.html`, `PM-xeplich-v3.md`.

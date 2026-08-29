@@ -5315,7 +5315,7 @@ window.renderSttOrderControl = function (type, i, total) {
             }
         }
 
-        function executeScheduling(strategy) {
+        async function executeScheduling(strategy) {
             window.viewingImportedScheduleFile = false;
             closeStrategyModal();
             const dateVal = document.getElementById('schedule-date').value;
@@ -5326,160 +5326,161 @@ window.renderSttOrderControl = function (type, i, total) {
             const list = document.getElementById('schedule-list');
             const btn = document.getElementById('btn-run-sched');
 
-            btn.innerText = '⏳ ĐANG XẾP LỊCH...'; btn.disabled = true; btn.style.background = '#f39c12';
+            btn.innerText = '⏳ ĐANG XẾP LỊCH (ĐA LUỒNG)...'; btn.disabled = true; btn.style.background = '#f39c12';
             res.innerHTML = '';
             list.innerHTML = '<tr><td colspan="12" align="center"><div class="spinner"></div></td></tr>';
 
             const startTime = performance.now();
-            if (window.showGlobalLoading) window.showGlobalLoading("Đang chạy thuật toán tối ưu xếp lịch...");
+            if (window.showGlobalLoading) window.showGlobalLoading("Đang chạy thuật toán tối ưu xếp lịch (Đa Luồng)...");
 
-            setTimeout(() => {
-                try {
-                    let out = null;
-                    if (window.SchedulerEngine && typeof window.SchedulerEngine.runScheduling === 'function') {
-                        out = window.SchedulerEngine.runScheduling(dateVal, strategy, skipVal, crowdedVal);
-                    }
-
-                    if (window.hideGlobalLoading) window.hideGlobalLoading();
-                    const timeTaken = (out && out.elapsedMs !== undefined) ? (out.elapsedMs / 1000).toFixed(2) : ((performance.now() - startTime) / 1000).toFixed(2);
-                    btn.innerText = 'CHẠY XẾP LỊCH TỔNG'; btn.disabled = false; btn.style.background = '#008b02';
-
-                    const sched = (out && (out.schedule || out.sched)) ? (out.schedule || out.sched) : [];
-                    const unsch = (out && (out.unscheduled || out.rot)) ? (out.unscheduled || out.rot) : [];
-                    const schedCount = (out && out.scheduleCount !== undefined) ? out.scheduleCount : sched.length;
-                    const unschCount = (out && out.unscheduledCount !== undefined) ? out.unscheduledCount : unsch.length;
-
-                    window.currentScheduleData = markDischargedInSchedule(sched);
-                    if (typeof dataCache !== 'undefined') dataCache.schedule = sched;
-                    if (window.dataCache) window.dataCache.schedule = sched;
-                    setUnscheduledData(unsch, dateVal);
-                    window._systemActiveYMD = dateVal;
-
-                    const dashboardDate = document.getElementById('dashboard-date-filter');
-                    if (dashboardDate) dashboardDate.value = dateVal;
-
-                    localStorage.setItem('meds_schedule_date', dateVal);
-                    localStorage.setItem('meds_success', JSON.stringify(sched));
-                    localStorage.setItem('meds_unscheduled', JSON.stringify(unsch));
-
-                    if (window.OfflineSyncEngine && typeof window.OfflineSyncEngine.saveCache === 'function') {
-                        window.OfflineSyncEngine.saveCache('meds_success', sched);
-                        window.OfflineSyncEngine.broadcastLiveEvent('SCHEDULE_GENERATED', { date: dateVal, schedCount, unschCount });
-                    }
-
-                    res.innerHTML = '<div class="alert alert-success" style="margin-top:10px">Xếp thành công: <b>' + schedCount + '</b> ca. Rớt: <b>' + unschCount + '</b> ca. <span style="margin-left:15px; color:#555; font-size:13px;">(⏱ <b>' + timeTaken + ' giây</b>)</span></div>';
-                    
-                    // Hiển thị Popup kết quả tức thì
-                    const contentEl = document.getElementById('custom-popup-content');
-                    if (contentEl) contentEl.innerHTML = `
-                    <div>✅ Xếp thành công: <b style="color:#27ae60; font-size:18px;">${schedCount}</b> ca</div>
-                    <div>❌ Không xếp được: <b style="color:#c0392b; font-size:18px;">${unschCount}</b> ca</div>
-                    <hr style="border:0; border-top:1px dashed #ccc; margin:10px 0;">
-                    <div style="font-size:14px; color:#7f8c8d;">⏱ Thời gian: <b>${timeTaken}</b> giây</div>`;
-                    const popup = document.getElementById('custom-success-popup');
-                    if (popup) popup.style.display = 'flex';
-
-                    // Cập nhật lại lịch hiển thị
-                    filterSchedule();
-
-                    // Trì hoãn các tác vụ vẽ lại Dashboard & lưu cache nặng sang luồng phụ
-                    setTimeout(() => {
-                        if (typeof renderStats === 'function') renderStats(window.lastUnscheduledData);
-                        if (typeof renderPatientsTable === 'function') renderPatientsTable();
-                        if (typeof loadDashboard === 'function') loadDashboard();
-
-                        try {
-                            const cachedStr = localStorage.getItem('times_bootstrap_cache');
-                            if (cachedStr) {
-                                const b = JSON.parse(cachedStr);
-                                b.schedule = sched;
-                                localStorage.setItem('times_bootstrap_cache', JSON.stringify(b));
-                            }
-                        } catch(e) {}
-                    }, 50);
-
-                    // Đồng bộ lưu lịch trình vào D1 SQLite trong nền (15ms, không làm đơ giao diện)
-                    if (sched.length > 0) {
-                        const backendSched = sched.map(x => [ x.ngay || dateVal, x.tenBN || '', x.namSinh || '', x.phong || '', x.thuThuat || '', x.gioDienRa || '', x.gioKetThuc || '', x.nvChinh || '', x.nvPhu || '', x.may || '', x.giuong || '' ]);
-                        callApi('saveSchedule', [dateVal, backendSched], null, null);
-                    }
-                } catch(err) {
-                    if (window.hideGlobalLoading) window.hideGlobalLoading();
-                    btn.innerText = 'CHẠY XẾP LỊCH TỔNG'; btn.disabled = false; btn.style.background = '#008b02';
-                    res.innerHTML = '<div class="alert alert-danger">Lỗi xếp lịch: ' + err.message + '</div>';
+            try {
+                let out = null;
+                if (window.SchedulerEngine && typeof window.SchedulerEngine.runSchedulingAsync === 'function') {
+                    out = await window.SchedulerEngine.runSchedulingAsync(dateVal, strategy, skipVal, crowdedVal);
+                } else if (window.SchedulerEngine && typeof window.SchedulerEngine.runScheduling === 'function') {
+                    out = window.SchedulerEngine.runScheduling(dateVal, strategy, skipVal, crowdedVal);
                 }
-            }, 30);
+
+                if (window.hideGlobalLoading) window.hideGlobalLoading();
+                const timeTaken = (out && out.elapsedMs !== undefined) ? (out.elapsedMs / 1000).toFixed(2) : ((performance.now() - startTime) / 1000).toFixed(2);
+                btn.innerText = 'CHẠY XẾP LỊCH TỔNG'; btn.disabled = false; btn.style.background = '#008b02';
+
+                const sched = (out && (out.schedule || out.sched)) ? (out.schedule || out.sched) : [];
+                const unsch = (out && (out.unscheduled || out.rot)) ? (out.unscheduled || out.rot) : [];
+                const schedCount = (out && out.scheduleCount !== undefined) ? out.scheduleCount : sched.length;
+                const unschCount = (out && out.unscheduledCount !== undefined) ? out.unscheduledCount : unsch.length;
+                const engineInfo = (out && out.engine) ? out.engine : 'Turbo-Engine';
+
+                window.currentScheduleData = markDischargedInSchedule(sched);
+                if (typeof dataCache !== 'undefined') dataCache.schedule = sched;
+                if (window.dataCache) window.dataCache.schedule = sched;
+                setUnscheduledData(unsch, dateVal);
+                window._systemActiveYMD = dateVal;
+
+                const dashboardDate = document.getElementById('dashboard-date-filter');
+                if (dashboardDate) dashboardDate.value = dateVal;
+
+                localStorage.setItem('meds_schedule_date', dateVal);
+                localStorage.setItem('meds_success', JSON.stringify(sched));
+                localStorage.setItem('meds_unscheduled', JSON.stringify(unsch));
+
+                if (window.OfflineSyncEngine && typeof window.OfflineSyncEngine.saveCache === 'function') {
+                    window.OfflineSyncEngine.saveCache('meds_success', sched);
+                    window.OfflineSyncEngine.broadcastLiveEvent('SCHEDULE_GENERATED', { date: dateVal, schedCount, unschCount });
+                }
+
+                res.innerHTML = '<div class="alert alert-success" style="margin-top:10px">Xếp thành công: <b>' + schedCount + '</b> ca. Rớt: <b>' + unschCount + '</b> ca. <span style="margin-left:15px; color:#555; font-size:13px;">(🚀 <b>' + engineInfo + '</b> | ⏱ <b>' + timeTaken + 's</b>)</span></div>';
+                
+                // Hiển thị Popup kết quả tức thì
+                const contentEl = document.getElementById('custom-popup-content');
+                if (contentEl) contentEl.innerHTML = `
+                <div>✅ Xếp thành công: <b style="color:#27ae60; font-size:18px;">${schedCount}</b> ca</div>
+                <div>❌ Không xếp được: <b style="color:#c0392b; font-size:18px;">${unschCount}</b> ca</div>
+                <hr style="border:0; border-top:1px dashed #ccc; margin:10px 0;">
+                <div style="font-size:13px; color:#16a085;">🚀 Động cơ: <b>${engineInfo}</b></div>
+                <div style="font-size:13px; color:#7f8c8d; margin-top:3px;">⏱ Thời gian: <b>${timeTaken}</b> giây</div>`;
+                const popup = document.getElementById('custom-success-popup');
+                if (popup) popup.style.display = 'flex';
+
+                // Cập nhật lại lịch hiển thị
+                filterSchedule();
+
+                // Trì hoãn các tác vụ vẽ lại Dashboard & lưu cache nặng sang luồng phụ
+                setTimeout(() => {
+                    if (typeof renderStats === 'function') renderStats(window.lastUnscheduledData);
+                    if (typeof renderPatientsTable === 'function') renderPatientsTable();
+                    if (typeof loadDashboard === 'function') loadDashboard();
+
+                    try {
+                        const cachedStr = localStorage.getItem('times_bootstrap_cache');
+                        if (cachedStr) {
+                            const b = JSON.parse(cachedStr);
+                            b.schedule = sched;
+                            localStorage.setItem('times_bootstrap_cache', JSON.stringify(b));
+                        }
+                    } catch(e) {}
+                }, 50);
+
+                // Đồng bộ lưu lịch trình vào D1 SQLite trong nền (15ms, không làm đơ giao diện)
+                if (sched.length > 0) {
+                    const backendSched = sched.map(x => [ x.ngay || dateVal, x.tenBN || '', x.namSinh || '', x.phong || '', x.thuThuat || '', x.gioDienRa || '', x.gioKetThuc || '', x.nvChinh || '', x.nvPhu || '', x.may || '', x.giuong || '' ]);
+                    callApi('saveSchedule', [dateVal, backendSched], null, null);
+                }
+            } catch(err) {
+                if (window.hideGlobalLoading) window.hideGlobalLoading();
+                btn.innerText = 'CHẠY XẾP LỊCH TỔNG'; btn.disabled = false; btn.style.background = '#008b02';
+                res.innerHTML = '<div class="alert alert-danger">Lỗi xếp lịch: ' + err.message + '</div>';
+            }
         }
 
-        function runExtraScheduling() {
+        async function runExtraScheduling() {
             window.viewingImportedScheduleFile = false;
             const dateVal = document.getElementById('schedule-date').value;
             if (!dateVal) return alert("Vui lòng chọn ngày để xếp bổ sung!");
             const btn = document.getElementById('btn-run-extra');
             btn.innerText = '⏳ ĐANG TÌM CHỖ TRỐNG...'; btn.disabled = true;
 
-            if (window.showGlobalLoading) window.showGlobalLoading("Đang xếp lịch bổ sung bệnh nhân mới...");
+            if (window.showGlobalLoading) window.showGlobalLoading("Đang xếp lịch bổ sung bệnh nhân mới (Đa Luồng)...");
 
-            setTimeout(() => {
-                try {
-                    const currentSched = window.currentScheduleData || (typeof dataCache !== 'undefined' && dataCache.schedule) || [];
-                    let out = null;
-                    if (window.SchedulerEngine && typeof window.SchedulerEngine.runExtraScheduling === 'function') {
-                        out = window.SchedulerEngine.runExtraScheduling(dateVal, currentSched);
-                    } else if (window.SchedulerEngine && typeof window.SchedulerEngine.runScheduling === 'function') {
-                        out = window.SchedulerEngine.runScheduling(dateVal, 'opt_rare', '', -1, currentSched);
-                    }
-
-                    if (window.hideGlobalLoading) window.hideGlobalLoading();
-                    btn.innerText = '⚡ XẾP BỔ SUNG BN MỚI'; btn.disabled = false;
-
-                    const newSched = (out && (out.schedule || out.sched)) ? (out.schedule || out.sched) : [];
-                    const newUnsch = (out && (out.unscheduled || out.rot)) ? (out.unscheduled || out.rot) : [];
-                    const addedCount = newSched.length;
-
-                    if (addedCount > 0) {
-                        const mergedSched = [...currentSched, ...newSched];
-                        window.currentScheduleData = markDischargedInSchedule(mergedSched);
-                        if (typeof dataCache !== 'undefined') dataCache.schedule = mergedSched;
-                        if (window.dataCache) window.dataCache.schedule = mergedSched;
-
-                        localStorage.setItem('meds_schedule_date', dateVal);
-                        localStorage.setItem('meds_success', JSON.stringify(mergedSched));
-
-                        if (window.OfflineSyncEngine && typeof window.OfflineSyncEngine.saveCache === 'function') {
-                            window.OfflineSyncEngine.saveCache('meds_success', mergedSched);
-                            window.OfflineSyncEngine.broadcastLiveEvent('SCHEDULE_GENERATED', { date: dateVal, addedCount });
-                        }
-
-                        const backendSched = mergedSched.map(x => [ x.ngay || dateVal, x.tenBN || '', x.namSinh || '', x.phong || '', x.thuThuat || '', x.gioDienRa || '', x.gioKetThuc || '', x.nvChinh || '', x.nvPhu || '', x.may || '', x.giuong || '' ]);
-                        callApi('saveSchedule', [dateVal, backendSched], null, null);
-                    }
-
-                    setUnscheduledData(newUnsch, dateVal);
-                    filterSchedule();
-                    if (typeof renderStats === 'function') renderStats(window.lastUnscheduledData);
-                    if (typeof renderPatientsTable === 'function') renderPatientsTable();
-                    if (typeof loadDashboard === 'function') loadDashboard();
-
-                    const totalFail = window.lastUnscheduledData ? window.lastUnscheduledData.length : 0;
-                    const contentEl = document.getElementById('custom-popup-content');
-                    if (contentEl) contentEl.innerHTML = `
-                    <div>✅ Xếp bổ sung thành công: <b style="color:#27ae60; font-size:18px;">${addedCount}</b> ca</div>
-                    <div>❌ Không xếp được lần này: <b style="color:#c0392b; font-size:18px;">${newUnsch.length}</b> ca</div>
-                    <hr style="border:0; border-top:1px dashed #ccc; margin:10px 0;">
-                    <div style="font-size:14px; color:#7f8c8d;">Tổng số ca rớt hiện tại: <b>${totalFail}</b> ca</div>`;
-
-                    const popup = document.getElementById('custom-success-popup');
-                    if (popup) popup.style.display = 'flex';
-                } catch(err) {
-                    if (window.hideGlobalLoading) window.hideGlobalLoading();
-                    btn.innerText = '⚡ XẾP BỔ SUNG BN MỚI'; btn.disabled = false;
-                    console.error("Error in runExtraScheduling:", err);
-                    const res = document.getElementById('schedule-result');
-                    if (res) res.innerHTML = '<div class="alert alert-danger" style="margin-top:10px">❌ Lỗi hệ thống: ' + err.message + '</div>';
-                    alert("Lỗi xếp bổ sung: " + err.message);
+            try {
+                const currentSched = window.currentScheduleData || (typeof dataCache !== 'undefined' && dataCache.schedule) || [];
+                let out = null;
+                if (window.SchedulerEngine && typeof window.SchedulerEngine.runSchedulingAsync === 'function') {
+                    out = await window.SchedulerEngine.runSchedulingAsync(dateVal, 'opt_rare', '', -1, currentSched);
+                } else if (window.SchedulerEngine && typeof window.SchedulerEngine.runExtraScheduling === 'function') {
+                    out = window.SchedulerEngine.runExtraScheduling(dateVal, currentSched);
+                } else if (window.SchedulerEngine && typeof window.SchedulerEngine.runScheduling === 'function') {
+                    out = window.SchedulerEngine.runScheduling(dateVal, 'opt_rare', '', -1, currentSched);
                 }
-            }, 30);
+
+                if (window.hideGlobalLoading) window.hideGlobalLoading();
+                btn.innerText = '⚡ XẾP BỔ SUNG BN MỚI'; btn.disabled = false;
+
+                const newSched = (out && (out.schedule || out.sched)) ? (out.schedule || out.sched) : [];
+                const newUnsch = (out && (out.unscheduled || out.rot)) ? (out.unscheduled || out.rot) : [];
+                const addedCount = newSched.length;
+
+                if (addedCount > 0) {
+                    const mergedSched = [...currentSched, ...newSched];
+                    window.currentScheduleData = markDischargedInSchedule(mergedSched);
+                    if (typeof dataCache !== 'undefined') dataCache.schedule = mergedSched;
+                    if (window.dataCache) window.dataCache.schedule = mergedSched;
+
+                    localStorage.setItem('meds_schedule_date', dateVal);
+                    localStorage.setItem('meds_success', JSON.stringify(mergedSched));
+
+                    if (window.OfflineSyncEngine && typeof window.OfflineSyncEngine.saveCache === 'function') {
+                        window.OfflineSyncEngine.saveCache('meds_success', mergedSched);
+                        window.OfflineSyncEngine.broadcastLiveEvent('SCHEDULE_GENERATED', { date: dateVal, addedCount });
+                    }
+
+                    const backendSched = mergedSched.map(x => [ x.ngay || dateVal, x.tenBN || '', x.namSinh || '', x.phong || '', x.thuThuat || '', x.gioDienRa || '', x.gioKetThuc || '', x.nvChinh || '', x.nvPhu || '', x.may || '', x.giuong || '' ]);
+                    callApi('saveSchedule', [dateVal, backendSched], null, null);
+                }
+
+                setUnscheduledData(newUnsch, dateVal);
+                filterSchedule();
+                if (typeof renderStats === 'function') renderStats(window.lastUnscheduledData);
+                if (typeof renderPatientsTable === 'function') renderPatientsTable();
+                if (typeof loadDashboard === 'function') loadDashboard();
+
+                const totalFail = window.lastUnscheduledData ? window.lastUnscheduledData.length : 0;
+                const contentEl = document.getElementById('custom-popup-content');
+                if (contentEl) contentEl.innerHTML = `
+                <div>✅ Xếp bổ sung thành công: <b style="color:#27ae60; font-size:18px;">${addedCount}</b> ca</div>
+                <div>❌ Không xếp được lần này: <b style="color:#c0392b; font-size:18px;">${newUnsch.length}</b> ca</div>
+                <hr style="border:0; border-top:1px dashed #ccc; margin:10px 0;">
+                <div style="font-size:14px; color:#7f8c8d;">Tổng số ca rớt hiện tại: <b>${totalFail}</b> ca</div>`;
+                const popup = document.getElementById('custom-success-popup');
+                if (popup) popup.style.display = 'flex';
+            } catch(err) {
+                if (window.hideGlobalLoading) window.hideGlobalLoading();
+                btn.innerText = '⚡ XẾP BỔ SUNG BN MỚI'; btn.disabled = false;
+                console.error("Error in runExtraScheduling:", err);
+                const res = document.getElementById('schedule-result');
+                if (res) res.innerHTML = '<div class="alert alert-danger" style="margin-top:10px">❌ Lỗi hệ thống: ' + err.message + '</div>';
+                alert("Lỗi xếp bổ sung: " + err.message);
+            }
         }
 
 

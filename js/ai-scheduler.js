@@ -194,27 +194,40 @@ window.AIScheduler = (function () {
   }
 
   /**
-   * 🔄 Tự động quét và hiệu chỉnh mô hình AI từ bộ nhớ dữ liệu hiện tại
+   * ⏰ Tự động kiểm tra và huấn luyện AI theo khung giờ chỉ định hàng ngày
    */
-  function calibrateFromAppContext() {
-    let historyRows = [];
-
-    // Đọc từ dataCache
-    if (typeof window !== 'undefined' && window.dataCache) {
-      if (Array.isArray(window.dataCache.history)) historyRows = historyRows.concat(window.dataCache.history);
-      if (Array.isArray(window.dataCache.schedule)) historyRows = historyRows.concat(window.dataCache.schedule);
-    }
-
-    // Đọc từ localStorage cache
+  function checkAutoTrain() {
     try {
-      const cachedHistory = localStorage.getItem('times_history_cache');
-      if (cachedHistory) {
-        const parsed = JSON.parse(cachedHistory);
-        if (Array.isArray(parsed)) historyRows = historyRows.concat(parsed);
-      }
-    } catch(e) {}
+      if (typeof localStorage === 'undefined') return;
+      const enable = localStorage.getItem('ai_auto_train_enable') !== '0'; // Mặc định bật
+      if (!enable) return;
 
-    return trainFromHistory(historyRows);
+      const targetTimeStr = localStorage.getItem('ai_auto_train_time') || '17:00';
+      const parts = targetTimeStr.split(':');
+      const targetMins = (parseInt(parts[0], 10) || 17) * 60 + (parseInt(parts[1], 10) || 0);
+
+      const now = new Date();
+      const currentMins = now.getHours() * 60 + now.getMinutes();
+      const todayStr = now.toISOString().slice(0, 10);
+      const lastTrainedDate = localStorage.getItem('ai_last_auto_train_date') || '';
+
+      if (todayStr !== lastTrainedDate && currentMins >= targetMins) {
+        console.log(`[AIScheduler] ⏰ Đã đến giờ tự động huấn luyện AI (${targetTimeStr}). Đang nạp dữ liệu...`);
+        const model = calibrateFromAppContext();
+        localStorage.setItem('ai_last_auto_train_date', todayStr);
+        if (model && model.trainedRows > 0) {
+          console.log(`[AIScheduler] ✅ Đã tự động cập nhật mô hình AI (${model.trainedRows} dòng) thành công!`);
+        }
+      }
+    } catch (e) {
+      console.warn('[AIScheduler] Lỗi trong tiến trình kiểm tra tự động huấn luyện AI:', e);
+    }
+  }
+
+  // Khởi động tiến trình chạy nền kiểm tra định kỳ mỗi 60 giây
+  if (typeof window !== 'undefined') {
+    setTimeout(checkAutoTrain, 3000);
+    setInterval(checkAutoTrain, 60000);
   }
 
   return {
@@ -223,6 +236,7 @@ window.AIScheduler = (function () {
     scorePatientPriority,
     rankPatients,
     getStaffAffinityScore,
-    calibrate: calibrateFromAppContext
+    calibrate: calibrateFromAppContext,
+    checkAutoTrain
   };
 })();

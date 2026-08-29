@@ -8679,6 +8679,10 @@ window.renderSttOrderControl = function (type, i, total) {
                 btn.style.borderLeft = '4px solid #16a085';
                 btn.style.borderBottom = '2px solid #16a085';
             }
+
+            if (sectionId === 'admin-sec-ai' && typeof window.renderAISettingsUI === 'function') {
+                window.renderAISettingsUI();
+            }
         }
 
         // ============================================================
@@ -10658,8 +10662,55 @@ window.saveBackupScheduleSettings = function() {
     showCustomAlert("Thành công", "Đã lưu cấu hình lịch tự động sao lưu & nhắc nhở thành công!");
 };
 
+window.renderAISettingsUI = function() {
+    try {
+        const model = (window.AIScheduler && typeof window.AIScheduler.getModel === 'function') ? window.AIScheduler.getModel() : null;
+        const trainedRowsEl = document.getElementById('ai-stat-trained-rows');
+        const lastTrainedEl = document.getElementById('ai-stat-last-trained');
+        const affinityEl = document.getElementById('ai-stat-affinity-count');
+        const autoEnableEl = document.getElementById('ai-auto-train-enable');
+        const autoTimeEl = document.getElementById('ai-auto-train-time');
+
+        if (model) {
+            if (trainedRowsEl) trainedRowsEl.innerText = `${(model.trainedRows || 0).toLocaleString()} dòng`;
+            if (lastTrainedEl) {
+                if (model.lastTrained) {
+                    const d = new Date(model.lastTrained);
+                    lastTrainedEl.innerText = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} ${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+                } else {
+                    lastTrainedEl.innerText = "Mô hình tiền huấn luyện";
+                }
+            }
+            const countAffinity = model.staffAffinity ? Object.keys(model.staffAffinity).length : 0;
+            if (affinityEl) affinityEl.innerText = `${countAffinity} mẫu thói quen`;
+        }
+
+        const autoEnable = localStorage.getItem('ai_auto_train_enable') !== '0';
+        const autoTime = localStorage.getItem('ai_auto_train_time') || '17:00';
+        if (autoEnableEl) autoEnableEl.value = autoEnable ? "1" : "0";
+        if (autoTimeEl) autoTimeEl.value = autoTime;
+    } catch(e) {
+        console.warn('[renderAISettingsUI] Lỗi hiển thị thông số AI:', e);
+    }
+};
+
+window.saveAIAutoTrainConfig = function() {
+    const enableEl = document.getElementById('ai-auto-train-enable');
+    const timeEl = document.getElementById('ai-auto-train-time');
+    const enable = enableEl ? enableEl.value : '1';
+    const time = timeEl ? timeEl.value : '17:00';
+
+    localStorage.setItem('ai_auto_train_enable', enable);
+    localStorage.setItem('ai_auto_train_time', time);
+
+    const configObj = { enable, time };
+    callApi('saveSystemSettings', ['ai_auto_train_config', JSON.stringify(configObj)], null, null);
+
+    showCustomAlert("Thành công", `Đã lưu cấu hình tự động huấn luyện AI hàng ngày vào lúc ${time} thành công!`);
+};
+
 window.calibrateAIFromHistory = async function() {
-    if (window.showGlobalLoading) window.showGlobalLoading("Đang nạp và huấn luyện mô hình AI từ dữ liệu lịch sử...");
+    if (window.showGlobalLoading) window.showGlobalLoading("Đang nạp và huấn luyện mô hình AI từ toàn bộ dữ liệu lịch sử...");
     setTimeout(() => {
         try {
             let historyRows = [];
@@ -10684,7 +10735,9 @@ window.calibrateAIFromHistory = async function() {
 
             if (window.hideGlobalLoading) window.hideGlobalLoading();
             const trainedCount = model ? model.trainedRows : historyRows.length;
-            showCustomAlert("Huấn luyện AI thành công", `Đã huấn luyện thành công mô hình AI từ ${trainedCount} dòng lịch sử thực tế!\nMa trận nhân sự, phòng bệnh và mức độ tắc nghẽn máy móc đã được cập nhật tối ưu.`);
+            if (typeof window.renderAISettingsUI === 'function') window.renderAISettingsUI();
+
+            showCustomAlert("Huấn luyện AI thành công", `Đã huấn luyện thành công mô hình AI từ toàn bộ ${trainedCount} dòng lịch sử thực tế!\nMa trận nhân sự, phòng bệnh và mức độ tắc nghẽn máy móc đã được cập nhật tối ưu.`);
         } catch(err) {
             if (window.hideGlobalLoading) window.hideGlobalLoading();
             showCustomAlert("Thông báo", "Lỗi huấn luyện AI: " + err.message);

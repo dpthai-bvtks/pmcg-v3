@@ -1081,6 +1081,9 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
      - **Định lượng độ ưu tiên bệnh nhân (AI Patient Ranking)**: Xếp thứ tự các ca khó, nhiều thủ thuật hoặc ra viện sớm vào vị trí thuận lợi nhất.
   2. **Tích hợp sâu vào Động cơ Xếp lịch (`js/scheduler-engine.js`)**:
      - Cả Kịch bản 1 (Tối ưu nhanh) và Kịch bản 2 (Toán học chuyên sâu) đều được AI dẫn đường, đạt hiệu năng tối đa.
-  3. **Nút "Huấn Luyện AI" trong Tab Cài Đặt Hệ Thống (`index.html` & `js/app.js`)**:
-     - Bổ sung nút **"🤖 HUẤN LUYỆN AI TỪ LỊCH SỬ THỰC TẾ (20.000 DÒNG)"** cho phép bác sĩ cập nhật lại mô hình AI bất cứ lúc nào chỉ trong ~45 ms.
+  3. **Mục Riêng "🤖 Huấn Luyện AI" Trong Menu Quản Trị & Tự Động Học Theo Giờ (`index.html` & `js/app.js`)**:
+     - Tạo mục menu chuyên dụng **"🤖 Huấn Luyện AI"** (`admin-sec-ai`) trong Menu Quản trị.
+     - Hiển thị bảng điều khiển trực quan: Số dòng dữ liệu đã học, thời điểm huấn luyện gần nhất, số cặp thói quen nhân sự.
+     - Bổ sung tính năng **Tự động huấn luyện AI hàng ngày theo khung giờ chỉ định** (Mặc định: `17:00` hàng ngày).
+     - Nút thao tác thủ công lớn: **"🤖 HUẤN LUYỆN AI"** cho phép cập nhật tức thì.
 - **File sửa đổi**: `js/ai-scheduler.js`, `js/scheduler-engine.js`, `js/app.js`, `index.html`, `PM-xeplich-v3.md`.

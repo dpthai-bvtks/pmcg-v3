@@ -998,3 +998,16 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
      - Ghim cố định cột STT / Tên bên trái khi cuộn ngang.
      - Tinh gọn nút bấm Sửa / Xóa (`height: 26px`, `font-size: 10.5px`).
 - **File sửa đổi**: `css/style.css`, `index.html`, `PM-xeplich-v3.md`.
+
+### Nâng Cấp: Đồng Bộ Triệt Để Phác Đồ Trên iPad & Tối Ưu Cài Đặt Hệ Thống Trên Điện Thoại (29/08/2026)
+- **Vấn đề xử lý**:
+  1. Bảng phác đồ trên iPad chưa đồng bộ giống PC: Do trước đó `initProtocolsData()` tự động đẩy dữ liệu mặc định lên cloud khi vừa mở app trên thiết bị mới, vô tình ghi đè lên dữ liệu đã lưu của PC.
+  2. Tab Cài đặt hệ thống (`#tab-admin`) trên điện thoại bị trống trơn do Menu sidebar 250px chiếm hết màn hình và ép phần form cấu hình tràn ra ngoài biên màn hình. Đồng thời các ô nhập nếu chưa có dữ liệu trong DB thì hiển thị rỗng thay vì giá trị mặc định.
+- **Giải pháp triển khai**:
+  1. **Đồng Bộ Phác Đồ Đa Thiết Bị Chuẩn Xác (PC / iPad / Phone)**:
+     - Loại bỏ hành vi tự động push phác đồ mặc định từ thiết bị mới. Chỉ push lên đám mây khi người dùng Thêm / Sửa / Xóa hoặc bấm nút *"🔄 Đồng Bộ Đám Mây"*.
+     - Cả `restoreOfflineCache()` và `loadBootstrapData()` đều ưu tiên nạp `clinical_protocols` từ máy chủ Cloudflare D1 và cập nhật tức thì vào bộ nhớ đệm của iPad/Phone.
+  2. **Giao Diện Cài Đặt Hệ Thống Responsive Đầy Đủ**:
+     - Menu quản trị trên mobile chuyển thành dạng thanh Pill cuộn ngang (`overflow-x: auto`) cực kỳ gọn gàng.
+     - Khung cấu hình hệ thống chiếm trọn 100% bề ngang, hiển thị đầy đủ các thông số kèm giá trị mặc định chuẩn (Giờ chốt sổ 16:20, Giờ lố YHCT 5p, Phạt rớt ca 10000, Phạt tăng ca 2, Phạt lệch tải 0.1).
+- **File sửa đổi**: `js/app.js`, `index.html`, `css/style.css`, `PM-xeplich-v3.md`.

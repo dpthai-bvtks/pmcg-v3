@@ -2236,8 +2236,24 @@ window.renderSttOrderControl = function (type, i, total) {
         // ============================================================
 
         function applySystemSettings(res) {
-            if (!res) return;
-            if (res.chotSoTime && document.getElementById("admin-chotso-time")) document.getElementById("admin-chotso-time").value = res.chotSoTime;
+            if (!res) res = {};
+            const chotSoEl = document.getElementById("admin-chotso-time");
+            if (chotSoEl) chotSoEl.value = res.chotSoTime || "16:20";
+
+            const yhctLunchEl = document.getElementById("admin-yhct-lunch");
+            if (yhctLunchEl) yhctLunchEl.value = (res.yhctLunch !== undefined && res.yhctLunch !== null && res.yhctLunch !== "") ? res.yhctLunch : "5";
+
+            const yhctEndEl = document.getElementById("admin-yhct-end");
+            if (yhctEndEl) yhctEndEl.value = (res.yhctEnd !== undefined && res.yhctEnd !== null && res.yhctEnd !== "") ? res.yhctEnd : "5";
+
+            const dropWeightEl = document.getElementById("admin-weight-drop");
+            if (dropWeightEl) dropWeightEl.value = (res.dropWeight !== undefined && res.dropWeight !== null && res.dropWeight !== "") ? res.dropWeight : "10000";
+
+            const overtimeWeightEl = document.getElementById("admin-weight-overtime");
+            if (overtimeWeightEl) overtimeWeightEl.value = (res.overtimeWeight !== undefined && res.overtimeWeight !== null && res.overtimeWeight !== "") ? res.overtimeWeight : "2";
+
+            const imbalanceWeightEl = document.getElementById("admin-weight-imbalance");
+            if (imbalanceWeightEl) imbalanceWeightEl.value = (res.imbalanceWeight !== undefined && res.imbalanceWeight !== null && res.imbalanceWeight !== "") ? res.imbalanceWeight : "0.1";
             
             // Restore backup reminder settings from D1 database configuration
             if (res.backup_schedule_config) {
@@ -2258,9 +2274,9 @@ window.renderSttOrderControl = function (type, i, total) {
             }
 
             // Đồng bộ phác đồ từ Server Settings
-            if (res.clinical_protocols || res.protocols) {
+            const rawProtocols = res.clinical_protocols || res.protocols;
+            if (rawProtocols) {
                 try {
-                    const rawProtocols = res.clinical_protocols || res.protocols;
                     const parsed = typeof rawProtocols === 'string' ? JSON.parse(rawProtocols) : rawProtocols;
                     if (Array.isArray(parsed) && parsed.length > 0) {
                         window.dataCache.protocols = parsed;
@@ -2272,12 +2288,6 @@ window.renderSttOrderControl = function (type, i, total) {
                     console.error("Lỗi đồng bộ phác đồ từ server:", e);
                 }
             }
-
-            if (res.yhctLunch !== undefined && document.getElementById("admin-yhct-lunch")) document.getElementById("admin-yhct-lunch").value = res.yhctLunch;
-            if (res.yhctEnd !== undefined && document.getElementById("admin-yhct-end")) document.getElementById("admin-yhct-end").value = res.yhctEnd;
-            if (res.dropWeight !== undefined && document.getElementById("admin-weight-drop")) document.getElementById("admin-weight-drop").value = res.dropWeight;
-            if (res.overtimeWeight !== undefined && document.getElementById("admin-weight-overtime")) document.getElementById("admin-weight-overtime").value = res.overtimeWeight;
-            if (res.imbalanceWeight !== undefined && document.getElementById("admin-weight-imbalance")) document.getElementById("admin-weight-imbalance").value = res.imbalanceWeight;
         }
 
         function restoreOfflineCache() {
@@ -2351,10 +2361,17 @@ window.renderSttOrderControl = function (type, i, total) {
                             dataCache.pat = b.patients.filter(pt => pt && pt.ten);
                             if (typeof renderPatientsTable === 'function') renderPatientsTable();
                         }
-                        if (b.protocols && Array.isArray(b.protocols) && b.protocols.length > 0) {
-                            dataCache.protocols = b.protocols;
-                            if (typeof renderProtocolsTable === 'function') renderProtocolsTable();
-                            if (typeof renderProtocolSelectOptions === 'function') renderProtocolSelectOptions();
+                        // Nạp phác đồ từ cache hoặc cài đặt máy chủ
+                        const rawCachedProto = (b.settings && b.settings.clinical_protocols) || b.protocols;
+                        if (rawCachedProto) {
+                            try {
+                                const parsed = typeof rawCachedProto === 'string' ? JSON.parse(rawCachedProto) : rawCachedProto;
+                                if (Array.isArray(parsed) && parsed.length > 0) {
+                                    dataCache.protocols = parsed;
+                                    if (typeof renderProtocolsTable === 'function') renderProtocolsTable();
+                                    if (typeof renderProtocolSelectOptions === 'function') renderProtocolSelectOptions();
+                                }
+                            } catch(e) {}
                         }
                         if (b.settings) {
                             applySystemSettings(b.settings);
@@ -2422,14 +2439,11 @@ window.renderSttOrderControl = function (type, i, total) {
                             if (typeof renderPatientsTable === 'function') renderPatientsTable();
                         }
 
-                        if (b.protocols && Array.isArray(b.protocols) && b.protocols.length > 0) {
-                            dataCache.protocols = b.protocols;
-                            try { localStorage.setItem('meds_protocols', JSON.stringify(b.protocols)); } catch(e) {}
-                            if (typeof renderProtocolsTable === 'function') renderProtocolsTable();
-                            if (typeof renderProtocolSelectOptions === 'function') renderProtocolSelectOptions();
-                        } else if (b.settings && b.settings.clinical_protocols) {
+                        // Đồng bộ phác đồ mới nhất từ máy chủ (Cloudflare D1)
+                        const rawServerProto = (b.settings && b.settings.clinical_protocols) || b.protocols;
+                        if (rawServerProto) {
                             try {
-                                const parsed = typeof b.settings.clinical_protocols === 'string' ? JSON.parse(b.settings.clinical_protocols) : b.settings.clinical_protocols;
+                                const parsed = typeof rawServerProto === 'string' ? JSON.parse(rawServerProto) : rawServerProto;
                                 if (Array.isArray(parsed) && parsed.length > 0) {
                                     dataCache.protocols = parsed;
                                     try { localStorage.setItem('meds_protocols', JSON.stringify(parsed)); } catch(e) {}
@@ -2951,11 +2965,6 @@ window.renderSttOrderControl = function (type, i, total) {
             }
             if (!window.dataCache.protocols || !window.dataCache.protocols.length) {
                 window.dataCache.protocols = JSON.parse(JSON.stringify(DEFAULT_PROTOCOLS));
-            }
-            
-            // Tự động đẩy phác đồ lên Cloudflare D1 nếu có dữ liệu
-            if (window.dataCache.protocols && window.dataCache.protocols.length) {
-                syncProtocolsToCloud(false);
             }
 
             renderProtocolsTable();
@@ -8651,18 +8660,23 @@ window.renderSttOrderControl = function (type, i, total) {
         // ============================================================
         window.switchAdminSection = function switchAdminSection(sectionId, btn) {
             document.querySelectorAll('.admin-section').forEach(sec => sec.style.display = 'none');
-            document.getElementById(sectionId).style.display = 'flex';
+            const targetSec = document.getElementById(sectionId);
+            if (targetSec) targetSec.style.display = 'flex';
 
             document.querySelectorAll('.admin-nav-btn').forEach(b => {
+                b.classList.remove('active');
                 b.style.background = '#f1f2f6';
                 b.style.color = '#333';
                 b.style.borderLeft = '4px solid transparent';
+                b.style.borderBottom = '2px solid transparent';
             });
 
             if (btn) {
+                btn.classList.add('active');
                 btn.style.background = '#e8f8f5';
                 btn.style.color = '#16a085';
                 btn.style.borderLeft = '4px solid #16a085';
+                btn.style.borderBottom = '2px solid #16a085';
             }
         }
 

@@ -1057,3 +1057,15 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   3. **Bổ sung Kịch bản 4 trên Giao diện (`index.html`)**:
      - Thêm nút **"🧠 Kịch bản 4: Toán Học Chuyên Sâu (CP-SAT / MIP Optimizer)"** vào Modal Chọn Kịch Bản Xếp Lịch (`#strategyModal`), giúp bác sĩ có thêm lựa chọn khi cần tính toán chuyên sâu cho ngày đặc biệt đông.
 - **File sửa đổi**: `js/cp-solver.js`, `js/scheduler-engine.js`, `index.html`, `PM-xeplich-v3.md`.
+
+### Nâng Cấp: Tinh Gọn 2 Kịch Bản Xếp Lịch Cốt Lõi (Kịch Bản 1 & Kịch Bản 2) (29/08/2026)
+- **Yêu cầu & Mục tiêu**:
+  - Loại bỏ các kịch bản cũ (Cân bằng tải, Dự phòng máy), gom lại thành đúng 2 Kịch bản tinh hoa dễ nhớ, trực quan và tối ưu nhất cho bác sĩ.
+- **Giải pháp triển khai**:
+  1. **🚀 Kịch bản 1: Tối Ưu Nhanh (Đa Luồng Metaheuristics)**:
+     - Tích hợp Web Worker đa luồng song song + Tabu Search + LAHC + Nén khe hở lịch.
+     - Thời gian tính toán siêu tốc (~0.1s - 0.3s), đạt tỷ lệ xếp thành công 100% cho ngày thường.
+  2. **🧠 Kịch bản 2: Toán Học Chuyên Sâu (CP-SAT Math Optimizer)**:
+     - Tích hợp Quy hoạch Ràng buộc Toán học + Hybrid Warm-Start + Branch-and-Bound.
+     - Rà soát toàn bộ cây nghiệm, tối ưu hóa triệt để xung đột ca khó & ngày siêu cao điểm.
+- **File sửa đổi**: `index.html`, `PM-xeplich-v3.md`.

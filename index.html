@@ -2954,7 +2954,7 @@
 
                     <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.2.5</span></p>
 
-                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 11:30 29/08/2026</span></p>
+                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 11:38 29/08/2026</span></p>
 
                     <p><span class="f-icon">👨‍💻</span> <span>Thiết kế & Phát triển: <b>Bác sĩ Thái</b></span></p>
 
@@ -3013,27 +3013,15 @@
             </div>
 
             <button onclick="executeScheduling('opt_rare')"
-                style="width:100%; padding:15px; margin-bottom:12px; background:#1e3d2b; color:white; border:none; border-radius:8px; cursor:pointer; text-align:left;">
-                <b>🚀 Kịch bản 1: Tối ưu tối đa</b><br>
-                <small>Ưu tiên máy hiếm, khoảng cách tối thiểu. Phù hợp ngày thường.</small>
-            </button>
-
-            <button onclick="executeScheduling('balanced')"
-                style="width:100%; padding:15px; margin-bottom:12px; background:#2ecc71; color:white; border:none; border-radius:8px; cursor:pointer; text-align:left;">
-                <b>⚖️ Kịch bản 2: Cân bằng tải</b><br>
-                <small>Phân bổ đều nhân viên, linh hoạt phòng. Phù hợp ngày đông.</small>
-            </button>
-
-            <button onclick="executeScheduling('contingency')"
-                style="width:100%; padding:15px; margin-bottom:12px; background:#e67e22; color:white; border:none; border-radius:8px; cursor:pointer; text-align:left;">
-                <b>🛡️ Kịch bản 3: Dự phòng</b><br>
-                <small>Giữ lại 20% máy làm dự phòng. Phù hợp khi có sự cố máy.</small>
+                style="width:100%; padding:15px; margin-bottom:12px; background:#1e3d2b; color:white; border:none; border-radius:8px; cursor:pointer; text-align:left; transition:all 0.2s; box-shadow:0 3px 8px rgba(30,61,43,0.2);">
+                <b>🚀 Kịch bản 1: Tối Ưu Nhanh (Đa Luồng Metaheuristics)</b><br>
+                <small>Quét đa luồng song song siêu tốc (~0.1s), tối ưu khoảng cách & máy hiếm. Phù hợp ngày thường.</small>
             </button>
 
             <button onclick="executeScheduling('opt_math')"
-                style="width:100%; padding:15px; margin-bottom:12px; background:linear-gradient(135deg, #16a085, #2c3e50); color:white; border:none; border-radius:8px; cursor:pointer; text-align:left; box-shadow: 0 4px 10px rgba(22, 160, 133, 0.25);">
-                <b>🧠 Kịch bản 4: Toán Học Chuyên Sâu (CP-SAT / MIP Optimizer)</b><br>
-                <small>Quy hoạch ràng buộc toán học, tối ưu hóa triệt để xung đột tài nguyên.</small>
+                style="width:100%; padding:15px; margin-bottom:12px; background:linear-gradient(135deg, #16a085, #2c3e50); color:white; border:none; border-radius:8px; cursor:pointer; text-align:left; transition:all 0.2s; box-shadow: 0 4px 10px rgba(22, 160, 133, 0.25);">
+                <b>🧠 Kịch bản 2: Toán Học Chuyên Sâu (CP-SAT Math Optimizer)</b><br>
+                <small>Quy hoạch ràng buộc toán học, tối ưu triệt để xung đột ca khó & ngày siêu cao điểm.</small>
             </button>
 
             <button onclick="closeStrategyModal()"

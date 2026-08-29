@@ -10718,41 +10718,10 @@ window.saveAIAutoTrainConfig = function() {
 };
 
 window.calibrateAIFromHistory = async function() {
-    if (window.showGlobalLoading) window.showGlobalLoading("Đang nạp và huấn luyện mô hình AI từ toàn bộ dữ liệu lịch sử...");
-    setTimeout(() => {
-        try {
-            let historyRows = [];
-            if (window.dataCache) {
-                if (Array.isArray(window.dataCache.history)) historyRows = historyRows.concat(window.dataCache.history);
-                if (Array.isArray(window.dataCache.schedule)) historyRows = historyRows.concat(window.dataCache.schedule);
-                if (Array.isArray(window.dataCache.lich_trinh)) historyRows = historyRows.concat(window.dataCache.lich_trinh);
-            }
-            if (window.currentScheduleData && Array.isArray(window.currentScheduleData)) {
-                historyRows = historyRows.concat(window.currentScheduleData);
-            }
-            try {
-                const bStr = localStorage.getItem('times_bootstrap_cache');
-                if (bStr) {
-                    const bObj = JSON.parse(bStr);
-                    if (bObj && Array.isArray(bObj.schedule)) historyRows = historyRows.concat(bObj.schedule);
-                    if (bObj && Array.isArray(bObj.history)) historyRows = historyRows.concat(bObj.history);
-                }
-            } catch(e) {}
-            try {
-                const hStr = localStorage.getItem('times_history_cache');
-                if (hStr) {
-                    const hObj = JSON.parse(hStr);
-                    if (Array.isArray(hObj)) historyRows = historyRows.concat(hObj);
-                }
-            } catch(e) {}
-            try {
-                const mStr = localStorage.getItem('meds_success');
-                if (mStr) {
-                    const mObj = JSON.parse(mStr);
-                    if (Array.isArray(mObj)) historyRows = historyRows.concat(mObj);
-                }
-            } catch(e) {}
+    if (window.showGlobalLoading) window.showGlobalLoading("Đang tải dữ liệu từ bảng lịch sử Cloudflare D1 để huấn luyện AI...");
 
+    const executeTraining = (historyRows) => {
+        try {
             let model = null;
             if (window.AIScheduler && typeof window.AIScheduler.trainFromHistory === 'function') {
                 model = window.AIScheduler.trainFromHistory(historyRows);
@@ -10775,13 +10744,51 @@ window.calibrateAIFromHistory = async function() {
 
             showCustomAlert(
                 "Huấn luyện AI thành công",
-                `Đã cập nhật mô hình AI lúc ${timeStr}!\n\n📊 Dữ liệu thực tế: ${trainedCount.toLocaleString('vi-VN')} dòng lịch sử\n👥 Cặp thói quen nhân sự: ${affinityCount.toLocaleString('vi-VN')} mẫu thói quen\n🚦 Tắc nghẽn máy móc & khung giờ vàng đã được cập nhật.`
+                `Đã cập nhật mô hình AI lúc ${timeStr}!\n\n📊 Dữ liệu thực tế: ${trainedCount.toLocaleString('vi-VN')} dòng từ bảng lịch sử (Cloudflare D1)\n👥 Cặp thói quen nhân sự: ${affinityCount.toLocaleString('vi-VN')} mẫu thói quen\n🚦 Tắc nghẽn máy móc & khung giờ vàng đã được tối ưu.`
             );
         } catch(err) {
             if (window.hideGlobalLoading) window.hideGlobalLoading();
             showCustomAlert("Thông báo", "Lỗi huấn luyện AI: " + err.message);
         }
-    }, 50);
+    };
+
+    // 1. Gọi trực tiếp API getLichSu lấy toàn bộ dữ liệu từ bảng lich_su của D1 Cloudflare
+    if (typeof callApi === 'function') {
+        callApi('getLichSu', [], (res) => {
+            let rows = [];
+            if (res && res.data) {
+                if (Array.isArray(res.data.rows)) rows = res.data.rows;
+                else if (Array.isArray(res.data.history)) rows = res.data.history;
+                else if (Array.isArray(res.data)) rows = res.data;
+            }
+
+            if (!rows || rows.length === 0) {
+                // Fallback nếu D1 trả về rỗng: Quét từ local cache
+                if (window.dataCache && Array.isArray(window.dataCache.history)) rows = window.dataCache.history;
+            }
+
+            if (rows && rows.length > 0) {
+                try {
+                    localStorage.setItem('times_history_cache', JSON.stringify(rows));
+                } catch(e) {}
+            }
+
+            executeTraining(rows);
+        }, (err) => {
+            console.warn('[AI] Lỗi gọi API D1 getLichSu, nạp từ bộ nhớ cache:', err);
+            let localRows = [];
+            try {
+                const hStr = localStorage.getItem('times_history_cache');
+                if (hStr) localRows = JSON.parse(hStr);
+            } catch(e) {}
+            if (!localRows.length && window.dataCache && Array.isArray(window.dataCache.history)) {
+                localRows = window.dataCache.history;
+            }
+            executeTraining(localRows);
+        });
+    } else {
+        executeTraining([]);
+    }
 };
 
 window.checkBackupReminder = function() {

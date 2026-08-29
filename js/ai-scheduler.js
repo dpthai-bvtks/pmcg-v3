@@ -82,11 +82,11 @@ window.AIScheduler = (function () {
 
     historyRows.forEach(row => {
       if (!row) return;
-      const proc = String(row.thuThuat || row.DICHVU || row[4] || '').trim();
-      const room = String(row.phong || row.PHONG || row[3] || '').trim();
-      const staff = String(row.nvChinh || row["NV CHÍNH"] || row[7] || '').trim();
-      const timeStart = String(row.gioDienRa || row.GIODIENRA || row[5] || '').trim();
-      const machine = String(row.may || row.MAY || row[9] || '').trim();
+      const proc = String(row.procedure_name || row.thuThuat || row.DICHVU || row.tenThuThuat || row[4] || '').trim();
+      const room = String(row.room || row.phong || row.PHONG || row.tenPhong || row[3] || '').trim();
+      const staff = String(row.staff_name || row.nvChinh || row["NV CHÍNH"] || row.tenNV || row[7] || '').trim();
+      const timeStart = String(row.start_time || row.gioDienRa || row.GIODIENRA || row.gioBatDau || row[5] || '').trim();
+      const machine = String(row.machine_name || row.may || row.MAY || row.tenMay || row[9] || '').trim();
 
       if (!proc || !staff) return;
 

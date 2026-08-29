@@ -543,6 +543,47 @@ async function handleApiAction(action, args, env, request, ctx) {
       return success({ version: v });
     }
 
+    case "getLichSu":
+    case "getAllHistory":
+    case "getHistoryForAI": {
+      const res = await db.prepare("SELECT date, patient_name, dob, room, procedure_name, staff_name, sub_staff_name, machine_name, bed, start_time, end_time FROM lich_su ORDER BY id DESC").all();
+      const rows = (res.results || []).map(s => ({
+        date: s.date,
+        ngay: s.date,
+        patient_name: s.patient_name,
+        tenBN: s.patient_name,
+        HOTEN: s.patient_name,
+        dob: s.dob || "",
+        namSinh: s.dob || "",
+        NAMSINH: s.dob || "",
+        room: s.room || "",
+        phong: s.room || "",
+        PHONG: s.room || "",
+        procedure_name: s.procedure_name,
+        thuThuat: s.procedure_name,
+        DICHVU: s.procedure_name,
+        start_time: s.start_time,
+        gioDienRa: s.start_time,
+        GIODIENRA: s.start_time,
+        end_time: s.end_time,
+        gioKetThuc: s.end_time,
+        GIOKETTHUC: s.end_time,
+        staff_name: s.staff_name || "",
+        nvChinh: s.staff_name || "",
+        "NV CHÍNH": s.staff_name || "",
+        sub_staff_name: s.sub_staff_name || "",
+        nvPhu: s.sub_staff_name || "",
+        "NV PHỤ": s.sub_staff_name || "",
+        machine_name: s.machine_name || "",
+        may: s.machine_name || "",
+        MAY: s.machine_name || "",
+        bed: s.bed || "",
+        giuong: s.bed || "",
+        GIUONG: s.bed || ""
+      }));
+      return success({ count: rows.length, rows: rows, history: rows });
+    }
+
     // ============================================================
     // 2. CRUD MÁY MÓC
     // ============================================================

@@ -44,6 +44,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (typeof initServerConfigModal === 'function') {
     }
+
+    if (typeof window.renderAISettingsUI === 'function') {
+        window.renderAISettingsUI();
+    }
 });
 
 

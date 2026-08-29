@@ -10672,17 +10672,25 @@ window.renderAISettingsUI = function() {
         const autoTimeEl = document.getElementById('ai-auto-train-time');
 
         if (model) {
-            if (trainedRowsEl) trainedRowsEl.innerText = `${(model.trainedRows || 0).toLocaleString()} dòng`;
+            const rowsCount = model.trainedRows || 0;
+            if (trainedRowsEl) trainedRowsEl.innerText = `${rowsCount.toLocaleString('vi-VN')} dòng`;
+            
             if (lastTrainedEl) {
                 if (model.lastTrained) {
                     const d = new Date(model.lastTrained);
-                    lastTrainedEl.innerText = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} ${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+                    const hh = String(d.getHours()).padStart(2, '0');
+                    const mm = String(d.getMinutes()).padStart(2, '0');
+                    const ss = String(d.getSeconds()).padStart(2, '0');
+                    const dd = String(d.getDate()).padStart(2, '0');
+                    const MM = String(d.getMonth() + 1).padStart(2, '0');
+                    const yyyy = d.getFullYear();
+                    lastTrainedEl.innerText = `${hh}:${mm}:${ss} - ${dd}/${MM}/${yyyy}`;
                 } else {
-                    lastTrainedEl.innerText = "Mô hình tiền huấn luyện";
+                    lastTrainedEl.innerText = "Chưa huấn luyện";
                 }
             }
             const countAffinity = model.staffAffinity ? Object.keys(model.staffAffinity).length : 0;
-            if (affinityEl) affinityEl.innerText = `${countAffinity} mẫu thói quen`;
+            if (affinityEl) affinityEl.innerText = `${countAffinity.toLocaleString('vi-VN')} cặp thói quen`;
         }
 
         const autoEnable = localStorage.getItem('ai_auto_train_enable') !== '0';
@@ -10714,17 +10722,34 @@ window.calibrateAIFromHistory = async function() {
     setTimeout(() => {
         try {
             let historyRows = [];
-            if (window.dataCache && Array.isArray(window.dataCache.history)) {
-                historyRows = historyRows.concat(window.dataCache.history);
+            if (window.dataCache) {
+                if (Array.isArray(window.dataCache.history)) historyRows = historyRows.concat(window.dataCache.history);
+                if (Array.isArray(window.dataCache.schedule)) historyRows = historyRows.concat(window.dataCache.schedule);
+                if (Array.isArray(window.dataCache.lich_trinh)) historyRows = historyRows.concat(window.dataCache.lich_trinh);
             }
-            if (window.dataCache && Array.isArray(window.dataCache.schedule)) {
-                historyRows = historyRows.concat(window.dataCache.schedule);
+            if (window.currentScheduleData && Array.isArray(window.currentScheduleData)) {
+                historyRows = historyRows.concat(window.currentScheduleData);
             }
             try {
-                const cachedStr = localStorage.getItem('times_history_cache');
-                if (cachedStr) {
-                    const parsed = JSON.parse(cachedStr);
-                    if (Array.isArray(parsed)) historyRows = historyRows.concat(parsed);
+                const bStr = localStorage.getItem('times_bootstrap_cache');
+                if (bStr) {
+                    const bObj = JSON.parse(bStr);
+                    if (bObj && Array.isArray(bObj.schedule)) historyRows = historyRows.concat(bObj.schedule);
+                    if (bObj && Array.isArray(bObj.history)) historyRows = historyRows.concat(bObj.history);
+                }
+            } catch(e) {}
+            try {
+                const hStr = localStorage.getItem('times_history_cache');
+                if (hStr) {
+                    const hObj = JSON.parse(hStr);
+                    if (Array.isArray(hObj)) historyRows = historyRows.concat(hObj);
+                }
+            } catch(e) {}
+            try {
+                const mStr = localStorage.getItem('meds_success');
+                if (mStr) {
+                    const mObj = JSON.parse(mStr);
+                    if (Array.isArray(mObj)) historyRows = historyRows.concat(mObj);
                 }
             } catch(e) {}
 
@@ -10734,10 +10759,24 @@ window.calibrateAIFromHistory = async function() {
             }
 
             if (window.hideGlobalLoading) window.hideGlobalLoading();
-            const trainedCount = model ? model.trainedRows : historyRows.length;
+            const trainedCount = model ? (model.trainedRows || 0) : historyRows.length;
+            const affinityCount = model && model.staffAffinity ? Object.keys(model.staffAffinity).length : 0;
+            
             if (typeof window.renderAISettingsUI === 'function') window.renderAISettingsUI();
 
-            showCustomAlert("Huấn luyện AI thành công", `Đã huấn luyện thành công mô hình AI từ toàn bộ ${trainedCount} dòng lịch sử thực tế!\nMa trận nhân sự, phòng bệnh và mức độ tắc nghẽn máy móc đã được cập nhật tối ưu.`);
+            const d = new Date();
+            const hh = String(d.getHours()).padStart(2, '0');
+            const mm = String(d.getMinutes()).padStart(2, '0');
+            const ss = String(d.getSeconds()).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            const MM = String(d.getMonth() + 1).padStart(2, '0');
+            const yyyy = d.getFullYear();
+            const timeStr = `${hh}:${mm}:${ss} - ${dd}/${MM}/${yyyy}`;
+
+            showCustomAlert(
+                "Huấn luyện AI thành công",
+                `Đã cập nhật mô hình AI lúc ${timeStr}!\n\n📊 Dữ liệu thực tế: ${trainedCount.toLocaleString('vi-VN')} dòng lịch sử\n👥 Cặp thói quen nhân sự: ${affinityCount.toLocaleString('vi-VN')} mẫu thói quen\n🚦 Tắc nghẽn máy móc & khung giờ vàng đã được cập nhật.`
+            );
         } catch(err) {
             if (window.hideGlobalLoading) window.hideGlobalLoading();
             showCustomAlert("Thông báo", "Lỗi huấn luyện AI: " + err.message);

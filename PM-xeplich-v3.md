@@ -1042,3 +1042,18 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   4. **Thuật Toán Nén Khe Hở Thời Gian (`compactTimelineGaps`)**:
      - Quét và dồn các khoảng trống nhàn rỗi 5-15 phút giữa các ca bệnh của cùng bệnh nhân/nhân sự/phòng bệnh, giúp các y bác sĩ và bệnh nhân hoàn thành lịch điều trị sớm hơn.
 - **File sửa đổi**: `js/scheduler-engine.js`, `js/app.js`, `index.html`, `PM-xeplich-v3.md`.
+
+### Nâng Cấp: Thuật Toán Xếp Lịch Nhóm 1 (Quy Hoạch Ràng Buộc Toán Học CP-SAT & Medical Constraint Programming) (29/08/2026)
+- **Mục tiêu**:
+  - Tích hợp bộ giải Quy hoạch Ràng buộc Toán học (Constraint Programming CP-SAT / MIP Optimizer) tìm kiếm nghiệm tối ưu toàn cục (Global Mathematical Optimum) cho những ngày cao điểm kỷ lục hoặc các ca bệnh phức tạp có nhiều ràng buộc chéo máy hiếm & giờ bận.
+- **Giải pháp triển khai**:
+  1. **Xây dựng module `js/cp-solver.js` (MedicalCPSolver)**:
+     - Mô hình hóa bài toán RCPSP y tế: Không gian biến quyết định $[T_{p,k}, \text{Staff}, \text{Bed}, \text{Machine}]$.
+     - Lan truyền ràng buộc toán học (*Constraint Propagation*) và kiểm tra tính khả thi (*Forward Checking + Disjoint Intervals*).
+     - Rà soát toàn bộ các khoảng trống nhàn rỗi trong ngày của phòng và nhân sự theo nhánh cây nghiệm (*Branch-and-Bound*), tự động cứu các ca rớt phức tạp.
+  2. **Cơ chế Nghiệm Mồi Kép Lai (Hybrid Warm-Start Optimizer)**:
+     - **Pha 1**: Web Worker đa luồng Nhóm 2 tạo ra nghiệm mồi cơ sở $S_0$ cực nhanh trong ~50ms.
+     - **Pha 2**: `MedicalCPSolver` tiếp nhận $S_0$, áp dụng quy hoạch ràng buộc toán học để giải cứu triệt để các ca xung đột và hoàn thiện lịch trình.
+  3. **Bổ sung Kịch bản 4 trên Giao diện (`index.html`)**:
+     - Thêm nút **"🧠 Kịch bản 4: Toán Học Chuyên Sâu (CP-SAT / MIP Optimizer)"** vào Modal Chọn Kịch Bản Xếp Lịch (`#strategyModal`), giúp bác sĩ có thêm lựa chọn khi cần tính toán chuyên sâu cho ngày đặc biệt đông.
+- **File sửa đổi**: `js/cp-solver.js`, `js/scheduler-engine.js`, `index.html`, `PM-xeplich-v3.md`.

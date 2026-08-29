@@ -848,208 +848,88 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
   return { sched: results, rot: finalDropList, score: scoreVal, staff: staffLoad, proc: localProcCount, tl: staffTimeline, ca: staffShifts };
 }
 
-function getPatientSignature(patients) {
-  if (!patients) return '';
-  const len = Math.min(patients.length, 25);
-  let sig = '';
-  for (let i = 0; i < len; i++) {
-    const p = patients[i];
-    sig += (p.pId || p.name || i) + (p.pending ? (':' + p.pending.length) : '') + ';';
+function getPatientSignature(pat) {
+    if (!pat) return '';
+    return (pat.name || pat.pId || '') + '_' + (pat.pending ? pat.pending.join('|') : '');
   }
-  return sig;
-}
 
-function runBestIteration(db, dateVal, existingSched = [], scenario = 1, crowdedOverride = -1, weights = { drop: 10000, overtime: 2, imbalance: 0.1 }, baseSeed = 42, maxSteps = 14) {
-  let rand = createSeededRandom(baseSeed);
-  let currentPatients = clonePatients(db.rawPatients);
-  let current = _turbo_core_logic({ ...db, rawPatients: currentPatients }, dateVal, 0, existingSched, scenario, crowdedOverride, weights);
-  let best = current;
+  function runBestIteration(db, dateVal, existingSched = [], scenario = 1, crowdedOverride = -1, weights = { drop: 10000, overtime: 2, imbalance: 0.1 }, baseSeed = 42, maxSteps = 15) {
+    let bestSched = null;
+    let bestRot = null;
+    let bestScore = Infinity;
 
-  if (best.rot.length === 0) return best;
-
-  const tabuSet = new Set();
-  const tabuQueue = [];
-  const MAX_TABU = 30;
-
-  const LAHC_L = 5;
-  const lahcBuffer = new Array(LAHC_L).fill(current.score);
-  let lahcIdx = 0;
-
-  let droppedNames = new Set(best.rot.map(r => r.pId || (r.bn + '_' + (r.ns || '') + '_' + (r.room || ''))));
-  const T_initial = 4.0, T_min = 0.4, alpha = 0.72;
-  let T = T_initial, steps = 0, noImprove = 0;
-
-  while (T > T_min && steps < maxSteps && noImprove < 4) {
-    steps++;
-    const neighborPatients = mutate(currentPatients, rand, droppedNames);
-    const sig = getPatientSignature(neighborPatients);
-    const isTabu = tabuSet.has(sig);
-
-    const neighbor = _turbo_core_logic({ ...db, rawPatients: neighborPatients }, dateVal, (baseSeed + steps * 17) % 10000, existingSched, scenario, crowdedOverride, weights);
-
-    if (isTabu && neighbor.score >= best.score) {
-      T *= alpha;
-      continue;
+    let currentOrder = clonePatients(db.rawPatients);
+    let currentRes = _turbo_core_logic(db, dateVal, baseSeed, existingSched, scenario, crowdedOverride, weights);
+    if (currentRes) {
+      bestSched = currentRes.sched;
+      bestRot = currentRes.rot;
+      bestScore = currentRes.score;
     }
 
-    tabuSet.add(sig);
-    tabuQueue.push(sig);
-    if (tabuQueue.length > MAX_TABU) {
-      const oldSig = tabuQueue.shift();
-      tabuSet.delete(oldSig);
-    }
+    // Tabu Search State List (FIFO size 30)
+    const tabuList = [];
+    const maxTabuSize = 30;
 
-    const delta = neighbor.score - current.score;
-    const lateScore = lahcBuffer[lahcIdx];
-    const acceptLAHC = neighbor.score <= lateScore;
-    const acceptSA = delta < 0 || (rand() < Math.exp(-delta / Math.max(T, 0.1)));
+    // Late Acceptance Hill Climbing (LAHC buffer L=5)
+    const lahcLength = 5;
+    const lahcBuffer = new Array(lahcLength).fill(bestScore);
+    let lahcIdx = 0;
 
-    if (acceptLAHC || acceptSA) {
-      current = neighbor;
-      currentPatients = neighborPatients;
-      lahcBuffer[lahcIdx] = current.score;
-      lahcIdx = (lahcIdx + 1) % LAHC_L;
+    for (let step = 0; step < maxSteps; step++) {
+      const stepSeed = (baseSeed * 1000 + step * 37) % 2147483647;
+      const randFn = createSeededRandom(stepSeed);
+      const droppedNames = bestRot ? bestRot.map(r => String(r.bn || r.tenBN || r.name || '').toUpperCase()) : [];
+      const candidateOrder = mutate(currentOrder, randFn, droppedNames);
+      
+      const sig = candidateOrder.map(p => getPatientSignature(p)).slice(0, 15).join(';');
+      const isTabu = tabuList.includes(sig);
 
-      if (current.score < best.score) {
-        best = current;
-        if (best.rot.length === 0) return best;
-        droppedNames = new Set(best.rot.map(r => r.pId || (r.bn + '_' + (r.ns || '') + '_' + (r.room || ''))));
-        noImprove = 0;
-      } else {
-        noImprove++;
+      db.rawPatients = candidateOrder;
+      const res = _turbo_core_logic(db, dateVal, baseSeed + step * 7 + 1, existingSched, scenario, crowdedOverride, weights);
+
+      if (res) {
+        // Aspiration Criterion: vượt tabu nếu điểm tốt hơn kỷ lục toàn cục
+        if (!isTabu || res.score < bestScore) {
+          const lahcThreshold = lahcBuffer[lahcIdx];
+          if (res.score <= lahcThreshold || res.score <= bestScore) {
+            currentOrder = candidateOrder;
+            lahcBuffer[lahcIdx] = res.score;
+            lahcIdx = (lahcIdx + 1) % lahcLength;
+
+            tabuList.push(sig);
+            if (tabuList.length > maxTabuSize) tabuList.shift();
+          }
+
+          if (res.score < bestScore) {
+            bestScore = res.score;
+            bestSched = res.sched;
+            bestRot = res.rot;
+          }
+        }
       }
-    } else {
-      lahcBuffer[lahcIdx] = current.score;
-      lahcIdx = (lahcIdx + 1) % LAHC_L;
-      noImprove++;
     }
-    T *= alpha;
-  }
 
-  if (best.rot.length > 0) {
-    const divResult = _turbo_core_logic({ ...db, rawPatients: clonePatients(db.rawPatients) }, dateVal, baseSeed + 101, existingSched, scenario, crowdedOverride, weights);
-    if (divResult.score < best.score) best = divResult;
-  }
-
-  return best;
-}
-
-function compactTimelineGaps(formattedSched, db) {
-  if (!formattedSched || formattedSched.length < 2) return formattedSched;
-  
-  const list = formattedSched.map(item => ({ ...item }));
-  
-  const patientAppointments = new Map();
-  list.forEach(item => {
-    const key = (item.tenBN || '').toUpperCase() + '_' + (item.namSinh || '') + '_' + (item.phong || '');
-    if (!patientAppointments.has(key)) patientAppointments.set(key, []);
-    patientAppointments.get(key).push(item);
-  });
-
-  patientAppointments.forEach(arr => {
-    arr.sort((a, b) => t2m(a.gioDienRa) - t2m(b.gioDienRa));
-  });
-
-  return list;
-}
-
-async function buildBaseDbFromD1(db) {
-  const [machinesRes, staffRes, roomsRes, procsRes, patientsRes] = await db.batch([
-    db.prepare("SELECT * FROM machines WHERE is_active = 1 AND trang_thai = 'Sẵn sàng' ORDER BY order_idx ASC"),
-    db.prepare("SELECT * FROM staff WHERE is_active = 1 AND name NOT GLOB '[0-9]*' ORDER BY priority ASC, id ASC"),
-    db.prepare("SELECT * FROM rooms WHERE is_active = 1 ORDER BY order_idx ASC"),
-    db.prepare("SELECT * FROM procedures WHERE is_active = 1 ORDER BY order_idx ASC"),
-    db.prepare("SELECT * FROM patients WHERE is_saturday = 0 ORDER BY order_idx ASC, id ASC")
-  ]);
-
-  const database = {
-    machineTypes: {},
-    thuThuatInfo: {},
-    replacementMap: {},
-    roomStaff: {},
-    roomBeds: {},
-    rawStaff: [],
-    rawPatients: []
-  };
-
-  (machinesRes.results || []).forEach(r => {
-    if (!database.machineTypes[r.ten_loai]) database.machineTypes[r.ten_loai] = [];
-    database.machineTypes[r.ten_loai].push(r.ma_may);
-  });
-
-  (staffRes.results || []).forEach(r => {
-    const thayThe = r.nguoi_thay_the || "Không";
-    if (thayThe && thayThe !== "Không") database.replacementMap[r.name] = thayThe;
-    const skills = parseStringOrJsonArray(r.skills).join(", ");
-    const busy = parseStringOrJsonArray(r.temp_busy).join(", ");
-    database.rawStaff.push([r.name, r.role || "KTV", skills, r.thoi_gian_lam || "07:30-11:30, 13:00-16:30", busy, r.trang_thai || "Đi làm"]);
-  });
-
-  (procsRes.results || []).forEach(r => {
-    const tgNhanVien = parseInt(r.tg_thuc_hien) || 5;
-    const tgMay = parseInt(r.tg_thu_thuat) || 15;
-    const khoangCach = parseInt(r.khoang_cach) || tgNhanVien;
-    const canRutMay = r.can_rut_may === 1 || r.can_rut_may === "1" || r.can_rut_may === true ? 1 : 0;
-    const canNguoiPhu = r.can_nguoi_phu === 1 || r.can_nguoi_phu === "1" || r.can_nguoi_phu === true ? 1 : 0;
-    const dsPhu = parseStringOrJsonArray(r.ds_phu);
-
-    database.thuThuatInfo[r.ten.toLowerCase()] = [
-      r.may || "Thủ công",
-      Math.max(1, tgMay),
-      Math.max(1, tgNhanVien),
-      r.he || "PHCN",
-      canRutMay,
-      canNguoiPhu,
-      dsPhu,
-      khoangCach,
-      r.ten,
-      r.viet_tat || ""
-    ];
-  });
-
-  (roomsRes.results || []).forEach(r => {
-    const soGiuong = parseInt(r.so_giuong) || 15;
-    const bedStr = (r.danh_sach_giuong || "").trim();
-    database.roomBeds[r.name] = (bedStr && bedStr !== 'None')
-      ? bedStr.split(",").map(x => x.trim()).filter(Boolean)
-      : Array.from({ length: soGiuong }, (_, i) => "Giường " + (i + 1));
-
-    const bsList = parseStringOrJsonArray(r.bac_si);
-    const ktvList = parseStringOrJsonArray(r.ktv);
-    database.roomStaff[r.name] = [...new Set([...bsList, ...ktvList].map(x => database.replacementMap[x] || x))];
-  });
-
-  database.rawPatients = (patientsRes.results || []).map((p, idx) => {
-    const pName = p.name.toUpperCase();
-    const pNs = p.age || "";
-    const pRoom = p.room || "";
-    const pId = p.id || (pName + "_" + pNs + "_" + pRoom + "_" + idx);
-    const gioVao = isEmptyTime(p.gio_vao) ? 420 : t2m(p.gio_vao);
-    const busyRaw = p.gio_ban || "";
-    const busySlots = busyRaw ? String(busyRaw).split(",").filter(b => b.includes("-")).map(b => [t2m(b.split("-")[0]), t2m(b.split("-")[1]) + 1]) : [];
-    busySlots.push([0, gioVao + 1]);
-
-    const procs = parseStringOrJsonArray(p.procedures);
     return {
-      pId: pId,
-      name: pName,
-      ns: pNs,
-      ngayVao: p.ngay_vao || "",
-      room: pRoom,
-      arrive: gioVao,
-      leave: t2m(p.leave_time) || 9999,
-      busy: busySlots,
-      pending: procs,
-      free_at: gioVao + 1,
-      loaiBN: p.loai_bn || "NoiTru",
-      buoiDieuTri: p.buoi_dieu_tri || "Sang"
+      sched: bestSched,
+      rot: bestRot,
+      score: bestScore
     };
-  });
+  }
 
-  return { database, rawPatientsList: patientsRes.results || [] };
-}
+  function compactTimelineGaps(scheduleList, db) {
+    if (!scheduleList || scheduleList.length <= 1) return scheduleList || [];
+    
+    const patGroups = {};
+    scheduleList.forEach(item => {
+      const key = (item.tenBN || item.HOTEN || '') + '_' + (item.namSinh || item.NAMSINH || '');
+      if (!patGroups[key]) patGroups[key] = [];
+      patGroups[key].push(item);
+    });
 
-  function getSafeCache() {
+    const result = [...scheduleList];
+    return result;
+  }
+function getSafeCache() {
     let cache = (typeof dataCache !== 'undefined' && dataCache) ? dataCache : (window.dataCache || null);
     if (!cache || !cache.staff || !cache.staff.length) {
       try {
@@ -1089,6 +969,7 @@ async function buildBaseDbFromD1(db) {
       return parts.length === 2 ? parts[0].trim() + "-" + m2t(t2m(parts[1].trim()) + 1) : b;
     }).join(",");
 
+    // 1. Machines
     const machineList = cache.machine || cache.machines || [];
     machineList.forEach(m => {
       const tenLoai = m.tenLoai || m[1] || "";
@@ -1100,6 +981,7 @@ async function buildBaseDbFromD1(db) {
       }
     });
 
+    // 2. Staff
     const staffList = cache.staff || [];
     staffList.forEach(s => {
       const ten = s.ten || s.name || s[1] || "";
@@ -1116,6 +998,7 @@ async function buildBaseDbFromD1(db) {
       }
     });
 
+    // 3. Procedures
     const procList = cache.proc || cache.procedures || [];
     procList.forEach(p => {
       const ten = String(p.ten || p.name || p[1] || "").trim().toLowerCase();
@@ -1140,6 +1023,7 @@ async function buildBaseDbFromD1(db) {
       ];
     });
 
+    // 4. Rooms
     const roomList = cache.room || cache.rooms || [];
     roomList.forEach(r => {
       const roomName = String(r.tenPhong || r.name || r[1] || "").trim();
@@ -1157,6 +1041,7 @@ async function buildBaseDbFromD1(db) {
       database.roomStaff[roomName] = [...new Set([...dsBacSi, ...dsKTV].map(x => database.replacementMap[x] || x))];
     });
 
+    // 5. Patients
     const patList = cache.pat || cache.patients || [];
     const skipList = skipProcsStr ? String(skipProcsStr).split(',').map(s => s.trim().toLowerCase()).filter(Boolean) : [];
     const seen = new Set();
@@ -1176,6 +1061,7 @@ async function buildBaseDbFromD1(db) {
       let procs = Array.isArray(ttStr) ? ttStr : String(ttStr).split(",").map(x => x.trim()).filter(Boolean);
       if (!procs.length) return;
 
+      // Nếu đang xếp bổ sung (có existingSched), loại bỏ các thủ thuật CỦA BỆNH NHÂN NÀY đã được xếp lịch trước đó (khớp theo số lượng)
       if (existingSched && existingSched.length > 0) {
         const scheduledProcsForPat = existingSched
           .filter(r => {
@@ -1201,7 +1087,7 @@ async function buildBaseDbFromD1(db) {
         }
         procs = remainingProcs;
       }
-      if (!procs.length) return;
+      if (!procs.length) return; // Bệnh nhân đã được xếp đủ hết thủ thuật rồi, không cần xếp nữa
 
       const rawGioVao = p.gioVao || p[4] || "";
       const gioVao = isEmptyTime(rawGioVao) ? 420 : t2m(rawGioVao);
@@ -1260,10 +1146,21 @@ async function buildBaseDbFromD1(db) {
       };
     }
 
-    const scenarioMap = { opt_rare: 1, balanced: 2, contingency: 3 };
+    const scenarioMap = { opt_rare: 1, balanced: 2, contingency: 3, opt_math: 1 };
     const scenario = scenarioMap[strategyKey] || 1;
 
-    const best = runBestIteration(db, dateVal, existingSched, scenario, crowdedOverride, { drop: 10000, overtime: 2, imbalance: 0.1 }, 42, 14);
+    let best = runBestIteration(db, dateVal, existingSched, scenario, crowdedOverride, { drop: 10000, overtime: 2, imbalance: 0.1 }, 42, 14);
+    let engineName = 'Turbo-Tabu-LAHC';
+
+    // 🧠 Pha 2: Tối ưu hóa Toán học Chuyên sâu (Constraint Programming CP-SAT / MIP Optimizer)
+    if (strategyKey === 'opt_math' && typeof window !== 'undefined' && window.MedicalCPSolver && best) {
+      const cpRes = window.MedicalCPSolver.solve(db, dateVal, best.sched, best.rot, 1200);
+      if (cpRes && cpRes.sched) {
+        best = { ...best, sched: cpRes.sched, rot: cpRes.rot, score: cpRes.score };
+        engineName = cpRes.rescuedCount > 0 ? `🧠 CP-SAT Math Optimizer (Cứu +${cpRes.rescuedCount} ca)` : '🧠 CP-SAT Math Optimizer';
+      }
+    }
+
     const finalDropList = (best ? best.rot : []).concat(forcedDrops).map(r => ({ ...r, ngay: r.ngay || dateVal }));
 
     const formattedSched = (best ? best.sched : []).map(x => ({
@@ -1292,7 +1189,7 @@ async function buildBaseDbFromD1(db) {
       rot: finalDropList,
       elapsedMs: elapsed,
       threadCount: 1,
-      engine: 'Turbo-Tabu-LAHC'
+      engine: engineName
     };
   }
 
@@ -1312,7 +1209,7 @@ async function buildBaseDbFromD1(db) {
       };
     }
 
-    const scenarioMap = { opt_rare: 1, balanced: 2, contingency: 3 };
+    const scenarioMap = { opt_rare: 1, balanced: 2, contingency: 3, opt_math: 1 };
     const scenario = scenarioMap[strategyKey] || 1;
     const weights = options.weights || { drop: 10000, overtime: 2, imbalance: 0.1 };
 
@@ -1344,7 +1241,7 @@ async function buildBaseDbFromD1(db) {
 
         self.onmessage = function(e) {
           const { db, dateVal, existingSched, scenario, crowdedOverride, weights, seed } = e.data;
-          const result = runBestIteration(db, dateVal, existingSched, scenario, crowdedOverride, weights, seed, 12);
+          const result = runBestIteration(db, dateVal, existingSched, scenario, crowdedOverride, weights, seed, 15);
           self.postMessage(result);
         };
       `;
@@ -1396,6 +1293,17 @@ async function buildBaseDbFromD1(db) {
         best = runBestIteration(db, dateVal, existingSched, scenario, crowdedOverride, weights, 42, 14);
       }
 
+      let engineName = `Multi-Thread (${numWorkers} Cores | Tabu+LAHC)`;
+
+      // 🧠 Pha 2: Tối ưu hóa Toán học Chuyên sâu (Constraint Programming CP-SAT / MIP Optimizer)
+      if (strategyKey === 'opt_math' && typeof window !== 'undefined' && window.MedicalCPSolver && best) {
+        const cpRes = window.MedicalCPSolver.solve(db, dateVal, best.sched, best.rot, 1500);
+        if (cpRes && cpRes.sched) {
+          best = { ...best, sched: cpRes.sched, rot: cpRes.rot, score: cpRes.score };
+          engineName = cpRes.rescuedCount > 0 ? `🧠 CP-SAT Math Optimizer (Cứu +${cpRes.rescuedCount} ca)` : '🧠 CP-SAT Math Optimizer';
+        }
+      }
+
       const finalDropList = (best ? best.rot : []).concat(forcedDrops).map(r => ({ ...r, ngay: r.ngay || dateVal }));
       const formattedSched = (best ? best.sched : []).map(x => ({
         ngay: x.NGAY,
@@ -1423,15 +1331,14 @@ async function buildBaseDbFromD1(db) {
         rot: finalDropList,
         elapsedMs: elapsed,
         threadCount: numWorkers,
-        engine: `Multi-Thread (${numWorkers} Cores | Tabu+LAHC)`
+        engine: engineName
       };
     } catch(err) {
       console.warn('[SchedulerEngine]: Web Worker đa luồng gặp sự cố, tự động fallback về chạy đơn luồng:', err);
       return runClientScheduling(dateVal, strategyKey, skipProcsStr, crowdedOverride, existingSched);
     }
   }
-
-  function runSaturdayScheduling(payload = {}, dateVal = '') {
+function runSaturdayScheduling(payload = {}, dateVal = '') {
     const startTime = performance.now();
     const targetDate = dateVal || new Date().toISOString().slice(0, 10);
     const { database: baseDb } = buildDbFromCache();
@@ -1483,7 +1390,7 @@ async function buildBaseDbFromD1(db) {
       });
     });
 
-    const best = runBestIteration(baseDb, targetDate, [], 2, -1, { drop: 10000, overtime: 2, imbalance: 0.1 }, 42, 14);
+    const best = runBestIteration(baseDb, targetDate, [], 2, -1);
     const decodeRoom = item => {
       if (item.PHONG === "PHONG_CHUNG_T7" && item.GIUONG?.includes("|")) {
         const parts = item.GIUONG.split("|");
@@ -1545,7 +1452,6 @@ async function buildBaseDbFromD1(db) {
     runScheduling: runClientScheduling,
     runSchedulingAsync: runSchedulingAsync,
     runExtraScheduling: runExtraScheduling,
-    runSaturdayScheduling: runSaturdayScheduling,
-    compactTimelineGaps: compactTimelineGaps
+    runSaturdayScheduling: runSaturdayScheduling
   };
 })();

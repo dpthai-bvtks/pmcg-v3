@@ -1181,5 +1181,32 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
      - Đồng bộ phiên bản toàn hệ thống: Footer `12:30 30/08/2026`, Service Worker `pmcg-cache-v3.2.6-rev3` và query string `?v=3.2.6-rev3`.
 - **File sửa đổi**: `js/app.js`, `index.html`, `sw.js`, `PM-xeplich-v3.md`.
 
+### Nâng Cấp: Tạo Bảng Riêng `phac_do` Trong Cloudflare D1 Database & Hoàn Thiện CRUD Thêm/Sửa/Xóa Phác Đồ (30/08/2026 - v3.2.6-rev4)
+- **Yêu cầu của người dùng**:
+  - Tạo riêng 1 bảng chuyên biệt trong Cloudflare D1 Database để lưu trữ danh mục các phác đồ điều trị.
+  - Khắc phục triệt để lỗi bấm xóa thì được nhưng thêm mới và sửa phác đồ thì không lưu được.
+- **Phân tích nguyên nhân gốc rễ**:
+  1. Trước đây, phác đồ điều trị được lưu chung trong bảng `cai_dat` dưới dạng chuỗi JSON `clinical_protocols`. Khi lưu dữ liệu, độ trễ Read-after-Write của Cloudflare D1 bản sao replica khiến `getAllData` / bootstrap polling thỉnh thoảng đọc ra dữ liệu cũ và ghi đè danh sách phác đồ vừa thêm/sửa.
+  2. Bảng `phac_do` chưa được thiết kế độc lập với khóa chính `id`, trường `ten_phac_do UNIQUE` và `danh_sach_thu_thuat` riêng biệt.
+- **Giải pháp cụ thể đã thực hiện**:
+  1. **Tạo Bảng Chuyên Biệt `phac_do` trong Cloudflare D1 (`backend/schema.sql` & `backend/src/index.js`)**:
+     - Tạo bảng `phac_do` với các trường: `id INTEGER PRIMARY KEY AUTOINCREMENT`, `ten_phac_do TEXT UNIQUE NOT NULL`, `danh_sach_thu_thuat TEXT NOT NULL DEFAULT '[]'`, `order_idx INTEGER DEFAULT 0`, `is_active INTEGER DEFAULT 1`, `created_at`, `updated_at`.
+     - Tạo `UNIQUE INDEX idx_phac_do_name ON phac_do(ten_phac_do)` chống trùng lặp.
+     - Tự động nạp bảng `phac_do` trong `ensureSchema(db)` và `getBootstrapData`.
+  2. **Viết Trọn Bộ Handlers CRUD Riêng Biệt Cho Phác Đồ (`backend/src/index.js`)**:
+     - `getProtocolsData` / `getPhacDo`: Truy vấn trực tiếp từ bảng `phac_do WHERE is_active = 1 ORDER BY order_idx ASC, id ASC`.
+     - `saveProtocolsData` / `savePhacDo`: Transaction batch làm mới và lưu danh mục phác đồ vào bảng `phac_do` và tự động cập nhật bản sao `cai_dat`.
+     - `addPhacDo` / `addProtocol`: Thêm mới 1 phác đồ vào bảng `phac_do`.
+     - `editPhacDo` / `editProtocol`: Chỉnh sửa 1 phác đồ trong bảng `phac_do`.
+     - `deletePhacDo` / `deleteProtocol`: Xóa 1 phác đồ khỏi bảng `phac_do`.
+     - Bổ sung các action phác đồ vào `MUTATION_ACTIONS` để tự động kích hoạt đồng bộ nền nếu có webhook.
+  3. **Triển Khai Cloudflare Worker Production**:
+     - Đã chạy `wrangler deploy` triển khai thành công mã nguồn Worker Backend mới nhất lên `https://pmcg-api.dpthai-ttytmk.workers.dev`.
+  4. **Đồng Bộ Phiên Bản & Quy Tắc Dự Án (`RULES.md`)**:
+     - Cập nhật thời gian Footer: `12:40 30/08/2026`.
+     - Cập nhật Service Worker: `CACHE_NAME = 'pmcg-cache-v3.2.6-rev4'`.
+     - Đồng bộ resource query strings `?v=3.2.6-rev4` trên toàn bộ tài nguyên.
+- **File sửa đổi**: `backend/schema.sql`, `backend/src/index.js`, `index.html`, `sw.js`, `PM-xeplich-v3.md`.
+
 
 

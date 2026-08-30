@@ -180,7 +180,9 @@ async function ensureSchema(db) {
       db.prepare("CREATE TABLE IF NOT EXISTS cham_cong (month_year TEXT PRIMARY KEY, data_json TEXT NOT NULL DEFAULT '{}', updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
       db.prepare("CREATE TABLE IF NOT EXISTS thong_ke (month_year TEXT PRIMARY KEY, data_json TEXT NOT NULL DEFAULT '{}', updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
       db.prepare("CREATE TABLE IF NOT EXISTS tim_ranh (id INTEGER PRIMARY KEY AUTOINCREMENT, procedure_name TEXT DEFAULT '', start_time TEXT DEFAULT '', end_time TEXT DEFAULT '', staff_name TEXT DEFAULT '', machine_name TEXT DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
-      db.prepare("CREATE TABLE IF NOT EXISTS tai_lieu (id INTEGER PRIMARY KEY AUTOINCREMENT, doc_number TEXT DEFAULT '', title TEXT DEFAULT '', agency TEXT DEFAULT '', signed_date TEXT DEFAULT '', view_link TEXT DEFAULT '', download_link TEXT DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)")
+      db.prepare("CREATE TABLE IF NOT EXISTS tai_lieu (id INTEGER PRIMARY KEY AUTOINCREMENT, doc_number TEXT DEFAULT '', title TEXT DEFAULT '', agency TEXT DEFAULT '', signed_date TEXT DEFAULT '', view_link TEXT DEFAULT '', download_link TEXT DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
+      db.prepare("CREATE TABLE IF NOT EXISTS phac_do (id INTEGER PRIMARY KEY AUTOINCREMENT, ten_phac_do TEXT UNIQUE NOT NULL, danh_sach_thu_thuat TEXT NOT NULL DEFAULT '[]', order_idx INTEGER DEFAULT 0, is_active INTEGER DEFAULT 1, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
+      db.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_phac_do_name ON phac_do(ten_phac_do)")
     ];
     await db.batch(stmts);
 
@@ -322,7 +324,8 @@ function dispatchBackgroundSync(action, args, env, ctx) {
     "addPhong", "editPhong", "deletePhong",
     "addThuThuat", "editThuThuat", "deleteThuThuat",
     "saveSystemSettings", "saveGeneralSettings",
-    "saveProtocolsData", "saveClinicalProtocols"
+    "saveProtocolsData", "saveClinicalProtocols",
+    "addPhacDo", "editPhacDo", "deletePhacDo", "savePhacDo"
   ];
 
   if (!MUTATION_ACTIONS.includes(action)) return;
@@ -380,7 +383,7 @@ async function handleApiAction(action, args, env, request, ctx) {
       const [ty, tm, td] = todayVN.split("-");
       const todayVNSlash = `${td}/${tm}/${ty}`; // VD: 21/08/2026
 
-      const [settingsRes, staffRes, machinesRes, roomsRes, proceduresRes, patientsRes, scheduleRes, accountsRes] = await db.batch([
+      const [settingsRes, staffRes, machinesRes, roomsRes, proceduresRes, patientsRes, scheduleRes, accountsRes, phacDoRes] = await db.batch([
         db.prepare("SELECT key, value FROM cai_dat"),
         db.prepare("SELECT * FROM nhan_su  ORDER BY priority ASC, id ASC"),
         db.prepare("SELECT * FROM may_moc ORDER BY order_idx ASC, id ASC"),
@@ -390,7 +393,8 @@ async function handleApiAction(action, args, env, request, ctx) {
         db.prepare("SELECT * FROM benh_nhan WHERE is_saturday = 0 ORDER BY order_idx ASC, id ASC"),
         // Chỉ lấy lịch của ngày hôm nay
         db.prepare("SELECT * FROM lich_trinh WHERE date = ? ORDER BY order_idx ASC, start_time ASC").bind(todayVN),
-        db.prepare("SELECT id, username, role, permissions FROM tai_khoan")
+        db.prepare("SELECT id, username, role, permissions FROM tai_khoan"),
+        db.prepare("SELECT * FROM phac_do WHERE is_active = 1 ORDER BY order_idx ASC, id ASC")
       ]);
 
       const settingsObj = {};
@@ -424,7 +428,22 @@ async function handleApiAction(action, args, env, request, ctx) {
       }
 
       let protocolsList = [];
-      if (settingsObj.clinical_protocols || settingsObj.protocols) {
+      if (phacDoRes.results && phacDoRes.results.length > 0) {
+        protocolsList = phacDoRes.results.map((r, i) => {
+          let procsArr = [];
+          try {
+            procsArr = typeof r.danh_sach_thu_thuat === 'string' ? JSON.parse(r.danh_sach_thu_thuat) : r.danh_sach_thu_thuat;
+          } catch(e) {
+            procsArr = String(r.danh_sach_thu_thuat || '').split(',').map(s => s.trim()).filter(Boolean);
+          }
+          return {
+            id: String(r.id || (i + 1)),
+            name: r.ten_phac_do,
+            ten_phac_do: r.ten_phac_do,
+            procs: Array.isArray(procsArr) ? procsArr : []
+          };
+        });
+      } else if (settingsObj.clinical_protocols || settingsObj.protocols) {
         try {
           const rawProtocols = settingsObj.clinical_protocols || settingsObj.protocols;
           protocolsList = typeof rawProtocols === 'string' ? JSON.parse(rawProtocols) : rawProtocols;
@@ -1610,10 +1629,31 @@ async function handleApiAction(action, args, env, request, ctx) {
     }
 
     // ============================================================
-    // 📋 PHÁC ĐỒ ĐIỀU TRỊ ĐỘNG (CLINICAL PROTOCOLS)
+    // 📋 BẢNG RIÊNG QUẢN LÝ PHÁC ĐỒ ĐIỀU TRỊ (CLINICAL PROTOCOLS TABLE)
     // ============================================================
     case "getProtocolsData":
-    case "getClinicalProtocols": {
+    case "getClinicalProtocols":
+    case "getPhacDo": {
+      const res = await db.prepare("SELECT * FROM phac_do WHERE is_active = 1 ORDER BY order_idx ASC, id ASC").all().catch(() => ({ results: [] }));
+      if (res.results && res.results.length > 0) {
+        const list = res.results.map((r, i) => {
+          let procsArr = [];
+          try {
+            procsArr = typeof r.danh_sach_thu_thuat === 'string' ? JSON.parse(r.danh_sach_thu_thuat) : r.danh_sach_thu_thuat;
+          } catch(e) {
+            procsArr = String(r.danh_sach_thu_thuat || '').split(',').map(s => s.trim()).filter(Boolean);
+          }
+          return {
+            id: String(r.id || (i + 1)),
+            name: r.ten_phac_do,
+            ten_phac_do: r.ten_phac_do,
+            procs: Array.isArray(procsArr) ? procsArr : []
+          };
+        });
+        return success(list);
+      }
+
+      // Fallback nếu bảng phac_do chưa có dữ liệu
       const rec = await db.prepare("SELECT value FROM cai_dat WHERE key = 'clinical_protocols'").first();
       if (rec && rec.value) {
         try {
@@ -1625,12 +1665,109 @@ async function handleApiAction(action, args, env, request, ctx) {
     }
 
     case "saveProtocolsData":
-    case "saveClinicalProtocols": {
+    case "saveClinicalProtocols":
+    case "savePhacDo": {
       const protocols = args[0] || [];
-      const jsonStr = typeof protocols === 'string' ? protocols : JSON.stringify(protocols);
-      await db.prepare("INSERT INTO cai_dat (key, value) VALUES ('clinical_protocols', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(jsonStr).run();
+      const list = Array.isArray(protocols) ? protocols : (typeof protocols === 'string' ? JSON.parse(protocols || '[]') : []);
+      const jsonStr = JSON.stringify(list);
+
+      const stmts = [
+        db.prepare("DELETE FROM phac_do"),
+        db.prepare("INSERT INTO cai_dat (key, value) VALUES ('clinical_protocols', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(jsonStr)
+      ];
+
+      list.forEach((item, idx) => {
+        const name = (item.name || item.ten || item.ten_phac_do || `Phác đồ ${idx + 1}`).trim();
+        const procs = item.procs || item.danh_sach_thu_thuat || [];
+        const procsJson = typeof procs === 'string' ? procs : JSON.stringify(procs);
+        stmts.push(
+          db.prepare("INSERT INTO phac_do (ten_phac_do, danh_sach_thu_thuat, order_idx, is_active) VALUES (?, ?, ?, 1)")
+            .bind(name, procsJson, idx)
+        );
+      });
+
+      await db.batch(stmts);
       await bumpDataVersion(db);
       return success(true);
+    }
+
+    case "addPhacDo":
+    case "addProtocol": {
+      let payload = {};
+      if (typeof args[0] === 'object' && args[0] !== null) payload = args[0];
+      const name = String(payload.name || payload.ten || payload.ten_phac_do || args[0] || '').trim();
+      const procs = payload.procs || payload.danh_sach_thu_thuat || args[1] || [];
+      const procsJson = typeof procs === 'string' ? procs : JSON.stringify(procs);
+      const orderIdx = parseInt(payload.order_idx || args[2]) || 0;
+
+      if (!name) return error("Tên phác đồ không được để trống", 400);
+
+      await db.prepare("INSERT INTO phac_do (ten_phac_do, danh_sach_thu_thuat, order_idx, is_active) VALUES (?, ?, ?, 1) ON CONFLICT(ten_phac_do) DO UPDATE SET danh_sach_thu_thuat = excluded.danh_sach_thu_thuat, order_idx = excluded.order_idx, is_active = 1, updated_at = CURRENT_TIMESTAMP").bind(name, procsJson, orderIdx).run();
+      
+      // Đồng bộ lại vào cai_dat
+      const allRes = await db.prepare("SELECT * FROM phac_do WHERE is_active = 1 ORDER BY order_idx ASC, id ASC").all();
+      const allList = (allRes.results || []).map(r => ({
+        id: String(r.id),
+        name: r.ten_phac_do,
+        procs: (() => { try { return JSON.parse(r.danh_sach_thu_thuat); } catch(e) { return []; } })()
+      }));
+      await db.prepare("INSERT INTO cai_dat (key, value) VALUES ('clinical_protocols', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(JSON.stringify(allList)).run();
+
+      await bumpDataVersion(db);
+      return success({ message: "Thêm phác đồ thành công" });
+    }
+
+    case "editPhacDo":
+    case "editProtocol": {
+      let payload = {};
+      if (typeof args[0] === 'object' && args[0] !== null) payload = args[0];
+      const id = payload.id || args[0];
+      const name = String(payload.name || payload.ten || payload.ten_phac_do || args[1] || '').trim();
+      const procs = payload.procs || payload.danh_sach_thu_thuat || args[2] || [];
+      const procsJson = typeof procs === 'string' ? procs : JSON.stringify(procs);
+
+      if (!name) return error("Tên phác đồ không được để trống", 400);
+
+      if (id) {
+        await db.prepare("UPDATE phac_do SET ten_phac_do = ?, danh_sach_thu_thuat = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(name, procsJson, id).run();
+      } else {
+        await db.prepare("UPDATE phac_do SET danh_sach_thu_thuat = ?, updated_at = CURRENT_TIMESTAMP WHERE ten_phac_do = ?").bind(procsJson, name).run();
+      }
+
+      // Đồng bộ lại vào cai_dat
+      const allRes = await db.prepare("SELECT * FROM phac_do WHERE is_active = 1 ORDER BY order_idx ASC, id ASC").all();
+      const allList = (allRes.results || []).map(r => ({
+        id: String(r.id),
+        name: r.ten_phac_do,
+        procs: (() => { try { return JSON.parse(r.danh_sach_thu_thuat); } catch(e) { return []; } })()
+      }));
+      await db.prepare("INSERT INTO cai_dat (key, value) VALUES ('clinical_protocols', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(JSON.stringify(allList)).run();
+
+      await bumpDataVersion(db);
+      return success({ message: "Cập nhật phác đồ thành công" });
+    }
+
+    case "deletePhacDo":
+    case "deleteProtocol": {
+      let idOrName = args[0];
+      if (typeof idOrName === 'object' && idOrName !== null) {
+        idOrName = idOrName.id || idOrName.name || idOrName.ten || idOrName.ten_phac_do;
+      }
+      if (!idOrName) return error("Thiếu ID hoặc Tên phác đồ để xóa", 400);
+
+      await db.prepare("DELETE FROM phac_do WHERE id = ? OR ten_phac_do = ?").bind(idOrName, idOrName).run();
+
+      // Đồng bộ lại vào cai_dat
+      const allRes = await db.prepare("SELECT * FROM phac_do WHERE is_active = 1 ORDER BY order_idx ASC, id ASC").all();
+      const allList = (allRes.results || []).map(r => ({
+        id: String(r.id),
+        name: r.ten_phac_do,
+        procs: (() => { try { return JSON.parse(r.danh_sach_thu_thuat); } catch(e) { return []; } })()
+      }));
+      await db.prepare("INSERT INTO cai_dat (key, value) VALUES ('clinical_protocols', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(JSON.stringify(allList)).run();
+
+      await bumpDataVersion(db);
+      return success({ message: "Xóa phác đồ thành công" });
     }
 
     // ============================================================

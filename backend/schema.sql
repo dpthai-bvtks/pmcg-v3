@@ -1,4 +1,4 @@
-﻿-- ============================================================
+-- ============================================================
 -- CLOUDFLARE D1 DATABASE SCHEMA CHO PM-XEPLICH V3
 -- ============================================================
 
@@ -117,6 +117,17 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS phac_do (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ten_phac_do TEXT UNIQUE NOT NULL,
+    danh_sach_thu_thuat TEXT NOT NULL DEFAULT '[]',
+    order_idx INTEGER DEFAULT 0,
+    is_active INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_phac_do_name ON phac_do(ten_phac_do);
 CREATE INDEX IF NOT EXISTS idx_schedules_date ON schedules(date);
 CREATE INDEX IF NOT EXISTS idx_history_records_date ON history_records(date);
 CREATE INDEX IF NOT EXISTS idx_history_busy_date ON history_busy(date);

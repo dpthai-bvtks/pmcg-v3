@@ -1206,7 +1206,7 @@ window.renderSttOrderControl = function (type, i, total) {
 
 
 
-        let editIndex = { machine: -1, proc: -1, staff: -1, room: -1, pat: -1 };
+        let editIndex = { machine: -1, proc: -1, staff: -1, room: -1, pat: -1, proto: -1 };
 
         let lastBusyContext = 'staff';
 
@@ -1864,20 +1864,22 @@ window.renderSttOrderControl = function (type, i, total) {
                 if (isInput) e.target.blur();
 
                 const tabBtnMap = {
-
                     'tab-machines': 'btn-save-machine',
-
-                    'tab-procedures': 'btn-save-proc',
-
+                    'tab-procedures': () => {
+                        const inProtoForm = document.activeElement && document.activeElement.closest('#sidebar-form-proto');
+                        if (inProtoForm) {
+                            document.getElementById('btn-save-proto')?.click();
+                        } else {
+                            document.getElementById('btn-save-proc')?.click();
+                        }
+                    },
                     'tab-staff': 'btn-save-staff',
-
                     'tab-rooms': 'btn-save-room',
-
                     'tab-patients': 'btn-save-pat',
-
                 };
 
-                if (tabBtnMap[tabId]) { document.getElementById(tabBtnMap[tabId])?.click(); return; }
+                if (typeof tabBtnMap[tabId] === 'function') { tabBtnMap[tabId](); return; }
+                else if (tabBtnMap[tabId]) { document.getElementById(tabBtnMap[tabId])?.click(); return; }
 
                 if (tabId === 'tab-busy') {
 
@@ -2039,6 +2041,7 @@ window.renderSttOrderControl = function (type, i, total) {
 
                         if (targetTab === 'tab-procedures') {
                             if (typeof renderProceduresTable === 'function') renderProceduresTable();
+                            if (typeof renderProtoProcsFormCheckboxes === 'function') renderProtoProcsFormCheckboxes();
                             if (typeof renderProtocolsTable === 'function') renderProtocolsTable();
                         }
 
@@ -2698,6 +2701,17 @@ window.renderSttOrderControl = function (type, i, total) {
 
                 room: () => { document.getElementById('btn-save-room').innerText = "Thêm"; document.getElementById('btn-cancel-room').style.display = "none"; },
 
+                proto: () => {
+                    const btnSave = document.getElementById('btn-save-proto');
+                    const btnCancel = document.getElementById('btn-cancel-proto');
+                    const nameInput = document.getElementById('proto-name');
+                    if (btnSave) btnSave.innerText = "➕ Thêm Phác Đồ";
+                    if (btnCancel) btnCancel.style.display = "none";
+                    if (nameInput) nameInput.value = '';
+                    document.querySelectorAll('.proto-proc-cb').forEach(c => c.checked = false);
+                    if (typeof updateProtoSelectedCount === 'function') updateProtoSelectedCount();
+                },
+
                 pat: () => {
 
                     document.getElementById('btn-save-pat').innerText = "Thêm";
@@ -2946,6 +2960,10 @@ window.renderSttOrderControl = function (type, i, total) {
         // 🎯 DYNAMIC CLINICAL PROTOCOLS ENGINE (Quản lý Phác đồ Riêng)
         // ============================================================
         const DEFAULT_PROTOCOLS = [
+        // ============================================================
+        // 🎯 DYNAMIC CLINICAL PROTOCOLS ENGINE (Quản lý Phác đồ Riêng)
+        // ============================================================
+        const DEFAULT_PROTOCOLS = [
             { id: '1', name: 'Phác đồ 1', procs: ['Điện châm', 'Thủy châm', 'Điện xung'] },
             { id: '2', name: 'Phác đồ 2', procs: ['Điện châm', 'Thủy châm', 'Điện xung', 'Parafin'] },
             { id: '3', name: 'Phác đồ 3', procs: ['Điện châm', 'Thủy châm', 'Điện xung', 'Sóng ngắn'] },
@@ -2961,8 +2979,6 @@ window.renderSttOrderControl = function (type, i, total) {
             { id: '13', name: 'Phác đồ 13', procs: ['Điện xung', 'Tập thở PHCN'] }
         ];
 
-        let _protocolModalListenersSetup = false;
-
         function initProtocolsData() {
             if (!window.dataCache) window.dataCache = {};
             if (typeof dataCache === 'undefined') window.dataCache = window.dataCache || {};
@@ -2972,7 +2988,7 @@ window.renderSttOrderControl = function (type, i, total) {
                 const saved = localStorage.getItem('meds_protocols');
                 if (saved) {
                     const parsed = JSON.parse(saved);
-                    if (Array.isArray(parsed)) loadedProtocols = parsed;
+                    if (Array.isArray(parsed) && parsed.length > 0) loadedProtocols = parsed;
                 }
             } catch (e) {}
 
@@ -2981,10 +2997,10 @@ window.renderSttOrderControl = function (type, i, total) {
                     const bStr = localStorage.getItem('times_bootstrap_cache');
                     if (bStr) {
                         const b = JSON.parse(bStr);
-                        const raw = (b.settings && b.settings.clinical_protocols) || b.protocols;
+                        const raw = (b.settings && b.settings.clinical_protocols) || b.protocols || b.phac_do;
                         if (raw) {
                             const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-                            if (Array.isArray(parsed)) loadedProtocols = parsed;
+                            if (Array.isArray(parsed) && parsed.length > 0) loadedProtocols = parsed;
                         }
                     }
                 } catch(e) {}
@@ -2997,57 +3013,102 @@ window.renderSttOrderControl = function (type, i, total) {
             window.dataCache.protocols = loadedProtocols;
             if (typeof dataCache !== 'undefined') dataCache.protocols = loadedProtocols;
 
+            renderProtoProcsFormCheckboxes();
             renderProtocolsTable();
             renderProtocolSelectOptions();
 
-            // Thiết lập sự kiện bàn phím & backdrop modal một lần duy nhất
-            if (!_protocolModalListenersSetup) {
-                _protocolModalListenersSetup = true;
-                const modal = document.getElementById('modal-protocol-editor');
-                if (modal) {
-                    modal.addEventListener('click', (e) => {
-                        if (e.target === modal) closeProtocolModal();
-                    });
-                }
-                const nameInput = document.getElementById('protocol-name-input');
-                if (nameInput) {
-                    nameInput.addEventListener('keydown', (e) => {
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            saveProtocolFromModal();
-                        }
-                    });
-                }
-                document.addEventListener('keydown', (e) => {
-                    if (e.key === 'Escape') {
-                        const m = document.getElementById('modal-protocol-editor');
-                        if (m && m.style.display !== 'none') closeProtocolModal();
+            // Lắng nghe sự kiện đồng bộ thời gian thực từ các Tab khác
+            if (typeof window.OfflineSyncEngine !== 'undefined' && typeof window.OfflineSyncEngine.registerLiveListener === 'function') {
+                window.OfflineSyncEngine.registerLiveListener((type, payload) => {
+                    if (type === 'PROTOCOLS_UPDATED' && payload && Array.isArray(payload.protocols)) {
+                        window.dataCache.protocols = payload.protocols;
+                        if (typeof dataCache !== 'undefined') dataCache.protocols = payload.protocols;
+                        try { localStorage.setItem('meds_protocols', JSON.stringify(payload.protocols)); } catch(e) {}
+                        renderProtocolsTable();
+                        renderProtocolSelectOptions();
                     }
                 });
-
-                // Lắng nghe sự kiện đồng bộ thời gian thực từ các Tab khác
-                if (typeof window.OfflineSyncEngine !== 'undefined' && typeof window.OfflineSyncEngine.registerLiveListener === 'function') {
-                    window.OfflineSyncEngine.registerLiveListener((type, payload) => {
-                        if (type === 'PROTOCOLS_UPDATED' && payload && Array.isArray(payload.protocols)) {
-                            window.dataCache.protocols = payload.protocols;
-                            if (typeof dataCache !== 'undefined') dataCache.protocols = payload.protocols;
-                            try { localStorage.setItem('meds_protocols', JSON.stringify(payload.protocols)); } catch(e) {}
-                            renderProtocolsTable();
-                            renderProtocolSelectOptions();
-                        }
-                    });
-                }
             }
         }
         window.initProtocolsData = initProtocolsData;
 
+        // Render danh sách checkbox thủ thuật trực tiếp trong Form bên trái của Phác đồ
+        function renderProtoProcsFormCheckboxes() {
+            const yhctBox = document.getElementById('proto-checkboxes-yhct');
+            const phcnBox = document.getElementById('proto-checkboxes-phcn');
+            if (!yhctBox || !phcnBox) return;
+
+            const allProcs = (window.dataCache && (window.dataCache.proc || window.dataCache.procedures)) ? (window.dataCache.proc || window.dataCache.procedures) : ((typeof dataCache !== 'undefined' && (dataCache.proc || dataCache.procedures)) ? (dataCache.proc || dataCache.procedures) : []);
+            
+            let yhctHtml = '', phcnHtml = '';
+            allProcs.forEach((p, idx) => {
+                if (!p) return;
+                const ten = p.ten || p.name || p[1] || '';
+                const he = p.he || p[3] || 'PHCN';
+                if (!ten) return;
+
+                const escapedTen = escapeHtml(ten);
+                const heUpper = String(he || '').trim().toUpperCase();
+                const isYhct = heUpper === 'YHCT' || heUpper.includes('CỔ TRUYỀN') || heUpper.includes('ĐÔNG Y');
+                
+                const cbHtml = `<label class="checkbox-item proto-proc-item" data-name="${escapedTen.toLowerCase()}" style="font-size:11.5px; padding:3px 5px !important; min-height:28px !important; margin-bottom:3px !important; display:flex !important; align-items:center !important; gap:5px !important; cursor:pointer; background:#fff; border-radius:4px; border:1px solid #e2e8f0;">
+                    <input type="checkbox" class="proto-proc-cb" data-he="${isYhct ? 'YHCT' : 'PHCN'}" value="${escapedTen}" onchange="updateProtoSelectedCount()" style="width:15px !important; height:15px !important; margin:0 !important; cursor:pointer;">
+                    <span style="font-size:11.5px !important; line-height:1.2; user-select:none;">${escapedTen}</span>
+                </label>`;
+
+                if (isYhct) yhctHtml += cbHtml;
+                else phcnHtml += cbHtml;
+            });
+
+            yhctBox.innerHTML = yhctHtml || '<em style="color:#94a3b8; font-size:11px;">Chưa có thủ thuật YHCT</em>';
+            phcnBox.innerHTML = phcnHtml || '<em style="color:#94a3b8; font-size:11px;">Chưa có thủ thuật PHCN</em>';
+            updateProtoSelectedCount();
+        }
+        window.renderProtoProcsFormCheckboxes = renderProtoProcsFormCheckboxes;
+
+        function updateProtoSelectedCount() {
+            const badge = document.getElementById('proto-selected-count-badge');
+            const count = document.querySelectorAll('.proto-proc-cb:checked').length;
+            if (badge) {
+                badge.innerText = `${count} đã chọn`;
+                badge.style.background = count > 0 ? '#dbeafe' : '#eff6ff';
+                badge.style.color = count > 0 ? '#1e40af' : '#64748b';
+            }
+        }
+        window.updateProtoSelectedCount = updateProtoSelectedCount;
+
+        function filterProtoCheckboxes() {
+            const input = document.getElementById('proto-search-proc-input');
+            const q = (input ? input.value : '').trim().toLowerCase();
+            document.querySelectorAll('.proto-proc-item').forEach(item => {
+                const name = item.getAttribute('data-name') || '';
+                if (!q || name.includes(q)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+        window.filterProtoCheckboxes = filterProtoCheckboxes;
+
+        function quickSelectProtoProcs(action) {
+            if (action === 'clear') {
+                document.querySelectorAll('.proto-proc-cb').forEach(cb => { cb.checked = false; });
+            } else if (action === 'all_yhct') {
+                document.querySelectorAll('.proto-proc-cb[data-he="YHCT"]').forEach(cb => { cb.checked = true; });
+            } else if (action === 'all_phcn') {
+                document.querySelectorAll('.proto-proc-cb[data-he="PHCN"]').forEach(cb => { cb.checked = true; });
+            }
+            updateProtoSelectedCount();
+        }
+        window.quickSelectProtoProcs = quickSelectProtoProcs;
+
         function syncProtocolsToCloud(showToastMsg = false) {
             const list = (window.dataCache && window.dataCache.protocols) ? window.dataCache.protocols : ((typeof dataCache !== 'undefined' && dataCache.protocols) ? dataCache.protocols : []);
-            const jsonStr = JSON.stringify(list);
             if (typeof callApi === 'function') {
                 callApi('saveProtocolsData', [list], res => {
                     if (showToastMsg && typeof window.showToast === 'function') {
-                        window.showToast(`☁️ Đã đồng bộ ${list.length} phác đồ lên đám mây thành công!`);
+                        window.showToast(`☁️ Đã đồng bộ ${list.length} phác đồ vào Cloudflare D1 thành công!`);
                     }
                 }, err => {
                     if (showToastMsg && typeof window.showToast === 'function') {
@@ -3064,18 +3125,19 @@ window.renderSttOrderControl = function (type, i, total) {
             if (typeof dataCache !== 'undefined') dataCache.protocols = newList;
             window.dataCache.protocols = newList;
 
-            // 1. Lưu localStorage riêng của phác đồ
+            // 1. Lưu localStorage
             try {
                 localStorage.setItem('meds_protocols', JSON.stringify(newList));
             } catch (e) {}
 
-            // 2. 🔥 Cập nhật trực tiếp vào times_bootstrap_cache để chống bị ghi đè bởi cache cũ
+            // 2. Cập nhật trực tiếp vào times_bootstrap_cache
             try {
                 const cachedStr = localStorage.getItem('times_bootstrap_cache');
                 if (cachedStr) {
                     const b = JSON.parse(cachedStr);
                     if (b) {
                         b.protocols = newList;
+                        b.phac_do = newList;
                         if (!b.settings) b.settings = {};
                         b.settings.clinical_protocols = JSON.stringify(newList);
                         localStorage.setItem('times_bootstrap_cache', JSON.stringify(b));
@@ -3083,7 +3145,7 @@ window.renderSttOrderControl = function (type, i, total) {
                 }
             } catch (e) {}
 
-            // 3. Lưu vào IndexedDB Dexie Cache nếu có
+            // 3. Lưu vào IndexedDB Dexie Cache
             if (typeof window.OfflineSyncEngine !== 'undefined') {
                 if (typeof window.OfflineSyncEngine.saveCache === 'function') {
                     window.OfflineSyncEngine.saveCache('protocols', newList);
@@ -3102,12 +3164,128 @@ window.renderSttOrderControl = function (type, i, total) {
         }
         window.saveProtocolsData = saveProtocolsData;
 
+        // Lưu / Cập nhật phác đồ từ Sidebar Form bên trái
+        function saveProtocolFromForm() {
+            const nameInput = document.getElementById('proto-name');
+            const name = (nameInput ? nameInput.value : '').trim();
+
+            if (!name) {
+                if (typeof window.showToast === 'function') window.showToast('⚠️ Vui lòng nhập tên phác đồ điều trị!', 'warning');
+                else alert('Vui lòng nhập tên phác đồ điều trị!');
+                if (nameInput) nameInput.focus();
+                return;
+            }
+
+            const checkedCbs = Array.from(document.querySelectorAll('.proto-proc-cb:checked'));
+            const selectedProcs = checkedCbs.map(cb => (cb.value || '').trim()).filter(Boolean);
+
+            if (!selectedProcs.length) {
+                if (typeof window.showToast === 'function') window.showToast('⚠️ Vui lòng chọn ít nhất 1 thủ thuật cho phác đồ!', 'warning');
+                else alert('Vui lòng chọn ít nhất 1 thủ thuật cho phác đồ!');
+                return;
+            }
+
+            const currentList = (window.dataCache && window.dataCache.protocols) ? window.dataCache.protocols : ((typeof dataCache !== 'undefined' && dataCache.protocols) ? dataCache.protocols : []);
+            const list = Array.isArray(currentList) ? [...currentList] : [];
+
+            if (editIndex.proto > -1 && editIndex.proto < list.length) {
+                const currentId = list[editIndex.proto] ? list[editIndex.proto].id : ('proto_' + Date.now());
+                list[editIndex.proto] = { id: currentId, name, procs: selectedProcs };
+            } else {
+                list.push({
+                    id: 'proto_' + Date.now(),
+                    name,
+                    procs: selectedProcs
+                });
+            }
+
+            saveProtocolsData(list);
+            cancelEdit('proto');
+            
+            if (typeof window.showToast === 'function') {
+                window.showToast(`✅ Đã lưu phác đồ: "${name}" (${selectedProcs.length} thủ thuật)`);
+            }
+        }
+        window.saveProtocolFromForm = saveProtocolFromForm;
+
+        // Nạp phác đồ vào Sidebar Form bên trái để chỉnh sửa
+        function editProtocol(index) {
+            editIndex.proto = index;
+            const currentList = (window.dataCache && window.dataCache.protocols) ? window.dataCache.protocols : ((typeof dataCache !== 'undefined' && dataCache.protocols) ? dataCache.protocols : []);
+            if (index < 0 || index >= currentList.length) return;
+            const target = currentList[index];
+
+            const nameInput = document.getElementById('proto-name');
+            if (nameInput) nameInput.value = target.name || target.ten_phac_do || `Phác đồ ${index + 1}`;
+
+            let procsArr = [];
+            if (Array.isArray(target.procs)) {
+                procsArr = target.procs;
+            } else if (typeof target.procs === 'string') {
+                try {
+                    const parsed = JSON.parse(target.procs);
+                    procsArr = Array.isArray(parsed) ? parsed : target.procs.split(',').map(s => s.trim()).filter(Boolean);
+                } catch(e) {
+                    procsArr = target.procs.split(',').map(s => s.trim()).filter(Boolean);
+                }
+            }
+
+            // Đánh dấu các checkbox
+            document.querySelectorAll('.proto-proc-cb').forEach(cb => {
+                const cbVal = String(cb.value || '').trim();
+                const isMatch = procsArr.some(sp => {
+                    const spName = (typeof sp === 'object' && sp !== null) ? (sp.name || sp.ten || '') : String(sp || '');
+                    return typeof matchProc === 'function' ? matchProc(cbVal, spName) : (cbVal.toLowerCase() === spName.toLowerCase());
+                });
+                cb.checked = isMatch;
+            });
+
+            updateProtoSelectedCount();
+
+            const btnSave = document.getElementById('btn-save-proto');
+            const btnCancel = document.getElementById('btn-cancel-proto');
+            if (btnSave) btnSave.innerText = "💾 Lưu Sửa Phác Đồ";
+            if (btnCancel) btnCancel.style.display = "inline-block";
+
+            // Cuộn nhẹ lên form trên màn hình di động/máy tính
+            const formBox = document.getElementById('sidebar-form-proto');
+            if (formBox) {
+                formBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            if (nameInput) nameInput.focus();
+        }
+        window.editProtocol = editProtocol;
+
+        function deleteProtocol(index) {
+            const currentList = (window.dataCache && window.dataCache.protocols) ? window.dataCache.protocols : ((typeof dataCache !== 'undefined' && dataCache.protocols) ? dataCache.protocols : []);
+            const list = Array.isArray(currentList) ? [...currentList] : [];
+            if (index < 0 || index >= list.length) return;
+            const target = list[index];
+            const targetName = target.name || target.ten_phac_do || `Phác đồ ${index + 1}`;
+
+            const doDelete = () => {
+                list.splice(index, 1);
+                saveProtocolsData(list);
+                if (editIndex.proto === index) cancelEdit('proto');
+                if (typeof window.showToast === 'function') {
+                    window.showToast(`🗑️ Đã xóa phác đồ: "${targetName}"`);
+                }
+            };
+
+            if (typeof showCustomConfirm === 'function') {
+                showCustomConfirm("Xác nhận xóa phác đồ", `Bác sĩ có chắc chắn muốn xóa phác đồ "${targetName}" không?`, doDelete);
+            } else if (confirm(`Bạn có chắc chắn muốn xóa phác đồ "${targetName}" không?`)) {
+                doDelete();
+            }
+        }
+        window.deleteProtocol = deleteProtocol;
+
         function renderProtocolsTable() {
             const tbody = document.getElementById('protocols-list');
             if (!tbody) return;
             const list = (window.dataCache && window.dataCache.protocols) ? window.dataCache.protocols : ((typeof dataCache !== 'undefined' && dataCache.protocols) ? dataCache.protocols : []);
             if (!list.length) {
-                tbody.innerHTML = '<tr><td colspan="4" align="center" style="color:#64748b; padding:15px;">Chưa có phác đồ điều trị nào. Hãy bấm "➕ Thêm Phác Đồ Mới" để tạo.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" align="center" style="color:#64748b; padding:20px; font-size:13px;">Chưa có phác đồ điều trị nào. Hãy nhập thông tin ở Form bên trái để tạo phác đồ mới.</td></tr>';
                 return;
             }
             tbody.innerHTML = list.map((item, i) => {
@@ -3124,16 +3302,19 @@ window.renderSttOrderControl = function (type, i, total) {
                 }
                 const procsHtml = procsArr.map(p => {
                     const pName = (typeof p === 'object' && p !== null) ? (p.name || p.ten || '') : String(p || '');
-                    return `<span class="badge" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; font-size:11.5px; padding:2px 8px; border-radius:12px; margin:2px 3px; display:inline-block;">${escapeHtml(pName)}</span>`;
+                    return `<span class="badge" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; font-size:11px; padding:2px 7px; border-radius:10px; margin:2px 3px; display:inline-block;">${escapeHtml(pName)}</span>`;
                 }).join('');
                 const sttHtml = (typeof window.renderSttOrderControl === 'function') ? window.renderSttOrderControl("protocols", i, list.length) : `<span style="font-weight:700;">${i + 1}</span>`;
-                return `<tr class="draggable-row editable-row" data-drag-idx="${i}" ondblclick="openProtocolModal(${i})" title="Bấm nút 'Sửa' hoặc nhấp đúp chuột để chỉnh sửa phác đồ">
-                    <td>${sttHtml}</td>
-                    <td><strong>${escapeHtml(item.name || `Phác đồ ${i + 1}`)}</strong></td>
+                return `<tr class="draggable-row editable-row" data-drag-idx="${i}" ondblclick="editProtocol(${i})" title="Nhấp đúp chuột để chỉnh sửa phác đồ này">
+                    <td align="center">${sttHtml}</td>
+                    <td>
+                        <strong style="color:#1e3a8a; font-size:13px;">${escapeHtml(item.name || `Phác đồ ${i + 1}`)}</strong>
+                        <div style="font-size:11px; color:#64748b; margin-top:2px;">${procsArr.length} thủ thuật</div>
+                    </td>
                     <td>${procsHtml || '<em style="color:#94a3b8;">Chưa chọn thủ thuật</em>'}</td>
                     <td align="center">
-                        <button type="button" class="btn btn-primary btn-sm" onclick="openProtocolModal(${i})" style="margin-right:4px; font-size:11px; padding:3px 8px; cursor:pointer;">Sửa</button>
-                        <button type="button" class="btn btn-danger btn-sm" onclick="deleteProtocol(${i})" style="font-size:11px; padding:3px 8px; cursor:pointer;">Xóa</button>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="editProtocol(${i})" style="margin-right:4px; font-size:11px; padding:3px 8px; cursor:pointer;" title="Sửa phác đồ">✏️ Sửa</button>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="deleteProtocol(${i})" style="font-size:11px; padding:3px 8px; cursor:pointer;" title="Xóa phác đồ">🗑️ Xóa</button>
                     </td>
                 </tr>`;
             }).join('');
@@ -3147,140 +3328,87 @@ window.renderSttOrderControl = function (type, i, total) {
         }
         window.renderProtocolsTable = renderProtocolsTable;
 
-        function openProtocolModal(idx) {
-            const modal = document.getElementById('modal-protocol-editor');
-            if (!modal) return;
-
-            const yhctContainer = document.getElementById('modal-protocol-procs-yhct');
-            const phcnContainer = document.getElementById('modal-protocol-procs-phcn');
-            const titleEl = document.getElementById('modal-protocol-title');
-            const nameInput = document.getElementById('protocol-name-input');
-            const idxInput = document.getElementById('protocol-edit-index');
-
-            idxInput.value = idx;
-            const list = (window.dataCache && window.dataCache.protocols) ? window.dataCache.protocols : ((typeof dataCache !== 'undefined' && dataCache.protocols) ? dataCache.protocols : []);
-            const isEdit = idx >= 0 && idx < list.length;
-            const currentItem = isEdit ? list[idx] : null;
-
-            titleEl.innerHTML = isEdit ? `<span>✏️ Chỉnh Sửa Phác Đồ</span>` : `<span>📋 Thêm Phác Đồ Mới</span>`;
-            nameInput.value = isEdit ? (currentItem.name || '') : `Phác đồ ${list.length + 1}`;
-
-            // Render checkboxes từ danh mục thủ thuật
-            let yhctHtml = '', phcnHtml = '';
-            const allProcs = (window.dataCache && (window.dataCache.proc || window.dataCache.procedures)) ? (window.dataCache.proc || window.dataCache.procedures) : ((typeof dataCache !== 'undefined' && (dataCache.proc || dataCache.procedures)) ? (dataCache.proc || dataCache.procedures) : []);
+        function renderProtocolSelectOptions() {
+            const sel = document.getElementById('pat-protocol-select');
+            if (!sel) return;
+            const list = (window.dataCache && window.dataCache.protocols) ? window.dataCache.protocols : [];
             
-            let selectedProcs = [];
-            if (isEdit && currentItem && currentItem.procs) {
-                if (Array.isArray(currentItem.procs)) {
-                    selectedProcs = currentItem.procs;
-                } else if (typeof currentItem.procs === 'string') {
+            let optionsHtml = '<option value="">-- Chọn Phác đồ --</option>';
+            list.forEach((item, i) => {
+                let procsArr = [];
+                if (Array.isArray(item.procs)) {
+                    procsArr = item.procs;
+                } else if (typeof item.procs === 'string') {
                     try {
-                        const parsed = JSON.parse(currentItem.procs);
-                        selectedProcs = Array.isArray(parsed) ? parsed : currentItem.procs.split(',').map(s => s.trim()).filter(Boolean);
+                        const parsed = JSON.parse(item.procs);
+                        procsArr = Array.isArray(parsed) ? parsed : item.procs.split(',').map(s => s.trim()).filter(Boolean);
                     } catch(e) {
-                        selectedProcs = currentItem.procs.split(',').map(s => s.trim()).filter(Boolean);
+                        procsArr = item.procs.split(',').map(s => s.trim()).filter(Boolean);
                     }
                 }
-            }
-
-            allProcs.forEach(p => {
-                if (!p) return;
-                const ten = p.ten || p.name || p[1] || '';
-                const he = p.he || p[3] || 'PHCN';
-                if (!ten) return;
-
-                const escapedTen = escapeHtml(ten);
-                const isChecked = selectedProcs.some(sp => {
-                    const spName = (typeof sp === 'object' && sp !== null) ? (sp.name || sp.ten || '') : String(sp || '');
-                    return typeof matchProc === 'function' ? matchProc(ten, spName) : (ten.trim().toLowerCase() === spName.trim().toLowerCase());
-                });
-                const cbHtml = `<label class="checkbox-item" style="font-size:12px; margin-bottom:4px; display:flex; align-items:center; gap:6px; cursor:pointer;">
-                    <input type="checkbox" class="modal-proc-cb" data-ten="${escapedTen}" value="${escapedTen}" ${isChecked ? 'checked' : ''}>
-                    <span>${escapedTen}</span>
-                </label>`;
-
-                const heUpper = String(he || '').trim().toUpperCase();
-                const isYhct = heUpper === 'YHCT' || heUpper.includes('CỔ TRUYỀN') || heUpper.includes('ĐÔNG Y');
-                if (isYhct) yhctHtml += cbHtml;
-                else phcnHtml += cbHtml;
+                const procsSummary = procsArr.map(p => (typeof p === 'object' && p !== null) ? (p.name || p.ten || '') : String(p || '')).filter(Boolean).join(', ');
+                optionsHtml += `<option value="${i}">${escapeHtml(item.name || `Phác đồ ${i + 1}`)}: ${escapeHtml(procsSummary)}</option>`;
             });
-
-            if (yhctContainer) yhctContainer.innerHTML = yhctHtml || '<em style="color:#94a3b8; font-size:11.5px;">Chưa có thủ thuật YHCT</em>';
-            if (phcnContainer) phcnContainer.innerHTML = phcnHtml || '<em style="color:#94a3b8; font-size:11.5px;">Chưa có thủ thuật PHCN</em>';
-
-            modal.style.display = 'flex';
-            setTimeout(() => { 
-                nameInput.focus(); 
-                nameInput.select();
-            }, 50);
+            sel.innerHTML = optionsHtml;
         }
-        window.openProtocolModal = openProtocolModal;
+        window.renderProtocolSelectOptions = renderProtocolSelectOptions;
 
-        function closeProtocolModal() {
-            const modal = document.getElementById('modal-protocol-editor');
-            if (modal) modal.style.display = 'none';
+        function clearSelectedProcs() {
+            document.querySelectorAll('.pat-proc-cb').forEach(cb => { cb.checked = false; });
+            const sel = document.getElementById('pat-protocol-select');
+            if (sel) sel.value = '';
         }
-        window.closeProtocolModal = closeProtocolModal;
+        window.clearSelectedProcs = clearSelectedProcs;
 
-        function saveProtocolFromModal() {
-            const nameInput = document.getElementById('protocol-name-input');
-            const idxInput = document.getElementById('protocol-edit-index');
-            const name = (nameInput.value || '').trim();
-            const idx = parseInt(idxInput.value, 10);
-
-            if (!name) {
-                if (typeof window.showToast === 'function') window.showToast('⚠️ Vui lòng nhập tên phác đồ!', 'warning');
-                else alert('Vui lòng nhập tên phác đồ!');
-                nameInput.focus();
+        function applyClinicalProtocol(protocolIdx) {
+            if (protocolIdx === '' || protocolIdx === null || protocolIdx === undefined) {
+                clearSelectedProcs();
                 return;
             }
+            const idx = parseInt(protocolIdx, 10);
+            const list = (window.dataCache && window.dataCache.protocols) ? window.dataCache.protocols : [];
+            if (isNaN(idx) || idx < 0 || idx >= list.length) return;
 
-            const checkedCbs = Array.from(document.querySelectorAll('#modal-protocol-editor .modal-proc-cb:checked'));
-            const selectedProcs = checkedCbs.map(cb => (cb.getAttribute('data-ten') || cb.value || '').trim()).filter(Boolean);
-
-            if (!selectedProcs.length) {
-                if (typeof window.showToast === 'function') window.showToast('⚠️ Vui lòng chọn ít nhất 1 thủ thuật cho phác đồ!', 'warning');
-                else alert('Vui lòng chọn ít nhất 1 thủ thuật cho phác đồ!');
-                return;
-            }
-
-            const currentList = (window.dataCache && window.dataCache.protocols) ? window.dataCache.protocols : ((typeof dataCache !== 'undefined' && dataCache.protocols) ? dataCache.protocols : []);
-            const list = Array.isArray(currentList) ? [...currentList] : [];
-            
-            if (idx >= 0 && idx < list.length) {
-                const currentId = list[idx] ? list[idx].id : ('proto_' + Date.now());
-                list[idx] = { id: currentId, name, procs: selectedProcs };
-            } else {
-                list.push({
-                    id: 'proto_' + Date.now(),
-                    name,
-                    procs: selectedProcs
-                });
-            }
-
-            saveProtocolsData(list);
-            closeProtocolModal();
-            if (typeof window.showToast === 'function') {
-                window.showToast(`✅ Đã lưu phác đồ: ${name} (${selectedProcs.length} thủ thuật)`);
-            }
-        }
-        window.saveProtocolFromModal = saveProtocolFromModal;
-
-        function deleteProtocol(idx) {
-            const currentList = (window.dataCache && window.dataCache.protocols) ? window.dataCache.protocols : ((typeof dataCache !== 'undefined' && dataCache.protocols) ? dataCache.protocols : []);
-            const list = Array.isArray(currentList) ? [...currentList] : [];
-            if (idx < 0 || idx >= list.length) return;
-            const target = list[idx];
-
-            if (confirm(`Bạn có chắc chắn muốn xóa phác đồ "${target.name}" không?`)) {
-                list.splice(idx, 1);
-                saveProtocolsData(list);
-                if (typeof window.showToast === 'function') {
-                    window.showToast(`🗑️ Đã xóa phác đồ: ${target.name}`);
+            const pObj = list[idx];
+            let targetProcs = [];
+            if (Array.isArray(pObj.procs)) {
+                targetProcs = pObj.procs;
+            } else if (typeof pObj.procs === 'string') {
+                try {
+                    const parsed = JSON.parse(pObj.procs);
+                    targetProcs = Array.isArray(parsed) ? parsed : pObj.procs.split(',').map(s => s.trim()).filter(Boolean);
+                } catch(e) {
+                    targetProcs = pObj.procs.split(',').map(s => s.trim()).filter(Boolean);
                 }
             }
+
+            // Bỏ chọn trước khi áp dụng
+            document.querySelectorAll('.pat-proc-cb').forEach(cb => { cb.checked = false; });
+
+            let matchedCount = 0;
+            document.querySelectorAll('.pat-proc-cb').forEach(cb => {
+                const cbVal = String(cb.value || '').trim();
+                const isMatch = targetProcs.some(target => {
+                    const targetName = (typeof target === 'object' && target !== null) ? (target.name || target.ten || '') : String(target || '');
+                    return typeof matchProc === 'function' ? matchProc(cbVal, targetName) : (cbVal.toLowerCase() === targetName.toLowerCase());
+                });
+                if (isMatch) {
+                    cb.checked = true;
+                    matchedCount++;
+                    const parent = cb.closest('.checkbox-item') || cb.parentElement;
+                    if (parent) {
+                        parent.style.transition = 'background-color 0.3s';
+                        parent.style.backgroundColor = '#dbeafe';
+                        setTimeout(() => { parent.style.backgroundColor = ''; }, 600);
+                    }
+                }
+            });
+
+            if (typeof window.showToast === 'function') {
+                window.showToast(`🎯 Đã áp dụng: ${pObj.name} (${matchedCount} thủ thuật)`);
+            }
         }
-        window.deleteProtocol = deleteProtocol;
+        window.applyClinicalProtocol = applyClinicalProtocol;
 
         function renderProtocolSelectOptions() {
             const sel = document.getElementById('pat-protocol-select');
@@ -3418,11 +3546,14 @@ window.renderSttOrderControl = function (type, i, total) {
 
             [['staff-skills-yhct', sYhct], ['staff-skills-phcn', sPhcn], ['pat-skills-yhct', pYhct], ['pat-skills-phcn', pPhcn]]
                 .forEach(([id, html]) => { const el = document.getElementById(id); if (el) el.innerHTML = html; });
+
+            if (typeof renderProtoProcsFormCheckboxes === 'function') renderProtoProcsFormCheckboxes();
         }
 
 
         function renderProceduresTable() {
             renderProceduresTable_Original();
+            if (typeof renderProtoProcsFormCheckboxes === 'function') renderProtoProcsFormCheckboxes();
             if (typeof renderProtocolsTable === 'function') renderProtocolsTable();
             if (typeof renderProtocolSelectOptions === 'function') renderProtocolSelectOptions();
         }

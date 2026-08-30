@@ -1208,5 +1208,38 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
      - Đồng bộ resource query strings `?v=3.2.6-rev4` trên toàn bộ tài nguyên.
 - **File sửa đổi**: `backend/schema.sql`, `backend/src/index.js`, `index.html`, `sw.js`, `PM-xeplich-v3.md`.
 
+### Tái Thiết Kế Toàn Diện: Vẽ Lại Bảng Phác Đồ Điều Trị Với Cấu Trúc Split-Layout Trực Quan & Trực Tiếp (30/08/2026 - v3.2.6-rev5)
+- **Yêu cầu của người dùng**:
+  - Đã tạo bảng trong D1 nhưng vẫn chưa thao tác mượt mà được với phác đồ trong tab Thủ thuật.
+  - Vẽ lại toàn bộ khu vực bảng phác đồ, chuyển sang mô hình chuẩn mực để triệt tiêu vĩnh viễn lỗi phát sinh.
+- **Phân tích nguyên nhân gốc rễ**:
+  - Mô hình cũ của phác đồ trong tab Thủ thuật bị cô lập vào 1 bảng đơn lẻ dưới cùng và phụ thuộc hoàn toàn vào Popup Modal (`#modal-protocol-editor`).
+  - Popup Modal có trải nghiệm rời rạc, khó kiểm soát state khi lọc thủ thuật, và không đồng nhất với phong cách chung của phần mềm (toàn bộ các tab khác đều dùng chuẩn `split-layout` với Form bên trái + Bảng bên phải).
+- **Giải pháp cụ thể đã thực hiện**:
+  1. **Vẽ Lại Giao Diện Chuẩn Split-Layout Trong Tab Thủ Thuật (`index.html`)**:
+     - Loại bỏ hoàn toàn sự phụ thuộc vào popup modal.
+     - Xây dựng khu vực **📋 QUẢN LÝ PHÁC ĐỒ ĐIỀU TRỊ (GÓI THỦ THUẬT LÂM SÀNG)** với chuẩn `split-layout`:
+       - **Bên Trái - Sidebar Form Phác Đồ (`#sidebar-form-proto`)**:
+         - Ô nhập Tên phác đồ `#proto-name`.
+         - Ô tìm kiếm nhanh thủ thuật `#proto-search-proc-input` lọc trực tiếp.
+         - Các nút bấm chọn nhanh: `+ YHCT`, `+ PHCN`, `Bỏ chọn`.
+         - Khung cuộn danh sách checkbox thủ thuật chia 2 cột YHCT và PHCN rõ ràng, có Badge đếm số lượng thủ thuật đã chọn (`[X] đã chọn`).
+         - Form Pinned Footer với 2 nút: `➕ Thêm Phác Đồ` (`#btn-save-proto`) và `Hủy` (`#btn-cancel-proto`).
+       - **Bên Phải - Main Table Phác Đồ (`#protocols-table`)**:
+         - Bảng hiển thị danh mục phác đồ: Cột STT (hỗ trợ kéo thả sắp xếp), Cột Tên phác đồ (in đậm kèm số lượng thủ thuật), Cột Badges thủ thuật phân màu YHCT/PHCN đẹp mắt, Cột Thao tác với nút `✏️ Sửa` và `🗑️ Xóa`.
+  2. **Nâng Cấp Động Cơ JavaScript (`js/app.js`)**:
+     - Thêm `proto: -1` vào `editIndex` và cập nhật `cancelEdit('proto')`.
+     - `renderProtoProcsFormCheckboxes()`: Tự động render checkbox thủ thuật vào form bên trái khi khởi tạo hoặc nạp dữ liệu thủ thuật.
+     - `editProtocol(index)`: Nạp thông tin phác đồ lên Form bên trái, tick sẵn các checkbox, cập nhật badge, đổi nút thành `💾 Lưu Sửa Phác Đồ`, hiện nút `Hủy`, và cuộn nhẹ màn hình tới form.
+     - `saveProtocolFromForm()`: Đọc dữ liệu từ form, validate, cập nhật `dataCache.protocols`, lưu LocalStorage, Dexie cache, và đồng bộ trực tiếp lên Cloudflare D1 Backend (`phac_do` table).
+     - `deleteProtocol(index)`: Xóa phác đồ an toàn có xác nhận confirm.
+     - Bổ sung phím tắt: Nhấn **Enter** trong form phác đồ sẽ tự động lưu phác đồ; nhấp đúp vào hàng trên bảng sẽ nạp sửa ngay lập tức.
+     - Tự động gọi `renderProtoProcsFormCheckboxes()` và `renderProtocolsTable()` mỗi khi chuyển sang tab Thủ thuật.
+  3. **Đồng Bộ Phiên Bản & Quy Tắc Dự Án (`RULES.md`)**:
+     - Cập nhật thời gian Footer: `12:45 30/08/2026`.
+     - Cập nhật Service Worker: `CACHE_NAME = 'pmcg-cache-v3.2.6-rev5'`.
+     - Đồng bộ resource query strings `?v=3.2.6-rev5` trên toàn bộ tài nguyên.
+- **File sửa đổi**: `index.html`, `js/app.js`, `sw.js`, `PM-xeplich-v3.md`.
+
 
 

@@ -4694,6 +4694,94 @@ transition: box-shadow 0.3s;
             white-space: nowrap !important;
         }
 
+        /* ── TAB GIỜ BẬN & RA VIỆN: GHIM FORM NHẬP VÀ TIÊU ĐỀ BẢNG ── */
+        #tab-busy .split-layout {
+            display: flex !important;
+            gap: 15px !important;
+            align-items: stretch !important;
+            height: calc(100vh - 160px) !important;
+            min-height: 480px !important;
+        }
+
+        #tab-busy .busy-col-card {
+            display: flex !important;
+            flex-direction: column !important;
+            border-radius: 8px !important;
+            border: 1px solid #dcdde1 !important;
+            padding: 12px 14px !important;
+            height: 100% !important;
+            max-height: 100% !important;
+            box-sizing: border-box !important;
+            overflow: hidden !important;
+        }
+
+        #tab-busy .busy-form-header {
+            flex-shrink: 0 !important;
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 20 !important;
+            background: inherit !important;
+        }
+
+        .busy-container {
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            overflow-y: auto !important;
+            overflow-x: auto !important;
+            position: relative !important;
+            border: 1px solid #dcdde1 !important;
+            border-radius: 4px !important;
+            background: #ffffff !important;
+            scrollbar-width: thin !important;
+            scrollbar-color: #cbd5e1 #f8fafc !important;
+        }
+
+        .busy-container::-webkit-scrollbar {
+            width: 6px !important;
+            height: 6px !important;
+        }
+
+        .busy-container::-webkit-scrollbar-track {
+            background: #f8fafc !important;
+        }
+
+        .busy-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1 !important;
+            border-radius: 3px !important;
+        }
+
+        .busy-container::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8 !important;
+        }
+
+        /* Ghim cố định thead th của cả 3 bảng */
+        #busy-staff-table,
+        #busy-pat-table,
+        #leave-pat-table {
+            width: 100% !important;
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
+        }
+
+        #busy-staff-table thead,
+        #busy-pat-table thead,
+        #leave-pat-table thead {
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 15 !important;
+        }
+
+        #busy-staff-table thead th,
+        #busy-pat-table thead th,
+        #leave-pat-table thead th {
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 15 !important;
+            background-color: #1e3d2b !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12) !important;
+        }
+
 
         /* ── GHIM NÚT CHỨC NĂNG (THÊM / SỬA / HỦY) TẠI TẤT CẢ CÁC TAB ── */
         .sidebar-form {

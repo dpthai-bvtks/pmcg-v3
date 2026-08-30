@@ -1320,5 +1320,15 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   - Cập nhật thời gian Footer: `14:18 30/08/2026`, Service Worker: `CACHE_NAME = 'pmcg-cache-v3.2.6-rev12'` và query strings `?v=3.2.6-rev12`.
 - **File sửa đổi**: `RULES.md`, `index.html`, `sw.js`, `PM-xeplich-v3.md`.
 
+### Nâng Cấp Giao Diện: Ghim Đoạn Nhập Liệu & Tiêu Đề Bảng Tab Giờ Bận (30/08/2026 - v3.2.6-rev13)
+- **Yêu cầu của người dùng**:
+  - Ghim cố định đoạn nhập dữ liệu và dòng tiêu đề bảng trong tab Giờ bận & Ra viện để khi cuộn chuột xem danh sách dài vẫn nhìn thấy và thao tác được.
+- **Phân tích nguyên nhân & Giải pháp**:
+  - Trong `css/style.css`, định nghĩa `.busy-col-card` và `.busy-form-header` với `flex-shrink: 0` và `position: sticky; top: 0; z-index: 20`.
+  - Thiết lập `.busy-container` với `flex: 1; min-height: 0; overflow-y: auto` có thanh cuộn riêng mượt mà.
+  - Thiết lập `thead th` của `#busy-staff-table`, `#busy-pat-table`, `#leave-pat-table` với `position: sticky; top: 0; z-index: 15` và nền xanh `#1e3d2b` kèm bóng đổ nổi bật.
+  - Cập nhật thời gian Footer: `14:26 30/08/2026`, Service Worker: `CACHE_NAME = 'pmcg-cache-v3.2.6-rev13'` và query strings `?v=3.2.6-rev13`.
+- **File sửa đổi**: `css/style.css`, `index.html`, `sw.js`, `PM-xeplich-v3.md`.
+
 
 

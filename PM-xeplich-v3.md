@@ -1116,24 +1116,25 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
      - Đồng bộ phiên bản toàn hệ thống lên **3.2.6** (Footer: `10:00 30/08/2026`), cập nhật Service Worker `pmcg-cache-v3.2.6` và query string `?v=3.2.6` trên tất cả tài nguyên.
 - **File sửa đổi**: `js/scheduler-engine.js`, `index.html`, `css/style.css`, `js/app.js`, `sw.js`, `PM-xeplich-v3.md`.
 
-### Nâng Cấp: Khung Thời Gian Thủ Thuật Tối Thiểu & Tối Đa (Dynamic Range Duration Scheduler) (30/08/2026 - v3.2.7)
+### Nâng Cấp: Bộ Cố Vấn Giải Cứu Ca Rớt Thông Minh & Khung Thời Gian Thủ Thuật Tối Thiểu - Tối Đa (30/08/2026 - v3.2.6)
 - **Mục tiêu**:
-  - Hỗ trợ mốc thời gian thủ thuật dạng khoảng **[Tối Thiểu – Tối Đa]** theo Hướng dẫn Quy trình Kỹ thuật YHCT - PHCN của Bộ Y tế (ví dụ: Điện châm 25 - 30 phút, Parafin 20 - 25 phút).
-  - Thuật toán xếp lịch tự động chuyển đổi linh hoạt mốc thời gian giữa Min $\to$ Max nhằm nén khoảng trống, giải quyết các xung đột trùng lịch/trùng máy và nâng cao tỷ lệ xếp thành công.
+  - Tự động chẩn đoán chính xác nguyên nhân gốc rễ của từng ca rớt và mô phỏng các phương án nới lỏng ràng buộc lâm sàng với tính năng 1-Click Tự động giải cứu ca rớt thẳng vào lịch trình.
+  - Hỗ trợ mốc thời gian thủ thuật dạng khoảng **[Tối Thiểu – Tối Đa]** theo Hướng dẫn Quy trình Kỹ thuật YHCT - PHCN của Bộ Y tế (ví dụ: Điện châm 25 - 30 phút, Parafin 20 - 25 phút) giúp thuật toán tự động linh hoạt điều chỉnh dải mốc để lấp khoảng trống lịch trình và triệt tiêu ca rớt.
 - **Giải pháp triển khai**:
-  1. **Cơ Sở Dữ Liệu & Backend (`backend/src/index.js`)**:
-     - Bổ sung cột `tg_thu_thuat_max` vào bảng `thu_thuat` trong Cloudflare D1 SQLite.
-     - Cập nhật API `getBootstrapData`, `getThuThuat`, `addThuThuat`, `editThuThuat` đọc/ghi đầy đủ `thoiGianThuThuatMin` và `thoiGianThuThuatMax`.
-  2. **Giao Diện Bảng Danh Mục & Ô Nhập Liệu (`index.html` & `css/style.css`)**:
-     - Cập nhật tiêu đề cột bảng Thủ thuật thành **`THỜI GIAN THỦ THUẬT (MIN - MAX)`**.
-     - Cập nhật Form Thêm/Sửa thủ thuật thành 2 ô song song: **TG thủ thuật Tối thiểu (phút)** và **Tối đa (phút)**.
-     - Thêm thiết kế Badge màu xanh nhạt `.proc-time-range-badge` hiển thị đẹp mắt (ví dụ: `⏱ 25 - 30 p`).
-  3. **Động Cơ Xếp Lịch & Frontend (`js/scheduler-engine.js` & `js/app.js`)**:
-     - Nâng cấp `buildDbFromCache` trích xuất `tgMayMin` và `tgMayMax` lưu vào bộ đệm `thuThuatInfo`.
-     - Nâng cấp `tryScheduleOne`: Thuật toán tự động sinh danh sách mốc thời gian ứng viên `candidateDurs` chạy từ `tgMayMin` $\to$ `tgMayMax` (ví dụ `[25, 26, 27, 28, 29, 30]`) để thử nghiệm dải slot tối ưu nhất.
-     - Cập nhật các hàm `renderProceduresTable()`, `saveProcedure()`, `editProc()` hỗ trợ trơn tru cả 2 mốc thời gian.
+  1. **Động cơ Chẩn đoán & Gợi ý Giải cứu (`js/scheduler-engine.js`)**:
+     - Phân tích 5 nhóm nguyên nhân rớt ca cụ thể: `BOTTLENECK_MACHINE`, `STAFF_UNAVAILABLE`, `OUTPATIENT_SESSION_LIMIT`, `PATIENT_TIME_WINDOW`, `INTERNAL_PATIENT_CLASH`.
+     - Tự động tính toán 1-3 gợi ý hành động giải cứu 1-Click (`ALLOW_OVERTIME`, `SWITCH_SESSION`, `SHIFT_WINDOW`, `REASSIGN_STAFF`).
+  2. **Giao Diện Modal & Thống Kê (`index.html` & `css/style.css`)**:
+     - Bổ sung **Modal Cố Vấn Giải Cứu Ca Rớt Thông Minh (`#modal-unscheduled-advisor`)** thiết kế Glassmorphism.
+     - Cập nhật tiêu đề cột bảng Thủ thuật thành **`THỜI GIAN THỦ THUẬT (MIN - MAX)`** và Form Thêm/Sửa thủ thuật thành 2 ô song song: **TG thủ thuật Tối thiểu (phút)** và **Tối đa (phút)**.
+     - Thiết kế Badge `.proc-time-range-badge` hiển thị đẹp mắt (ví dụ: `⏱ 25 - 30 p`).
+  3. **Tương Tác Frontend & Cơ Sở Dữ Liệu (`backend/src/index.js` & `js/app.js`)**:
+     - Nới lỏng bảng `thu_thuat` trên Cloudflare D1 với cột `tg_thu_thuat_max`.
+     - `tryScheduleOne` tự động sinh danh sách mốc thời gian ứng viên `candidateDurs` chạy từ `tgMayMin` $\to$ `tgMayMax` để xếp ca tối ưu nhất.
+     - Khi cứu ca, tự động cập nhật Bảng lịch trình, Timeline, Thống kê, Bảng bệnh nhân, đồng bộ ngầm D1 Database và IndexedDB/LocalStorage.
   4. **Đồng Bộ Phiên Bản & Quy Tắc Dự Án (`RULES.md`)**:
-     - Đồng bộ phiên bản toàn hệ thống lên **3.2.7** (Footer: `11:00 30/08/2026`), cập nhật Service Worker `pmcg-cache-v3.2.7` và `?v=3.2.7` trên toàn bộ tài nguyên.
+     - Đồng bộ chuẩn phiên bản hằng ngày **3.2.6** (Footer: `11:00 30/08/2026`), Service Worker `pmcg-cache-v3.2.6` và query string `?v=3.2.6`.
 - **File sửa đổi**: `backend/src/index.js`, `index.html`, `css/style.css`, `js/app.js`, `js/scheduler-engine.js`, `sw.js`, `PM-xeplich-v3.md`.
+
 
 

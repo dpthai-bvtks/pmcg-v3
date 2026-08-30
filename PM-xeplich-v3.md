@@ -1241,5 +1241,14 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
      - Đồng bộ resource query strings `?v=3.2.6-rev5` trên toàn bộ tài nguyên.
 - **File sửa đổi**: `index.html`, `js/app.js`, `sw.js`, `PM-xeplich-v3.md`.
 
+### Sửa Lỗi Cú Pháp: Khắc Phục Lỗi Trùng Lặp Khai Báo `const DEFAULT_PROTOCOLS` (30/08/2026 - v3.2.6-rev6)
+- **Yêu cầu của người dùng**:
+  - Khắc phục lỗi `Uncaught SyntaxError: Unexpected token 'const'`.
+- **Phân tích nguyên nhân & Giải pháp**:
+  - Trong quá trình thay thế khối mã phác đồ, phần tiêu đề `const DEFAULT_PROTOCOLS = [` bị chèn lặp lại 2 lần liên tiếp.
+  - Đã loại bỏ hoàn toàn đoạn lặp, chạy kiểm tra cú pháp `node -c js/app.js` đạt 100% thành công không có bất kỳ lỗi nào.
+  - Cập nhật thời gian Footer: `12:46 30/08/2026`, Service Worker: `CACHE_NAME = 'pmcg-cache-v3.2.6-rev6'` và query strings `?v=3.2.6-rev6`.
+- **File sửa đổi**: `js/app.js`, `index.html`, `sw.js`, `PM-xeplich-v3.md`.
+
 
 

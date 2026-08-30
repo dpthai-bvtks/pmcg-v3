@@ -2960,10 +2960,6 @@ window.renderSttOrderControl = function (type, i, total) {
         // 🎯 DYNAMIC CLINICAL PROTOCOLS ENGINE (Quản lý Phác đồ Riêng)
         // ============================================================
         const DEFAULT_PROTOCOLS = [
-        // ============================================================
-        // 🎯 DYNAMIC CLINICAL PROTOCOLS ENGINE (Quản lý Phác đồ Riêng)
-        // ============================================================
-        const DEFAULT_PROTOCOLS = [
             { id: '1', name: 'Phác đồ 1', procs: ['Điện châm', 'Thủy châm', 'Điện xung'] },
             { id: '2', name: 'Phác đồ 2', procs: ['Điện châm', 'Thủy châm', 'Điện xung', 'Parafin'] },
             { id: '3', name: 'Phác đồ 3', procs: ['Điện châm', 'Thủy châm', 'Điện xung', 'Sóng ngắn'] },

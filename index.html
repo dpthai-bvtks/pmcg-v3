@@ -693,33 +693,35 @@
                             <div class="sidebar-form" id="sidebar-form-proto">
                                 <div class="sidebar-form-body">
                                     <div class="form-group">
-                                        <label style="font-weight: 700; color: #1e3a8a;">Tên Phác Đồ / Mã Bệnh:</label>
-                                        <input type="text" id="proto-name" placeholder="VD: Phác đồ 1, Đau vai gáy, Thoái hóa khớp...">
+                                        <label style="font-weight: 700; color: #1e3a8a; min-width: 100px;">Tên Phác Đồ:</label>
+                                        <input type="text" id="proto-name" placeholder="VD: Phác đồ 1, Đau vai gáy, Liệt VII...">
                                     </div>
 
-                                    <div class="form-group" style="margin-top: 10px;">
-                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                            <label style="margin: 0; font-weight: 700; color: #1e3a8a; font-size: 13px;">Gói thủ thuật bao gồm:</label>
+                                    <!-- KHỐI CHỌN THỦ THUẬT (ĐỘC LẬP VỚI FORM-GROUP) -->
+                                    <div class="proto-skills-container" style="margin-top: 10px; display: flex; flex-direction: column; gap: 6px;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <span style="font-weight: 700; color: #1e3a8a; font-size: 12.5px;">Gói thủ thuật bao gồm:</span>
                                             <span id="proto-selected-count-badge" style="background: #eff6ff; color: #1d4ed8; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 700; border: 1px solid #bfdbfe;">0 đã chọn</span>
                                         </div>
-                                        <input type="text" id="proto-search-proc-input" placeholder="🔍 Lọc nhanh thủ thuật..." oninput="filterProtoCheckboxes()" style="margin-bottom: 8px; padding: 6px 10px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; width: 100%;">
+
+                                        <input type="text" id="proto-search-proc-input" placeholder="🔍 Lọc nhanh thủ thuật..." oninput="filterProtoCheckboxes()" style="width: 100%; box-sizing: border-box; padding: 5px 8px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
                                         
-                                        <div style="display: flex; gap: 5px; margin-bottom: 8px;">
-                                            <button type="button" class="btn btn-sm btn-secondary" onclick="quickSelectProtoProcs('all_yhct')" style="font-size: 10.5px; padding: 3px 6px; flex: 1; cursor: pointer;">+ YHCT</button>
-                                            <button type="button" class="btn btn-sm btn-secondary" onclick="quickSelectProtoProcs('all_phcn')" style="font-size: 10.5px; padding: 3px 6px; flex: 1; cursor: pointer;">+ PHCN</button>
-                                            <button type="button" class="btn btn-sm btn-secondary" onclick="quickSelectProtoProcs('clear')" style="font-size: 10.5px; padding: 3px 6px; flex: 1; cursor: pointer;">Bỏ chọn</button>
+                                        <div style="display: flex; gap: 5px;">
+                                            <button type="button" class="btn btn-sm btn-secondary" onclick="quickSelectProtoProcs('all_yhct')" style="font-size: 11px; padding: 3px 6px; flex: 1; cursor: pointer;">+ YHCT</button>
+                                            <button type="button" class="btn btn-sm btn-secondary" onclick="quickSelectProtoProcs('all_phcn')" style="font-size: 11px; padding: 3px 6px; flex: 1; cursor: pointer;">+ PHCN</button>
+                                            <button type="button" class="btn btn-sm btn-secondary" onclick="quickSelectProtoProcs('clear')" style="font-size: 11px; padding: 3px 6px; flex: 1; cursor: pointer;">Bỏ chọn</button>
                                         </div>
 
-                                        <div style="border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 8px; max-height: 280px; overflow-y: auto; background: #f8fafc;">
-                                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                                                <div>
-                                                    <div style="font-weight: 700; color: #dc2626; font-size: 11.5px; margin-bottom: 4px; border-bottom: 1.5px solid #fee2e2; padding-bottom: 2px;">💊 YHCT</div>
+                                        <div class="skills-box" style="margin-top: 4px; padding: 8px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; max-height: 300px; overflow-y: auto;">
+                                            <div class="skills-grid" style="display: flex; gap: 8px;">
+                                                <div class="skills-col" style="flex: 1;">
+                                                    <h4 class="yhct" style="font-size: 11.5px; font-weight: 700; color: #dc2626; border-bottom: 1.5px solid #fee2e2; padding-bottom: 3px; margin-bottom: 6px;">💊 YHCT</h4>
                                                     <div id="proto-checkboxes-yhct" style="display: flex; flex-direction: column; gap: 3px;">
                                                         <em style="color:#94a3b8; font-size:11px;">Đang tải...</em>
                                                     </div>
                                                 </div>
-                                                <div>
-                                                    <div style="font-weight: 700; color: #2563eb; font-size: 11.5px; margin-bottom: 4px; border-bottom: 1.5px solid #dbeafe; padding-bottom: 2px;">⚙️ PHCN</div>
+                                                <div class="skills-col" style="flex: 1;">
+                                                    <h4 class="phcn" style="font-size: 11.5px; font-weight: 700; color: #2563eb; border-bottom: 1.5px solid #dbeafe; padding-bottom: 3px; margin-bottom: 6px;">⚙️ PHCN</h4>
                                                     <div id="proto-checkboxes-phcn" style="display: flex; flex-direction: column; gap: 3px;">
                                                         <em style="color:#94a3b8; font-size:11px;">Đang tải...</em>
                                                     </div>
@@ -3080,7 +3082,7 @@
 
                     <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.2.6</span></p>
 
-                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 12:46 30/08/2026</span></p>
+                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 12:48 30/08/2026</span></p>
 
                     <p><span class="f-icon">👨‍💻</span> <span>Thiết kế & Phát triển: <b>Bác sĩ Thái</b></span></p>
 
@@ -3518,20 +3520,20 @@
     <div id="sidebar-tooltip"></div>
 
     <!-- JavaScript Modules -->
-    <script src="js/offline-sync-engine.js?v=3.2.6-rev6"></script>
-    <script src="js/ai-scheduler.js?v=3.2.6-rev6"></script>
-    <script src="js/cp-solver.js?v=3.2.6-rev6"></script>
-    <script src="js/scheduler-engine.js?v=3.2.6-rev6"></script>
-    <script src="js/app.js?v=3.2.6-rev6"></script>
-    <script src="js/init.js?v=3.2.6-rev6"></script>
-    <script src="js/sync.js?v=3.2.6-rev6"></script>
-    <script src="js/thongke.js?v=3.2.6-rev6"></script>
+    <script src="js/offline-sync-engine.js?v=3.2.6-rev7"></script>
+    <script src="js/ai-scheduler.js?v=3.2.6-rev7"></script>
+    <script src="js/cp-solver.js?v=3.2.6-rev7"></script>
+    <script src="js/scheduler-engine.js?v=3.2.6-rev7"></script>
+    <script src="js/app.js?v=3.2.6-rev7"></script>
+    <script src="js/init.js?v=3.2.6-rev7"></script>
+    <script src="js/sync.js?v=3.2.6-rev7"></script>
+    <script src="js/thongke.js?v=3.2.6-rev7"></script>
 
     <!-- PWA Service Worker Registration -->
     <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=3.2.6-rev6')
+            navigator.serviceWorker.register('./sw.js?v=3.2.6-rev7')
                 .then(reg => console.log('[PWA] Service Worker đăng ký thành công! Scope:', reg.scope))
                 .catch(err => console.warn('[PWA] Service Worker đăng ký thất bại:', err));
         });

@@ -3034,10 +3034,32 @@ window.renderSttOrderControl = function (type, i, total) {
             const phcnBox = document.getElementById('proto-checkboxes-phcn');
             if (!yhctBox || !phcnBox) return;
 
-            const allProcs = (window.dataCache && (window.dataCache.proc || window.dataCache.procedures)) ? (window.dataCache.proc || window.dataCache.procedures) : ((typeof dataCache !== 'undefined' && (dataCache.proc || dataCache.procedures)) ? (dataCache.proc || dataCache.procedures) : []);
+            let allProcs = (window.dataCache && (window.dataCache.proc || window.dataCache.procedures)) ? (window.dataCache.proc || window.dataCache.procedures) : ((typeof dataCache !== 'undefined' && (dataCache.proc || dataCache.procedures)) ? (dataCache.proc || dataCache.procedures) : []);
+
+            if (!allProcs || !allProcs.length) {
+                try {
+                    const saved = localStorage.getItem('meds_procedures');
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        if (Array.isArray(parsed) && parsed.length) allProcs = parsed;
+                    }
+                } catch(e) {}
+            }
+
+            if (!allProcs || !allProcs.length) {
+                try {
+                    const bStr = localStorage.getItem('times_bootstrap_cache');
+                    if (bStr) {
+                        const b = JSON.parse(bStr);
+                        if (b && (b.proc || b.procedures)) {
+                            allProcs = b.proc || b.procedures;
+                        }
+                    }
+                } catch(e) {}
+            }
             
             let yhctHtml = '', phcnHtml = '';
-            allProcs.forEach((p, idx) => {
+            (allProcs || []).forEach((p, idx) => {
                 if (!p) return;
                 const ten = p.ten || p.name || p[1] || '';
                 const he = p.he || p[3] || 'PHCN';
@@ -3047,9 +3069,9 @@ window.renderSttOrderControl = function (type, i, total) {
                 const heUpper = String(he || '').trim().toUpperCase();
                 const isYhct = heUpper === 'YHCT' || heUpper.includes('CỔ TRUYỀN') || heUpper.includes('ĐÔNG Y');
                 
-                const cbHtml = `<label class="checkbox-item proto-proc-item" data-name="${escapedTen.toLowerCase()}" style="font-size:11.5px; padding:3px 5px !important; min-height:28px !important; margin-bottom:3px !important; display:flex !important; align-items:center !important; gap:5px !important; cursor:pointer; background:#fff; border-radius:4px; border:1px solid #e2e8f0;">
-                    <input type="checkbox" class="proto-proc-cb" data-he="${isYhct ? 'YHCT' : 'PHCN'}" value="${escapedTen}" onchange="updateProtoSelectedCount()" style="width:15px !important; height:15px !important; margin:0 !important; cursor:pointer;">
-                    <span style="font-size:11.5px !important; line-height:1.2; user-select:none;">${escapedTen}</span>
+                const cbHtml = `<label class="checkbox-item proto-proc-item" data-name="${escapedTen.toLowerCase()}" style="font-size:11.5px; padding:3px 6px; margin-bottom:3px; display:flex; align-items:center; gap:6px; cursor:pointer; background:#fff; border-radius:4px; border:1px solid #cbd5e1;">
+                    <input type="checkbox" class="proto-proc-cb" data-he="${isYhct ? 'YHCT' : 'PHCN'}" value="${escapedTen}" onchange="updateProtoSelectedCount()" style="width:15px; height:15px; margin:0; cursor:pointer; flex-shrink:0;">
+                    <span style="font-size:11.5px; line-height:1.2; user-select:none; color:#1e293b;">${escapedTen}</span>
                 </label>`;
 
                 if (isYhct) yhctHtml += cbHtml;
@@ -3210,6 +3232,11 @@ window.renderSttOrderControl = function (type, i, total) {
             const currentList = (window.dataCache && window.dataCache.protocols) ? window.dataCache.protocols : ((typeof dataCache !== 'undefined' && dataCache.protocols) ? dataCache.protocols : []);
             if (index < 0 || index >= currentList.length) return;
             const target = currentList[index];
+
+            // Đảm bảo danh sách checkbox thủ thuật đã được render
+            if (!document.querySelectorAll('.proto-proc-cb').length) {
+                renderProtoProcsFormCheckboxes();
+            }
 
             const nameInput = document.getElementById('proto-name');
             if (nameInput) nameInput.value = target.name || target.ten_phac_do || `Phác đồ ${index + 1}`;

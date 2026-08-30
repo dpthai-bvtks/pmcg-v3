@@ -1250,5 +1250,15 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   - Cập nhật thời gian Footer: `12:46 30/08/2026`, Service Worker: `CACHE_NAME = 'pmcg-cache-v3.2.6-rev6'` và query strings `?v=3.2.6-rev6`.
 - **File sửa đổi**: `js/app.js`, `index.html`, `sw.js`, `PM-xeplich-v3.md`.
 
+### Sửa Lỗi Hiển Thị: Tái Cấu Trúc Khung Chọn Thủ Thuật Cho Phác Đồ (30/08/2026 - v3.2.6-rev7)
+- **Yêu cầu của người dùng**:
+  - Giao diện chọn thủ thuật cho phác đồ trong form bên trái bị biến mất/co rúm lại không thấy danh sách checkbox để tick chọn.
+- **Phân tích nguyên nhân & Giải pháp**:
+  - CSS của `.sidebar-form .form-group` có thuộc tính `display: flex; flex-direction: row;` khiến mọi thẻ con bên trong bị ép thành 1 hàng ngang duy nhất, làm khung danh sách checkbox bị co thành 1 đường chỉ mỏng ở cạnh ô tìm kiếm.
+  - Đã tách khối chọn thủ thuật ra khỏi `.form-group`, chuyển thành container độc lập `proto-skills-container` kết hợp với `skills-box` và `skills-grid` chuẩn như tab Bệnh nhân.
+  - Bổ sung cơ chế fallback đa tầng trong `renderProtoProcsFormCheckboxes()` (đọc từ `dataCache.proc`, `meds_procedures`, `times_bootstrap_cache`) và tự động kiểm tra kích hoạt render trước khi tick chọn trong `editProtocol`.
+  - Cập nhật thời gian Footer: `12:48 30/08/2026`, Service Worker: `CACHE_NAME = 'pmcg-cache-v3.2.6-rev7'` và query strings `?v=3.2.6-rev7`.
+- **File sửa đổi**: `index.html`, `js/app.js`, `sw.js`, `PM-xeplich-v3.md`.
+
 
 

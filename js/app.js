@@ -3631,9 +3631,7 @@ window.renderSttOrderControl = function (type, i, total) {
                 }
 
                 const isLienTuc = (item.lienTuc === 'Có' || item.lienTuc === 1 || item.lienTuc === '1' || item.lienTuc === true || item[14] === 'Có' || item[14] === 1 || (tgThMin === tgMin && tgThMax === tgMax && tgThMin >= 10));
-                const lienTucDisplay = isLienTuc 
-                    ? `<span class="badge" style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; font-weight:700; font-size:11px; padding:2px 8px; border-radius:10px;">Có (1:1)</span>`
-                    : `<span style="color:#94a3b8; font-size:11.5px;">Không</span>`;
+                const lienTucText = isLienTuc ? 'Có' : 'Không';
 
                 const thMinDisplay = `<span class="proc-time-single">${tgThMin} phút</span>`;
                 const thMaxDisplay = (tgThMax > tgThMin)
@@ -3654,7 +3652,7 @@ window.renderSttOrderControl = function (type, i, total) {
             <td align="center">${minDisplay}</td>
             <td align="center">${maxDisplay}</td>
             <td>${item.khoangCach || item[8] || 0} phút</td>
-            <td align="center">${lienTucDisplay}</td>
+            <td align="center">${lienTucText}</td>
             <td align="center">${rutText}</td>
             <td align="center">${phuText}</td>
             <td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteProcedure(${idx})">Xóa</button></td>

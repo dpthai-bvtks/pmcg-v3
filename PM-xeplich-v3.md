@@ -1288,5 +1288,13 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   - Cập nhật thời gian Footer: `13:00 30/08/2026`, Service Worker: `CACHE_NAME = 'pmcg-cache-v3.2.6-rev9'` và query strings `?v=3.2.6-rev9`.
 - **File sửa đổi**: `backend/src/index.js`, `index.html`, `js/app.js`, `js/scheduler-engine.js`, `sw.js`, `PM-xeplich-v3.md`.
 
+### Chuẩn Hóa Hiển Thị: Đồng Bộ Định Dạng Text "Có / Không" Cho 3 Cột Thủ Thuật (30/08/2026 - v3.2.6-rev10)
+- **Yêu cầu của người dùng**:
+  - Đồng bộ cách hiển thị chữ `Có` / `Không` của 3 cột `LÀM LIÊN TỤC`, `RÚT MÁY`, `NGƯỜI PHỤ` giống nhau hoàn toàn dưới dạng text chuẩn, không cần badge `Có (1:1)` hay màu sắc lệch nhau.
+- **Phân tích nguyên nhân & Giải pháp**:
+  - Trong `renderProceduresTable_Original()` (`js/app.js`), thay thế khối badge HTML thành chuỗi `Có` hoặc `Không` đồng nhất với 2 cột bên cạnh.
+  - Cập nhật thời gian Footer: `13:05 30/08/2026`, Service Worker: `CACHE_NAME = 'pmcg-cache-v3.2.6-rev10'` và query strings `?v=3.2.6-rev10`.
+- **File sửa đổi**: `js/app.js`, `index.html`, `sw.js`, `PM-xeplich-v3.md`.
+
 
 

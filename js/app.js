@@ -3018,7 +3018,8 @@ window.renderSttOrderControl = function (type, i, total) {
                 return;
             }
             tbody.innerHTML = list.map((item, i) => {
-                const procsHtml = (item.procs || []).map(p => `<span class="badge" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; font-size:11.5px; padding:2px 8px; border-radius:12px; margin:2px 3px; display:inline-block;">${escapeHtml(p)}</span>`).join('');
+                const procsArr = Array.isArray(item.procs) ? item.procs : (typeof item.procs === 'string' ? item.procs.split(',').map(s => s.trim()).filter(Boolean) : []);
+                const procsHtml = procsArr.map(p => `<span class="badge" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; font-size:11.5px; padding:2px 8px; border-radius:12px; margin:2px 3px; display:inline-block;">${escapeHtml(p)}</span>`).join('');
                 const sttHtml = (typeof window.renderSttOrderControl === 'function') ? window.renderSttOrderControl("protocols", i, list.length) : `<span style="font-weight:700;">${i + 1}</span>`;
                 return `<tr class="draggable-row editable-row" data-drag-idx="${i}">
                     <td>${sttHtml}</td>
@@ -3061,7 +3062,19 @@ window.renderSttOrderControl = function (type, i, total) {
             // Render checkboxes from dataCache.proc
             let yhctHtml = '', phcnHtml = '';
             const allProcs = (window.dataCache && window.dataCache.proc) ? window.dataCache.proc : [];
-            const selectedProcs = isEdit ? (currentItem.procs || []) : [];
+            let selectedProcs = [];
+            if (isEdit && currentItem && currentItem.procs) {
+                if (Array.isArray(currentItem.procs)) {
+                    selectedProcs = currentItem.procs;
+                } else if (typeof currentItem.procs === 'string') {
+                    try {
+                        const parsed = JSON.parse(currentItem.procs);
+                        selectedProcs = Array.isArray(parsed) ? parsed : currentItem.procs.split(',').map(s => s.trim()).filter(Boolean);
+                    } catch(e) {
+                        selectedProcs = currentItem.procs.split(',').map(s => s.trim()).filter(Boolean);
+                    }
+                }
+            }
 
             allProcs.forEach(p => {
                 if (!p) return;
@@ -3072,7 +3085,7 @@ window.renderSttOrderControl = function (type, i, total) {
                 const escapedTen = escapeHtml(ten);
                 const isChecked = selectedProcs.some(sp => matchProc(ten, sp));
                 const cbHtml = `<label class="checkbox-item" style="font-size:12px; margin-bottom:4px; display:flex; align-items:center; gap:6px; cursor:pointer;">
-                    <input type="checkbox" class="modal-proc-cb" value="${escapedTen}" ${isChecked ? 'checked' : ''}>
+                    <input type="checkbox" class="modal-proc-cb" data-ten="${escapedTen}" value="${escapedTen}" ${isChecked ? 'checked' : ''}>
                     <span>${escapedTen}</span>
                 </label>`;
 

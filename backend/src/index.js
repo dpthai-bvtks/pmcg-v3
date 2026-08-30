@@ -641,10 +641,13 @@ async function handleApiAction(action, args, env, request, ctx) {
     }
 
     case "deleteMayMoc": {
-      const maMay = String(args[1] || args[0] || "");
-      await db.prepare("DELETE FROM may_moc WHERE ma_may = ?").bind(maMay).run();
+      let payload = {};
+      if (typeof args[0] === "object" && args[0] !== null) payload = args[0];
+      let offset = (typeof args[0] === "number" || (typeof args[0] === "string" && /^\d+$/.test(args[0]))) ? 1 : 0;
+      const maMay = String(payload.maMay || payload.ma_may || args[offset] || args[0] || "").trim();
+      await db.prepare("DELETE FROM may_moc WHERE ma_may = ? OR id = ?").bind(maMay, maMay).run();
       await bumpDataVersion(db);
-      return success({ message: "Xóa thiết bị thành công" });
+      return success({ message: "Xóa máy thành công" });
     }
 
     case "getThuThuat": {
@@ -740,8 +743,11 @@ async function handleApiAction(action, args, env, request, ctx) {
     }
 
     case "deletePhong": {
-      const ten = String(args[1] || args[0] || "");
-      await db.prepare("DELETE FROM phong WHERE ten_phong = ?").bind(ten).run();
+      let payload = {};
+      if (typeof args[0] === "object" && args[0] !== null) payload = args[0];
+      let offset = (typeof args[0] === "number" || (typeof args[0] === "string" && /^\d+$/.test(args[0]))) ? 1 : 0;
+      const ten = String(payload.tenPhong || payload.ten || args[offset] || args[0] || "").trim();
+      await db.prepare("DELETE FROM phong WHERE ten_phong = ? OR id = ?").bind(ten, ten).run();
       await bumpDataVersion(db);
       return success({ message: "Xóa phòng thành công" });
     }

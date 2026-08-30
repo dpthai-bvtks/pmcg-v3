@@ -3285,7 +3285,7 @@ window.renderSttOrderControl = function (type, i, total) {
         function renderProceduresTable_Original() {
             const tbody = document.getElementById('procedures-list');
             if (!tbody) return;
-            if (!dataCache.proc.length) { tbody.innerHTML = renderEmptyRow(10); return; }
+            if (!dataCache.proc.length) { tbody.innerHTML = renderEmptyRow(11); return; }
 
             tbody.innerHTML = dataCache.proc.map((item, i) => {
                 const idx = dataCache.proc.indexOf(item);
@@ -3293,6 +3293,11 @@ window.renderSttOrderControl = function (type, i, total) {
                 const isNguoiPhu = (item.canNguoiPhu === 'Có' || item.canNguoiPhu === 1 || item.canNguoiPhu === '1' || item.canNguoiPhu === true || item[10] === 'Có' || item[10] === 1 || item[10] === '1');
                 const rutText = isRutMay ? 'Có' : 'Không';
                 const phuText = isNguoiPhu ? 'Có' : 'Không';
+
+                let tgThMin = parseInt(item.thoiGianThucHienMin || item.thoiGianThucHien || item[6]) || 0;
+                let tgThMax = parseInt(item.thoiGianThucHienMax || item[13] || 0) || tgThMin;
+                if (!tgThMax || tgThMax <= tgThMin) tgThMax = tgThMin;
+
                 let tgMin = parseInt(item.thoiGianThuThuatMin || item.thoiGianThuThuat || item[7]) || 0;
                 let tgMax = parseInt(item.thoiGianThuThuatMax || item[12] || 0) || 0;
 
@@ -3309,6 +3314,11 @@ window.renderSttOrderControl = function (type, i, total) {
                     }
                 }
 
+                const thMinDisplay = `<span class="proc-time-single">${tgThMin} phút</span>`;
+                const thMaxDisplay = (tgThMax > tgThMin)
+                    ? `<span class="proc-time-range-badge">${tgThMax} phút</span>`
+                    : `<span class="proc-time-single">${tgThMax} phút</span>`;
+
                 const minDisplay = `<span class="proc-time-single">${tgMin} phút</span>`;
                 const maxDisplay = (tgMax > tgMin)
                     ? `<span class="proc-time-range-badge">${tgMax} phút</span>`
@@ -3318,7 +3328,8 @@ window.renderSttOrderControl = function (type, i, total) {
             <td>${renderSttOrderControl("procedures", i, dataCache.proc.length)}</td>
             <td>${escapeHtml(item.ten || item[1] || '')}</td>
             <td><strong>${escapeHtml(item.vietTat || item[2] || '')}</strong></td>
-            <td>${item.thoiGianThucHien || item[6] || 0} phút</td>
+            <td align="center">${thMinDisplay}</td>
+            <td align="center">${thMaxDisplay}</td>
             <td align="center">${minDisplay}</td>
             <td align="center">${maxDisplay}</td>
             <td>${item.khoangCach || item[8] || 0} phút</td>
@@ -3340,9 +3351,12 @@ window.renderSttOrderControl = function (type, i, total) {
             const ten = document.getElementById('proc-name').value, vt = document.getElementById('proc-short').value;
             const he = document.getElementById('proc-system').value, loai = document.getElementById('proc-category').value;
             const may = document.getElementById('proc-machine').value;
-            const tgThucHien = parseInt(document.getElementById('proc-person-time').value) || 0;
+            const tgThucHienMin = parseInt(document.getElementById('proc-person-time').value) || 0;
+            const tgThucHienMaxInput = parseInt(document.getElementById('proc-person-time-max').value);
+            const tgThucHienMax = (!isNaN(tgThucHienMaxInput) && tgThucHienMaxInput > 0) ? tgThucHienMaxInput : tgThucHienMin;
             const tgThuThuatMin = parseInt(document.getElementById('proc-machine-time').value) || 0;
-            const tgThuThuatMax = parseInt(document.getElementById('proc-machine-time-max').value) || tgThuThuatMin;
+            const tgThuThuatMaxInput = parseInt(document.getElementById('proc-machine-time-max').value);
+            const tgThuThuatMax = (!isNaN(tgThuThuatMaxInput) && tgThuThuatMaxInput > 0) ? tgThuThuatMaxInput : tgThuThuatMin;
             const kc = parseInt(document.getElementById('proc-gap').value) || 0;
             const rut = document.getElementById('proc-unplug-cb').checked ? 'Có' : 'Không';
             const phu = document.getElementById('proc-assist-cb').checked ? 'Có' : 'Không';
@@ -3352,7 +3366,9 @@ window.renderSttOrderControl = function (type, i, total) {
 
             const obj = {
                 ten, vietTat: vt, he, phanLoai: loai, may,
-                thoiGianThucHien: tgThucHien,
+                thoiGianThucHien: tgThucHienMin,
+                thoiGianThucHienMin: tgThucHienMin,
+                thoiGianThucHienMax: tgThucHienMax,
                 thoiGianThuThuat: tgThuThuatMin,
                 thoiGianThuThuatMin: tgThuThuatMin,
                 thoiGianThuThuatMax: tgThuThuatMax,
@@ -3362,12 +3378,12 @@ window.renderSttOrderControl = function (type, i, total) {
             if (editIndex.proc > -1) {
                 dataCache.proc[editIndex.proc] = obj;
                 if (typeof callApi === 'function') {
-                    callApi('editThuThuat', [editIndex.proc, ten, vt, he, loai, may, tgThucHien, tgThuThuatMin, kc, rut, phu, dsPhu, tgThuThuatMax]);
+                    callApi('editThuThuat', [editIndex.proc, ten, vt, he, loai, may, tgThucHienMin, tgThuThuatMin, kc, rut, phu, dsPhu, tgThuThuatMax, tgThucHienMax]);
                 }
             } else {
                 dataCache.proc.push(obj);
                 if (typeof callApi === 'function') {
-                    callApi('addThuThuat', [ten, vt, he, loai, may, tgThucHien, tgThuThuatMin, kc, rut, phu, dsPhu, tgThuThuatMax]);
+                    callApi('addThuThuat', [ten, vt, he, loai, may, tgThucHienMin, tgThuThuatMin, kc, rut, phu, dsPhu, tgThuThuatMax, tgThucHienMax]);
                 }
             }
 
@@ -3377,14 +3393,15 @@ window.renderSttOrderControl = function (type, i, total) {
         function editProc(index) {
             editIndex.proc = index;
             const item = dataCache.proc[index];
-            ['proc-name', 'proc-short', 'proc-system', 'proc-category', 'proc-machine', 'proc-person-time', 'proc-machine-time', 'proc-machine-time-max', 'proc-gap'].forEach(id => {
+            ['proc-name', 'proc-short', 'proc-system', 'proc-category', 'proc-machine', 'proc-person-time', 'proc-person-time-max', 'proc-machine-time', 'proc-machine-time-max', 'proc-gap'].forEach(id => {
                 const keyMap = {
                     'proc-name': 'ten',
                     'proc-short': 'vietTat',
                     'proc-system': 'he',
                     'proc-category': 'phanLoai',
                     'proc-machine': 'may',
-                    'proc-person-time': 'thoiGianThucHien',
+                    'proc-person-time': 'thoiGianThucHienMin',
+                    'proc-person-time-max': 'thoiGianThucHienMax',
                     'proc-machine-time': 'thoiGianThuThuatMin',
                     'proc-machine-time-max': 'thoiGianThuThuatMax',
                     'proc-gap': 'khoangCach'
@@ -3392,6 +3409,8 @@ window.renderSttOrderControl = function (type, i, total) {
                 const el = document.getElementById(id);
                 if (el) {
                     let val = item[keyMap[id]];
+                    if (id === 'proc-person-time' && (!val && val !== 0)) val = item.thoiGianThucHien || item[6];
+                    if (id === 'proc-person-time-max' && (!val && val !== 0)) val = item.thoiGianThucHienMax || item[13] || item.thoiGianThucHien || item[6];
                     if (id === 'proc-machine-time' && (!val && val !== 0)) val = item.thoiGianThuThuat || item[7];
                     if (id === 'proc-machine-time-max' && (!val && val !== 0)) val = item.thoiGianThuThuatMax || item[12] || item.thoiGianThuThuat || item[7];
                     el.value = (val !== undefined && val !== null) ? val : '';

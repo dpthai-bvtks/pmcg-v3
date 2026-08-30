@@ -632,10 +632,11 @@
                                 <div class="form-group"><label>Loại Máy:</label><select id="proc-machine">
                                         <option>Thủ công</option>
                                     </select></div>
-                                <div class="form-group"><label>TG thực hiện:</label><input type="number" id="proc-person-time" placeholder="Phút (Ví dụ mắc máy 5p)"></div>
+                                <div class="form-group"><label>TG TH tối thiểu:</label><input type="number" id="proc-person-time" placeholder="Phút (Ví dụ mắc máy 5 phút)"></div>
+                                <div class="form-group"><label>TG TH tối đa:</label><input type="number" id="proc-person-time-max" placeholder="Phút (Ví dụ mắc máy 5 phút)"></div>
                                 <div class="form-group"><label>TG TT tối thiểu:</label><input type="number" id="proc-machine-time" placeholder="Phút (Ví dụ 25 phút)"></div>
                                 <div class="form-group"><label>TG TT tối đa:</label><input type="number" id="proc-machine-time-max" placeholder="Phút (Ví dụ 30 phút)"></div>
-                                <div class="form-group"><label>Khoảng cách ca:</label><input type="number" id="proc-gap" placeholder="Phút (VD: 9)"></div>
+                                <div class="form-group"><label>Khoảng cách nghỉ:</label><input type="number" id="proc-gap" placeholder="Số phút nghỉ/di chuyển (VD: 1)"></div>
                                 <div style="margin: 15px 0 10px 5px;">
                                     <label class="checkbox-item"><input type="checkbox" id="proc-unplug-cb" value="Có">
                                         <span style="color:#2980b9; font-weight:bold;">Có Điều dưỡng rút/tháo máy</span></label>
@@ -657,10 +658,11 @@
                                         <th>STT</th>
                                         <th>Tên Thủ Thuật</th>
                                         <th>Viết Tắt</th>
-                                        <th>Thời gian thực hiện</th>
-                                        <th>TG TT (Tối thiểu)</th>
-                                        <th>TG TT (Tối đa)</th>
-                                        <th>Khoảng cách</th>
+                                        <th>TG TH (Min)</th>
+                                        <th>TG TH (Max)</th>
+                                        <th>TG TT (Min)</th>
+                                        <th>TG TT (Max)</th>
+                                        <th>Khoảng cách nghỉ</th>
                                         <th>Rút Máy</th>
                                         <th>Người Phụ</th>
                                         <th>Thao Tác</th>
@@ -668,7 +670,7 @@
                                 </thead>
                                 <tbody id="procedures-list">
                                     <tr>
-                                        <td colspan="10" align="center">Đang tải...</td>
+                                        <td colspan="11" align="center">Đang tải...</td>
                                     </tr>
                                 </tbody>
                             </table>

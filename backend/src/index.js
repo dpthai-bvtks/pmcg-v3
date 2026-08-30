@@ -190,6 +190,7 @@ async function ensureSchema(db) {
       "ALTER TABLE thu_thuat ADD COLUMN is_active INTEGER DEFAULT 1",
       "ALTER TABLE thu_thuat ADD COLUMN order_idx INTEGER DEFAULT 0",
       "ALTER TABLE thu_thuat ADD COLUMN tg_thu_thuat_max INTEGER DEFAULT 0",
+      "ALTER TABLE thu_thuat ADD COLUMN tg_thuc_hien_max INTEGER DEFAULT 0",
       "ALTER TABLE nhan_su ADD COLUMN is_active INTEGER DEFAULT 1",
       "ALTER TABLE nhan_su ADD COLUMN temp_busy TEXT DEFAULT ''",
       "ALTER TABLE nhan_su ADD COLUMN his_name TEXT DEFAULT ''",
@@ -432,6 +433,8 @@ async function handleApiAction(action, args, env, request, ctx) {
         phanLoai: p.phan_loai,
         may: p.may,
         thoiGianThucHien: p.tg_thuc_hien,
+        thoiGianThucHienMin: p.tg_thuc_hien,
+        thoiGianThucHienMax: (p.tg_thuc_hien_max && p.tg_thuc_hien_max > 0) ? p.tg_thuc_hien_max : p.tg_thuc_hien,
         thoiGianThuThuat: p.tg_thu_thuat,
         thoiGianThuThuatMin: p.tg_thu_thuat,
         thoiGianThuThuatMax: (p.tg_thu_thuat_max && p.tg_thu_thuat_max > 0) ? p.tg_thu_thuat_max : p.tg_thu_thuat,
@@ -683,7 +686,8 @@ async function handleApiAction(action, args, env, request, ctx) {
       const he = String(payload.he || args[offset + 2] || "YHCT");
       const phanLoai = String(payload.phanLoai || args[offset + 3] || "");
       const may = String(payload.may || args[offset + 4] || "");
-      const tgTh = parseInt(payload.thoiGianThucHien || args[offset + 5]) || 0;
+      const tgThMin = parseInt(payload.thoiGianThucHienMin || payload.thoiGianThucHien || args[offset + 5]) || 0;
+      const tgThMax = parseInt(payload.thoiGianThucHienMax || args[offset + 12] || tgThMin) || tgThMin;
       const tgTtMin = parseInt(payload.thoiGianThuThuatMin || payload.thoiGianThuThuat || args[offset + 6]) || 0;
       const tgTtMax = parseInt(payload.thoiGianThuThuatMax || args[offset + 11] || tgTtMin) || tgTtMin;
       const kc = parseInt(payload.khoangCach || args[offset + 7]) || 0;
@@ -691,10 +695,10 @@ async function handleApiAction(action, args, env, request, ctx) {
       const phu = String(payload.canNguoiPhu || args[offset + 9] || "Không");
       const dsPhu = String(payload.dsNguoiPhu || args[offset + 10] || "");
 
-      await db.prepare(`INSERT INTO thu_thuat (ten_thu_thuat, viet_tat, he, phan_loai, may, tg_thuc_hien, tg_thu_thuat, tg_thu_thuat_max, khoang_cach, can_rut_may, can_nguoi_phu, ds_nguoi_phu)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(ten_thu_thuat) DO UPDATE SET viet_tat = excluded.viet_tat, he = excluded.he, phan_loai = excluded.phan_loai, may = excluded.may, tg_thuc_hien = excluded.tg_thuc_hien, tg_thu_thuat = excluded.tg_thu_thuat, tg_thu_thuat_max = excluded.tg_thu_thuat_max, khoang_cach = excluded.khoang_cach, can_rut_may = excluded.can_rut_may, can_nguoi_phu = excluded.can_nguoi_phu, ds_nguoi_phu = excluded.ds_nguoi_phu`)
-        .bind(ten, vietTat, he, phanLoai, may, tgTh, tgTtMin, tgTtMax, kc, rut, phu, dsPhu).run();
+      await db.prepare(`INSERT INTO thu_thuat (ten_thu_thuat, viet_tat, he, phan_loai, may, tg_thuc_hien, tg_thuc_hien_max, tg_thu_thuat, tg_thu_thuat_max, khoang_cach, can_rut_may, can_nguoi_phu, ds_nguoi_phu)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(ten_thu_thuat) DO UPDATE SET viet_tat = excluded.viet_tat, he = excluded.he, phan_loai = excluded.phan_loai, may = excluded.may, tg_thuc_hien = excluded.tg_thuc_hien, tg_thuc_hien_max = excluded.tg_thuc_hien_max, tg_thu_thuat = excluded.tg_thu_thuat, tg_thu_thuat_max = excluded.tg_thu_thuat_max, khoang_cach = excluded.khoang_cach, can_rut_may = excluded.can_rut_may, can_nguoi_phu = excluded.can_nguoi_phu, ds_nguoi_phu = excluded.ds_nguoi_phu`)
+        .bind(ten, vietTat, he, phanLoai, may, tgThMin, tgThMax, tgTtMin, tgTtMax, kc, rut, phu, dsPhu).run();
       await bumpDataVersion(db);
       return success({ message: "Lưu thủ thuật thành công" });
     }

@@ -396,18 +396,28 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
 
     const info = thuThuatInfo[tenThuThuat.toLowerCase()] || ["Thủ công", 15, 5, "PHCN", 1, 0, [], 5];
     const tenGoc = info[8] || tenThuThuat, targetRoom = patient.room, loaiMay = info[0];
-    const baseTgMay = Math.max(info[1], info[2]), tgNhanVien = info[2], canPhu = info[5];
+    const baseTgMay = Math.max(info[1], info[2]), canPhu = info[5];
     const tgMayMax = info[10] ? Math.max(info[10], baseTgMay) : baseTgMay;
+    const tgNvMin = Math.max(1, info[2] || 5);
+    const tgNvMax = info[11] ? Math.max(tgNvMin, info[11]) : tgNvMin;
+    const gapMinutes = (info[12] !== undefined && info[12] > 0) ? info[12] : 1;
     const isSupplemental = existingSched && existingSched.length > 0;
     
     const isDienCham = tenThuThuat.toLowerCase().includes('điện châm') || tenThuThuat.toLowerCase() === 'đc' || (info[8] && String(info[8]).toLowerCase().includes('điện châm'));
-    let candidateDurs = [];
-    if (tgMayMax > baseTgMay) {
-      for (let d = baseTgMay; d <= tgMayMax; d++) candidateDurs.push(d);
+    
+    let candidatePairs = [];
+    if (tgMayMax > baseTgMay || tgNvMax > tgNvMin) {
+      for (let m = baseTgMay; m <= tgMayMax; m++) {
+        for (let nv = tgNvMin; nv <= tgNvMax; nv++) {
+          if (nv <= m) {
+            candidatePairs.push({ tgMay: m, tgNv: nv });
+          }
+        }
+      }
     } else if (isDienCham && (isSupplemental || isBackfill)) {
-      candidateDurs = [25, 30, 26, 27, 28, 29];
+      [25, 30, 26, 27, 28, 29].forEach(m => candidatePairs.push({ tgMay: m, tgNv: tgNvMin }));
     } else {
-      candidateDurs = [baseTgMay];
+      candidatePairs.push({ tgMay: baseTgMay, tgNv: tgNvMin });
     }
 
     const isYHCT = String(info[3] || "").trim().toUpperCase() === "YHCT";
@@ -424,9 +434,10 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
       }
     }
 
-    for (const tgMay of candidateDurs) {
-      const rawKhoangCach = scenario === 1 ? info[2] : (info[7] || info[2]);
-      const khoangCach = Math.max(rawKhoangCach, info[2] + 1);
+    for (const pair of candidatePairs) {
+      const tgMay = pair.tgMay;
+      const tgNhanVien = pair.tgNv;
+      const khoangCach = tgNhanVien + gapMinutes;
       const gioKetThuc = tNow + tgMay;
       const hasTeardown = tgMay > tgNhanVien;
       const tearStart = hasTeardown ? (tNow + tgMay) : null;
@@ -1017,7 +1028,10 @@ function getSafeCache() {
     procList.forEach(p => {
       const ten = String(p.ten || p.name || p[1] || "").trim().toLowerCase();
       if (!ten) return;
-      const tgNhanVien = parseInt(p.thoiGianThucHien || p[6]) || 5;
+      const tgNvMin = parseInt(p.thoiGianThucHienMin || p.thoiGianThucHien || p[6]) || 5;
+      let tgNvMax = parseInt(p.thoiGianThucHienMax || p[13] || 0) || tgNvMin;
+      if (!tgNvMax || tgNvMax <= tgNvMin) tgNvMax = tgNvMin;
+
       const tgMayMin = parseInt(p.thoiGianThuThuatMin || p.thoiGianThuThuat || p[7]) || 15;
       let tgMayMax = parseInt(p.thoiGianThuThuatMax || p[12] || 0) || 0;
       if (!tgMayMax || tgMayMax <= tgMayMin) {
@@ -1030,22 +1044,26 @@ function getSafeCache() {
           tgMayMax = tgMayMin;
         }
       }
-      const khoangCach = parseInt(p.khoangCach || p[8]) || tgNhanVien;
+      const rawKc = parseInt(p.khoangCach || p[8]);
+      const gapMinutes = (!isNaN(rawKc) && rawKc > 0) ? (rawKc > tgNvMin ? rawKc - tgNvMin : rawKc) : 1;
+      const khoangCachBase = tgNvMin + gapMinutes;
       const dsPhuStr = p.dsNguoiPhu || p[11] || "";
       const dsPhu = Array.isArray(dsPhuStr) ? dsPhuStr : String(dsPhuStr).split(",").map(x => x.trim()).filter(Boolean);
 
       database.thuThuatInfo[ten] = [
         p.may || p[5] || "Thủ công",
         Math.max(1, tgMayMin),
-        Math.max(1, tgNhanVien),
+        Math.max(1, tgNvMin),
         p.he || p[3] || "PHCN",
         (p.canRutMay === "Có" || p[9] === "Có" || p.canRutMay === 1 || p.canRutMay === "1" || p.canRutMay === true) ? 1 : 0,
         (p.canNguoiPhu === "Có" || p[10] === "Có" || p.canNguoiPhu === 1 || p.canNguoiPhu === "1" || p.canNguoiPhu === true) ? 1 : 0,
         dsPhu,
-        khoangCach,
+        khoangCachBase,
         p.ten || p.name || p[1] || "",
         p.vietTat || p[2] || "",
-        Math.max(1, Math.max(tgMayMin, tgMayMax))
+        Math.max(1, Math.max(tgMayMin, tgMayMax)),
+        Math.max(1, Math.max(tgNvMin, tgNvMax)),
+        gapMinutes
       ];
     });
 

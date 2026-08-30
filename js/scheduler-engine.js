@@ -397,10 +397,18 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
     const info = thuThuatInfo[tenThuThuat.toLowerCase()] || ["Thủ công", 15, 5, "PHCN", 1, 0, [], 5];
     const tenGoc = info[8] || tenThuThuat, targetRoom = patient.room, loaiMay = info[0];
     const baseTgMay = Math.max(info[1], info[2]), tgNhanVien = info[2], canPhu = info[5];
+    const tgMayMax = info[10] ? Math.max(info[10], baseTgMay) : baseTgMay;
     const isSupplemental = existingSched && existingSched.length > 0;
     
     const isDienCham = tenThuThuat.toLowerCase().includes('điện châm') || tenThuThuat.toLowerCase() === 'đc' || (info[8] && String(info[8]).toLowerCase().includes('điện châm'));
-    const candidateDurs = (isDienCham && (isSupplemental || isBackfill)) ? [25, 30, 26, 27, 28, 29] : [baseTgMay];
+    let candidateDurs = [];
+    if (tgMayMax > baseTgMay) {
+      for (let d = baseTgMay; d <= tgMayMax; d++) candidateDurs.push(d);
+    } else if (isDienCham && (isSupplemental || isBackfill)) {
+      candidateDurs = [25, 30, 26, 27, 28, 29];
+    } else {
+      candidateDurs = [baseTgMay];
+    }
 
     const isYHCT = String(info[3] || "").trim().toUpperCase() === "YHCT";
     const yhctEndLimit = weights.yhctEnd !== undefined ? weights.yhctEnd : 10;
@@ -1010,14 +1018,15 @@ function getSafeCache() {
       const ten = String(p.ten || p.name || p[1] || "").trim().toLowerCase();
       if (!ten) return;
       const tgNhanVien = parseInt(p.thoiGianThucHien || p[6]) || 5;
-      const tgMay = parseInt(p.thoiGianThuThuat || p[7]) || 15;
+      const tgMayMin = parseInt(p.thoiGianThuThuatMin || p.thoiGianThuThuat || p[7]) || 15;
+      const tgMayMax = parseInt(p.thoiGianThuThuatMax || p[12] || tgMayMin) || tgMayMin;
       const khoangCach = parseInt(p.khoangCach || p[8]) || tgNhanVien;
       const dsPhuStr = p.dsNguoiPhu || p[11] || "";
       const dsPhu = Array.isArray(dsPhuStr) ? dsPhuStr : String(dsPhuStr).split(",").map(x => x.trim()).filter(Boolean);
 
       database.thuThuatInfo[ten] = [
         p.may || p[5] || "Thủ công",
-        Math.max(1, tgMay),
+        Math.max(1, tgMayMin),
         Math.max(1, tgNhanVien),
         p.he || p[3] || "PHCN",
         (p.canRutMay === "Có" || p[9] === "Có" || p.canRutMay === 1 || p.canRutMay === "1" || p.canRutMay === true) ? 1 : 0,
@@ -1025,7 +1034,8 @@ function getSafeCache() {
         dsPhu,
         khoangCach,
         p.ten || p.name || p[1] || "",
-        p.vietTat || p[2] || ""
+        p.vietTat || p[2] || "",
+        Math.max(1, Math.max(tgMayMin, tgMayMax))
       ];
     });
 

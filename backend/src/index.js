@@ -164,7 +164,7 @@ async function ensureSchema(db) {
       db.prepare("CREATE TABLE IF NOT EXISTS nhan_su (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL, role TEXT NOT NULL DEFAULT 'KTV', system TEXT NOT NULL DEFAULT 'PHCN', skills TEXT DEFAULT '', fixed_busy TEXT DEFAULT '', temp_busy TEXT DEFAULT '', his_name TEXT DEFAULT '', priority INTEGER DEFAULT 0, is_active INTEGER DEFAULT 1, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
       db.prepare("CREATE TABLE IF NOT EXISTS may_moc (id INTEGER PRIMARY KEY AUTOINCREMENT, ten_loai TEXT NOT NULL, ma_may TEXT UNIQUE NOT NULL, trang_thai TEXT DEFAULT 'Sẵn sàng', order_idx INTEGER DEFAULT 0, is_active INTEGER DEFAULT 1, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
       db.prepare("CREATE TABLE IF NOT EXISTS phong (id INTEGER PRIMARY KEY AUTOINCREMENT, ten_phong TEXT UNIQUE NOT NULL, bac_si TEXT DEFAULT '', ktv TEXT DEFAULT '', danh_sach_may TEXT DEFAULT '', so_giuong INTEGER DEFAULT 0, danh_sach_giuong TEXT DEFAULT '', order_idx INTEGER DEFAULT 0, is_active INTEGER DEFAULT 1, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
-      db.prepare("CREATE TABLE IF NOT EXISTS thu_thuat (id INTEGER PRIMARY KEY AUTOINCREMENT, ten_thu_thuat TEXT UNIQUE NOT NULL, viet_tat TEXT DEFAULT '', he TEXT DEFAULT 'PHCN', phan_loai TEXT DEFAULT '', may TEXT DEFAULT '', tg_thuc_hien INTEGER DEFAULT 30, tg_thu_thuat INTEGER DEFAULT 30, khoang_cach INTEGER DEFAULT 0, can_rut_may INTEGER DEFAULT 0, can_nguoi_phu INTEGER DEFAULT 0, ds_nguoi_phu TEXT DEFAULT '', order_idx INTEGER DEFAULT 0, is_active INTEGER DEFAULT 1, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
+      db.prepare("CREATE TABLE IF NOT EXISTS thu_thuat (id INTEGER PRIMARY KEY AUTOINCREMENT, ten_thu_thuat TEXT UNIQUE NOT NULL, viet_tat TEXT DEFAULT '', he TEXT DEFAULT 'PHCN', phan_loai TEXT DEFAULT '', may TEXT DEFAULT '', tg_thuc_hien INTEGER DEFAULT 30, tg_thu_thuat INTEGER DEFAULT 30, tg_thu_thuat_max INTEGER DEFAULT 0, khoang_cach INTEGER DEFAULT 0, can_rut_may INTEGER DEFAULT 0, can_nguoi_phu INTEGER DEFAULT 0, ds_nguoi_phu TEXT DEFAULT '', order_idx INTEGER DEFAULT 0, is_active INTEGER DEFAULT 1, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
       db.prepare("CREATE TABLE IF NOT EXISTS benh_nhan (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, age INTEGER DEFAULT 0, gender TEXT DEFAULT 'Nam', room TEXT DEFAULT '', bed TEXT DEFAULT '', arrive_time TEXT DEFAULT '07:30', leave_time TEXT DEFAULT '', thu_thuat TEXT NOT NULL DEFAULT '[]', status TEXT DEFAULT 'Chưa xếp', ngay_vao TEXT DEFAULT '', gio_ban TEXT DEFAULT '', is_saturday INTEGER DEFAULT 0, order_idx INTEGER DEFAULT 0, loai_bn TEXT DEFAULT 'NoiTru', buoi_dieu_tri TEXT DEFAULT 'Sang', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
       db.prepare("CREATE TABLE IF NOT EXISTS lich_trinh (id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, patient_name TEXT NOT NULL, dob TEXT DEFAULT '', room TEXT DEFAULT '', procedure_name TEXT NOT NULL, staff_name TEXT DEFAULT '', sub_staff_name TEXT DEFAULT '', machine_name TEXT DEFAULT '', bed TEXT DEFAULT '', start_time TEXT NOT NULL, end_time TEXT NOT NULL, is_saturday INTEGER DEFAULT 0, order_idx INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
       db.prepare("CREATE TABLE IF NOT EXISTS lich_su (id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, patient_name TEXT NOT NULL, dob TEXT DEFAULT '', room TEXT DEFAULT '', procedure_name TEXT NOT NULL, staff_name TEXT DEFAULT '', sub_staff_name TEXT DEFAULT '', machine_name TEXT DEFAULT '', bed TEXT DEFAULT '', start_time TEXT NOT NULL, end_time TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
@@ -189,6 +189,7 @@ async function ensureSchema(db) {
       "ALTER TABLE phong ADD COLUMN order_idx INTEGER DEFAULT 0",
       "ALTER TABLE thu_thuat ADD COLUMN is_active INTEGER DEFAULT 1",
       "ALTER TABLE thu_thuat ADD COLUMN order_idx INTEGER DEFAULT 0",
+      "ALTER TABLE thu_thuat ADD COLUMN tg_thu_thuat_max INTEGER DEFAULT 0",
       "ALTER TABLE nhan_su ADD COLUMN is_active INTEGER DEFAULT 1",
       "ALTER TABLE nhan_su ADD COLUMN temp_busy TEXT DEFAULT ''",
       "ALTER TABLE nhan_su ADD COLUMN his_name TEXT DEFAULT ''",
@@ -432,6 +433,8 @@ async function handleApiAction(action, args, env, request, ctx) {
         may: p.may,
         thoiGianThucHien: p.tg_thuc_hien,
         thoiGianThuThuat: p.tg_thu_thuat,
+        thoiGianThuThuatMin: p.tg_thu_thuat,
+        thoiGianThuThuatMax: (p.tg_thu_thuat_max && p.tg_thu_thuat_max > 0) ? p.tg_thu_thuat_max : p.tg_thu_thuat,
         khoangCach: p.khoang_cach,
         canRutMay: (p.can_rut_may === 1 || p.can_rut_may === '1' || p.can_rut_may === 'Có' || p.can_rut_may === true) ? 'Có' : 'Không',
         canNguoiPhu: (p.can_nguoi_phu === 1 || p.can_nguoi_phu === '1' || p.can_nguoi_phu === 'Có' || p.can_nguoi_phu === true) ? 'Có' : 'Không',
@@ -656,6 +659,8 @@ async function handleApiAction(action, args, env, request, ctx) {
         may: p.may,
         thoiGianThucHien: p.tg_thuc_hien,
         thoiGianThuThuat: p.tg_thu_thuat,
+        thoiGianThuThuatMin: p.tg_thu_thuat,
+        thoiGianThuThuatMax: (p.tg_thu_thuat_max && p.tg_thu_thuat_max > 0) ? p.tg_thu_thuat_max : p.tg_thu_thuat,
         khoangCach: p.khoang_cach,
         canRutMay: (p.can_rut_may === 1 || p.can_rut_may === '1' || p.can_rut_may === 'Có' || p.can_rut_may === true) ? 'Có' : 'Không',
         canNguoiPhu: (p.can_nguoi_phu === 1 || p.can_nguoi_phu === '1' || p.can_nguoi_phu === 'Có' || p.can_nguoi_phu === true) ? 'Có' : 'Không',
@@ -665,23 +670,28 @@ async function handleApiAction(action, args, env, request, ctx) {
 
     case "addThuThuat":
     case "editThuThuat": {
-      let offset = (typeof args[0] === "number" || (typeof args[0] === "string" && /^\d+$/.test(args[0]) && args.length >= 12)) ? 1 : 0;
-      const ten = String(args[offset] || "");
-      const vietTat = String(args[offset + 1] || "");
-      const he = String(args[offset + 2] || "YHCT");
-      const phanLoai = String(args[offset + 3] || "");
-      const may = String(args[offset + 4] || "");
-      const tgTh = parseInt(args[offset + 5]) || 0;
-      const tgTt = parseInt(args[offset + 6]) || 0;
-      const kc = parseInt(args[offset + 7]) || 0;
-      const rut = String(args[offset + 8] || "Không");
-      const phu = String(args[offset + 9] || "Không");
-      const dsPhu = String(args[offset + 10] || "");
+      let offset = (typeof args[0] === "number" || (typeof args[0] === "string" && /^\d+$/.test(args[0]) && args.length >= 11)) ? 1 : 0;
+      let payload = {};
+      if (typeof args[offset] === "object" && args[offset] !== null) {
+        payload = args[offset];
+      }
+      const ten = String(payload.ten || payload.name || args[offset] || "");
+      const vietTat = String(payload.vietTat || args[offset + 1] || "");
+      const he = String(payload.he || args[offset + 2] || "YHCT");
+      const phanLoai = String(payload.phanLoai || args[offset + 3] || "");
+      const may = String(payload.may || args[offset + 4] || "");
+      const tgTh = parseInt(payload.thoiGianThucHien || args[offset + 5]) || 0;
+      const tgTtMin = parseInt(payload.thoiGianThuThuatMin || payload.thoiGianThuThuat || args[offset + 6]) || 0;
+      const tgTtMax = parseInt(payload.thoiGianThuThuatMax || args[offset + 11] || tgTtMin) || tgTtMin;
+      const kc = parseInt(payload.khoangCach || args[offset + 7]) || 0;
+      const rut = String(payload.canRutMay || args[offset + 8] || "Không");
+      const phu = String(payload.canNguoiPhu || args[offset + 9] || "Không");
+      const dsPhu = String(payload.dsNguoiPhu || args[offset + 10] || "");
 
-      await db.prepare(`INSERT INTO thu_thuat (ten_thu_thuat, viet_tat, he, phan_loai, may, tg_thuc_hien, tg_thu_thuat, khoang_cach, can_rut_may, can_nguoi_phu, ds_nguoi_phu)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(ten_thu_thuat) DO UPDATE SET viet_tat = excluded.viet_tat, he = excluded.he, phan_loai = excluded.phan_loai, may = excluded.may, tg_thuc_hien = excluded.tg_thuc_hien, tg_thu_thuat = excluded.tg_thu_thuat, khoang_cach = excluded.khoang_cach, can_rut_may = excluded.can_rut_may, can_nguoi_phu = excluded.can_nguoi_phu, ds_nguoi_phu = excluded.ds_nguoi_phu`)
-        .bind(ten, vietTat, he, phanLoai, may, tgTh, tgTt, kc, rut, phu, dsPhu).run();
+      await db.prepare(`INSERT INTO thu_thuat (ten_thu_thuat, viet_tat, he, phan_loai, may, tg_thuc_hien, tg_thu_thuat, tg_thu_thuat_max, khoang_cach, can_rut_may, can_nguoi_phu, ds_nguoi_phu)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(ten_thu_thuat) DO UPDATE SET viet_tat = excluded.viet_tat, he = excluded.he, phan_loai = excluded.phan_loai, may = excluded.may, tg_thuc_hien = excluded.tg_thuc_hien, tg_thu_thuat = excluded.tg_thu_thuat, tg_thu_thuat_max = excluded.tg_thu_thuat_max, khoang_cach = excluded.khoang_cach, can_rut_may = excluded.can_rut_may, can_nguoi_phu = excluded.can_nguoi_phu, ds_nguoi_phu = excluded.ds_nguoi_phu`)
+        .bind(ten, vietTat, he, phanLoai, may, tgTh, tgTtMin, tgTtMax, kc, rut, phu, dsPhu).run();
       await bumpDataVersion(db);
       return success({ message: "Lưu thủ thuật thành công" });
     }

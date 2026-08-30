@@ -3935,6 +3935,22 @@
     transform: scale(1.02);
 }
 
+.proc-time-range-badge {
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 11.5px;
+    display: inline-block;
+}
+.proc-time-single {
+    font-weight: 600;
+    color: #334155;
+}
+
+
             display: flex;
         }
 

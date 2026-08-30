@@ -83,21 +83,21 @@
     <link rel="stylesheet" href="css/mobile.css?v=3.2.1">
 
     <!-- JS Thư viện Offline IndexedDB Dexie.js -->
-    <script src="js/dexie.min.js?v=3.2.6"></script>
+    <script src="js/dexie.min.js?v=3.2.7"></script>
     <!-- JS Thư viện Bảo mật DOMPurify & Tìm kiếm mờ thông minh Fuse.js -->
-    <script src="js/purify.min.js?v=3.2.6"></script>
-    <script src="js/fuse.min.js?v=3.2.6"></script>
+    <script src="js/purify.min.js?v=3.2.7"></script>
+    <script src="js/fuse.min.js?v=3.2.7"></script>
     <!-- JS Thư viện Biểu đồ Thống Kê Chart.js & Validation Schema Zod -->
-    <script src="js/chart.min.js?v=3.2.6"></script>
-    <script src="js/zod.min.js?v=3.2.6"></script>
+    <script src="js/chart.min.js?v=3.2.7"></script>
+    <script src="js/zod.min.js?v=3.2.7"></script>
     <!-- JS Thư viện kéo thả nội bộ -->
-    <script src="js/sortable.min.js?v=3.2.6"></script>
+    <script src="js/sortable.min.js?v=3.2.7"></script>
     <!-- Thư viện Dòng thời gian Timeline Frappe Gantt -->
-    <link rel="stylesheet" href="css/frappe-gantt.css?v=3.2.6">
-    <script src="js/frappe-gantt.min.js?v=3.2.6"></script>
+    <link rel="stylesheet" href="css/frappe-gantt.css?v=3.2.7">
+    <script src="js/frappe-gantt.min.js?v=3.2.7"></script>
     <!-- Thư viện Xuất PDF pdfmake tiếng Việt -->
-    <script src="js/pdfmake.min.js?v=3.2.6"></script>
-    <script src="js/vfs_fonts.js?v=3.2.6"></script>
+    <script src="js/pdfmake.min.js?v=3.2.7"></script>
+    <script src="js/vfs_fonts.js?v=3.2.7"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 </head>
 
@@ -633,7 +633,13 @@
                                         <option>Thủ công</option>
                                     </select></div>
                                 <div class="form-group"><label>TG thực hiện:</label><input type="number" id="proc-person-time" placeholder="Phút (Ví dụ mắc máy 5p)"></div>
-                                <div class="form-group"><label>TG thủ thuật:</label><input type="number" id="proc-machine-time" placeholder="Phút (Ví dụ chạy máy 15p)"></div>
+                                <div class="form-group">
+                                    <label>TG thủ thuật (Tối thiểu - Tối đa):</label>
+                                    <div style="display: flex; gap: 8px;">
+                                        <input type="number" id="proc-machine-time" placeholder="Min (Ví dụ 25p)" style="flex:1;">
+                                        <input type="number" id="proc-machine-time-max" placeholder="Max (Ví dụ 30p)" style="flex:1;">
+                                    </div>
+                                </div>
                                 <div class="form-group"><label>Khoảng cách ca:</label><input type="number" id="proc-gap" placeholder="Phút (VD: 9)"></div>
                                 <div style="margin: 15px 0 10px 5px;">
                                     <label class="checkbox-item"><input type="checkbox" id="proc-unplug-cb" value="Có">
@@ -2621,7 +2627,7 @@
                                 <div class="tab-header-title"
                                     style="background: linear-gradient(135deg, #1e3c72, #2a5298); color:#fff; margin-top:0; border:none; margin-bottom: 20px; padding: 14px; border-radius: 8px; font-size: 16px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
                                     <span>🤖 TRUNG TÂM HUẤN LUYỆN & TỐI ƯU HÓA TRÍ TUỆ NHÂN TẠO (AI ENGINE)</span>
-                                    <span id="ai-model-badge" style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight:600;">Phiên bản: v3.2.6-AI</span>
+                                    <span id="ai-model-badge" style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight:600;">Phiên bản: v3.2.7-AI</span>
                                 </div>
 
                                 <!-- THỐNG KÊ MÔ HÌNH HIỆN TẠI -->
@@ -3021,9 +3027,9 @@
 
                     <h4><span class="f-icon">⚙️</span> <span>THÔNG TIN HỆ THỐNG</span></h4>
 
-                    <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.2.6</span></p>
+                    <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.2.7</span></p>
 
-                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 10:00 30/08/2026</span></p>
+                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 11:00 30/08/2026</span></p>
 
                     <p><span class="f-icon">👨‍💻</span> <span>Thiết kế & Phát triển: <b>Bác sĩ Thái</b></span></p>
 
@@ -3461,20 +3467,20 @@
     <div id="sidebar-tooltip"></div>
 
     <!-- JavaScript Modules -->
-    <script src="js/offline-sync-engine.js?v=3.2.6"></script>
-    <script src="js/ai-scheduler.js?v=3.2.6"></script>
-    <script src="js/cp-solver.js?v=3.2.6"></script>
-    <script src="js/scheduler-engine.js?v=3.2.6"></script>
-    <script src="js/app.js?v=3.2.6"></script>
-    <script src="js/init.js?v=3.2.6"></script>
-    <script src="js/sync.js?v=3.2.6"></script>
-    <script src="js/thongke.js?v=3.2.6"></script>
+    <script src="js/offline-sync-engine.js?v=3.2.7"></script>
+    <script src="js/ai-scheduler.js?v=3.2.7"></script>
+    <script src="js/cp-solver.js?v=3.2.7"></script>
+    <script src="js/scheduler-engine.js?v=3.2.7"></script>
+    <script src="js/app.js?v=3.2.7"></script>
+    <script src="js/init.js?v=3.2.7"></script>
+    <script src="js/sync.js?v=3.2.7"></script>
+    <script src="js/thongke.js?v=3.2.7"></script>
 
     <!-- PWA Service Worker Registration -->
     <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=3.2.6')
+            navigator.serviceWorker.register('./sw.js?v=3.2.7')
                 .then(reg => console.log('[PWA] Service Worker đăng ký thành công! Scope:', reg.scope))
                 .catch(err => console.warn('[PWA] Service Worker đăng ký thất bại:', err));
         });

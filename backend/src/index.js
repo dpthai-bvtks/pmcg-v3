@@ -171,6 +171,9 @@ async function ensureSchema(db) {
       db.prepare("CREATE TABLE IF NOT EXISTS gio_ban_cu (id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, staff_name TEXT NOT NULL, busy_ranges TEXT DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"),
       db.prepare("DROP INDEX IF EXISTS idx_patients_name"),
       db.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_patients_name_age ON benh_nhan(name, age)"),
+      db.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_thu_thuat_name ON thu_thuat(ten_thu_thuat)"),
+      db.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_phong_name ON phong(ten_phong)"),
+      db.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_may_moc_code ON may_moc(ma_may)"),
       db.prepare("CREATE INDEX IF NOT EXISTS idx_lich_su_date ON lich_su(date)"),
       db.prepare("CREATE INDEX IF NOT EXISTS idx_lich_trinh_date ON lich_trinh(date)"),
       db.prepare("CREATE INDEX IF NOT EXISTS idx_gio_ban_cu_date ON gio_ban_cu(date)"),
@@ -183,6 +186,9 @@ async function ensureSchema(db) {
 
     // Migration safe column additions
     const migrations = [
+      "CREATE UNIQUE INDEX IF NOT EXISTS idx_thu_thuat_name ON thu_thuat(ten_thu_thuat)",
+      "CREATE UNIQUE INDEX IF NOT EXISTS idx_phong_name ON phong(ten_phong)",
+      "CREATE UNIQUE INDEX IF NOT EXISTS idx_may_moc_code ON may_moc(ma_may)",
       "ALTER TABLE may_moc ADD COLUMN is_active INTEGER DEFAULT 1",
       "ALTER TABLE may_moc ADD COLUMN order_idx INTEGER DEFAULT 0",
       "ALTER TABLE phong ADD COLUMN is_active INTEGER DEFAULT 1",
@@ -1103,12 +1109,12 @@ async function handleApiAction(action, args, env, request, ctx) {
     }
 
     case "saveReorderedData": {
-      const type = args[0] || "";
+      const type = String(args[0] || "").toLowerCase().trim();
       const list = args[1] || [];
       const stmts = [];
 
       try {
-        if (type === "benh_nhan") {
+        if (type === "benh_nhan" || type === "patients" || type === "pat") {
           list.forEach((p, idx) => {
             const name = String(p.ten || p.name || "").trim();
             const id = p.id;
@@ -1116,7 +1122,7 @@ async function handleApiAction(action, args, env, request, ctx) {
               stmts.push(db.prepare("UPDATE benh_nhan SET order_idx = ? WHERE name = ? OR id = ?").bind(idx + 1, name, id || 0));
             }
           });
-        } else if (type === "nhan_su") {
+        } else if (type === "nhan_su" || type === "staff" || type === "nhansu") {
           list.forEach((s, idx) => {
             const name = String(s.ten || s.name || "").trim();
             const id = s.id;
@@ -1124,25 +1130,31 @@ async function handleApiAction(action, args, env, request, ctx) {
               stmts.push(db.prepare("UPDATE nhan_su SET priority = ? WHERE name = ? OR id = ?").bind(idx + 1, name, id || 0));
             }
           });
-        } else if (type === "may_moc") {
+        } else if (type === "may_moc" || type === "machines" || type === "machine" || type === "may") {
           list.forEach((m, idx) => {
             const ma = String(m.maMay || m[2] || m.ten || m.name || "").trim();
             if (ma) {
               stmts.push(db.prepare("UPDATE may_moc SET order_idx = ? WHERE ma_may = ?").bind(idx + 1, ma));
             }
           });
-        } else if (type === "phong") {
+        } else if (type === "phong" || type === "rooms" || type === "room") {
           list.forEach((r, idx) => {
             const ten = String(r.tenPhong || r.ten || r.name || r[1] || "").trim();
             if (ten) {
               stmts.push(db.prepare("UPDATE phong SET order_idx = ? WHERE ten_phong = ?").bind(idx + 1, ten));
             }
           });
-        } else if (type === "thu_thuat") {
+        } else if (type === "thu_thuat" || type === "procedures" || type === "proc") {
           list.forEach((p, idx) => {
-            const ten = String(p.ten || p.name || p.ten_thu_thuat || "").trim();
+            const ten = String(p.ten || p.name || p.ten_thu_thuat || p[1] || "").trim();
+            const tgThMin = parseInt(p.thoiGianThucHienMin || p.thoiGianThucHien || p[6]) || 0;
+            const tgThMax = parseInt(p.thoiGianThucHienMax || p[13] || tgThMin) || tgThMin;
+            const tgTtMin = parseInt(p.thoiGianThuThuatMin || p.thoiGianThuThuat || p[7]) || 0;
+            const tgTtMax = parseInt(p.thoiGianThuThuatMax || p[12] || tgTtMin) || tgTtMin;
+            const kc = parseInt(p.khoangCach || p[8]) || 0;
             if (ten) {
-              stmts.push(db.prepare("UPDATE thu_thuat SET order_idx = ? WHERE ten_thu_thuat = ?").bind(idx + 1, ten));
+              stmts.push(db.prepare(`UPDATE thu_thuat SET order_idx = ?, tg_thuc_hien = CASE WHEN ? > 0 THEN ? ELSE tg_thuc_hien END, tg_thuc_hien_max = CASE WHEN ? > 0 THEN ? ELSE tg_thuc_hien_max END, tg_thu_thuat = CASE WHEN ? > 0 THEN ? ELSE tg_thu_thuat END, tg_thu_thuat_max = CASE WHEN ? > 0 THEN ? ELSE tg_thu_thuat_max END, khoang_cach = CASE WHEN ? > 0 THEN ? ELSE khoang_cach END WHERE ten_thu_thuat = ?`)
+                .bind(idx + 1, tgThMin, tgThMin, tgThMax, tgThMax, tgTtMin, tgTtMin, tgTtMax, tgTtMax, kc, kc, ten));
             }
           });
         }

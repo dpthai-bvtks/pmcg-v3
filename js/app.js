@@ -4358,7 +4358,7 @@ window.renderSttOrderControl = function (type, i, total) {
                         if (btnSave) { btnSave.disabled = false; btnSave.innerText = "Thêm"; }
                         alert('Lỗi khi xóa vĩnh viễn: ' + e);
                     })
-                    .deleteBenhNhan(deletedSheetIndex);
+                    .deleteBenhNhan(deletedSheetIndex, p.ten, p.namSinh);
 
             });
 

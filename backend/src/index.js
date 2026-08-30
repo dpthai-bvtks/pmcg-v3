@@ -615,18 +615,20 @@ async function handleApiAction(action, args, env, request, ctx) {
     }
 
     case "addMayMoc": {
-      const tenLoai = String(args[0] || "");
-      const maMayPrefix = String(args[1] || "");
-      const qty = parseInt(args[2]) || 1;
-      const trangThai = String(args[3] || "Sẵn sàng");
+      let payload = {};
+      if (typeof args[0] === "object" && args[0] !== null) payload = args[0];
+      const tenLoai = String(payload.tenLoai || payload.ten_loai || args[0] || "");
+      const maMayPrefix = String(payload.maMay || payload.ma_may || args[1] || "");
+      const qty = parseInt(payload.soLuong || payload.qty || args[2]) || 1;
+      const trangThai = String(payload.trangThai || payload.trang_thai || args[3] || "Sẵn sàng");
       
       const stmts = [];
       if (qty > 1) {
         for (let i = 0; i < qty; i++) {
-          stmts.push(db.prepare("INSERT INTO may_moc (ten_loai, ma_may, trang_thai) VALUES (?, ?, ?)").bind(tenLoai, `${maMayPrefix}${i + 1}`, trangThai));
+          stmts.push(db.prepare("INSERT INTO may_moc (ten_loai, ma_may, trang_thai) VALUES (?, ?, ?) ON CONFLICT(ma_may) DO UPDATE SET ten_loai = excluded.ten_loai, trang_thai = excluded.trang_thai").bind(tenLoai, `${maMayPrefix}${i + 1}`, trangThai));
         }
       } else {
-        stmts.push(db.prepare("INSERT INTO may_moc (ten_loai, ma_may, trang_thai) VALUES (?, ?, ?)").bind(tenLoai, maMayPrefix, trangThai));
+        stmts.push(db.prepare("INSERT INTO may_moc (ten_loai, ma_may, trang_thai) VALUES (?, ?, ?) ON CONFLICT(ma_may) DO UPDATE SET ten_loai = excluded.ten_loai, trang_thai = excluded.trang_thai").bind(tenLoai, maMayPrefix, trangThai));
       }
       await db.batch(stmts);
       await bumpDataVersion(db);
@@ -634,11 +636,19 @@ async function handleApiAction(action, args, env, request, ctx) {
     }
 
     case "editMayMoc": {
-      let offset = (typeof args[0] === "number" || (typeof args[0] === "string" && /^\d+$/.test(args[0]) && args.length >= 4)) ? 1 : 0;
-      const tenLoai = String(args[offset] || "");
-      const maMay = String(args[offset + 1] || "");
-      const trangThai = String(args[offset + 2] || args[3] || "Sẵn sàng");
-      await db.prepare("UPDATE may_moc SET ten_loai = ?, trang_thai = ? WHERE ma_may = ?").bind(tenLoai, trangThai, maMay).run();
+      let payload = {};
+      if (typeof args[0] === "object" && args[0] !== null) {
+        payload = args[0];
+      } else if (typeof args[1] === "object" && args[1] !== null) {
+        payload = args[1];
+      } else {
+        let offset = (typeof args[0] === "number" || (typeof args[0] === "string" && /^\d+$/.test(args[0]) && args.length >= 4)) ? 1 : 0;
+        payload = { tenLoai: args[offset], maMay: args[offset + 1], trangThai: args[offset + 2] };
+      }
+      const tenLoai = String(payload.tenLoai || payload.ten_loai || "");
+      const maMay = String(payload.maMay || payload.ma_may || "");
+      const trangThai = String(payload.trangThai || payload.trang_thai || "Sẵn sàng");
+      await db.prepare("INSERT INTO may_moc (ten_loai, ma_may, trang_thai) VALUES (?, ?, ?) ON CONFLICT(ma_may) DO UPDATE SET ten_loai = excluded.ten_loai, trang_thai = excluded.trang_thai").bind(tenLoai, maMay, trangThai).run();
       await bumpDataVersion(db);
       return success({ message: "Cập nhật thiết bị thành công" });
     }
@@ -676,24 +686,43 @@ async function handleApiAction(action, args, env, request, ctx) {
 
     case "addThuThuat":
     case "editThuThuat": {
-      let offset = (typeof args[0] === "number" || (typeof args[0] === "string" && /^\d+$/.test(args[0]) && args.length >= 11)) ? 1 : 0;
       let payload = {};
-      if (typeof args[offset] === "object" && args[offset] !== null) {
-        payload = args[offset];
+      if (typeof args[0] === "object" && args[0] !== null) {
+        payload = args[0];
+      } else if (typeof args[1] === "object" && args[1] !== null) {
+        payload = args[1];
+      } else {
+        let offset = (typeof args[0] === "number" || (typeof args[0] === "string" && /^\d+$/.test(args[0]) && args.length >= 11)) ? 1 : 0;
+        payload = {
+          ten: args[offset],
+          vietTat: args[offset + 1],
+          he: args[offset + 2],
+          phanLoai: args[offset + 3],
+          may: args[offset + 4],
+          thoiGianThucHienMin: args[offset + 5],
+          thoiGianThuThuatMin: args[offset + 6],
+          khoangCach: args[offset + 7],
+          canRutMay: args[offset + 8],
+          canNguoiPhu: args[offset + 9],
+          dsNguoiPhu: args[offset + 10],
+          thoiGianThuThuatMax: args[offset + 11],
+          thoiGianThucHienMax: args[offset + 12]
+        };
       }
-      const ten = String(payload.ten || payload.name || args[offset] || "");
-      const vietTat = String(payload.vietTat || args[offset + 1] || "");
-      const he = String(payload.he || args[offset + 2] || "YHCT");
-      const phanLoai = String(payload.phanLoai || args[offset + 3] || "");
-      const may = String(payload.may || args[offset + 4] || "");
-      const tgThMin = parseInt(payload.thoiGianThucHienMin || payload.thoiGianThucHien || args[offset + 5]) || 0;
-      const tgThMax = parseInt(payload.thoiGianThucHienMax || args[offset + 12] || tgThMin) || tgThMin;
-      const tgTtMin = parseInt(payload.thoiGianThuThuatMin || payload.thoiGianThuThuat || args[offset + 6]) || 0;
-      const tgTtMax = parseInt(payload.thoiGianThuThuatMax || args[offset + 11] || tgTtMin) || tgTtMin;
-      const kc = parseInt(payload.khoangCach || args[offset + 7]) || 0;
-      const rut = String(payload.canRutMay || args[offset + 8] || "Không");
-      const phu = String(payload.canNguoiPhu || args[offset + 9] || "Không");
-      const dsPhu = String(payload.dsNguoiPhu || args[offset + 10] || "");
+      const ten = String(payload.ten || payload.name || "").trim();
+      if (!ten) return error("Tên thủ thuật không hợp lệ");
+      const vietTat = String(payload.vietTat || payload.viet_tat || "");
+      const he = String(payload.he || "YHCT");
+      const phanLoai = String(payload.phanLoai || payload.phan_loai || "");
+      const may = String(payload.may || "Thủ công");
+      const tgThMin = parseInt(payload.thoiGianThucHienMin || payload.thoiGianThucHien || payload.tg_thuc_hien) || 0;
+      const tgThMax = parseInt(payload.thoiGianThucHienMax || payload.tg_thuc_hien_max || tgThMin) || tgThMin;
+      const tgTtMin = parseInt(payload.thoiGianThuThuatMin || payload.thoiGianThuThuat || payload.tg_thu_thuat) || 0;
+      const tgTtMax = parseInt(payload.thoiGianThuThuatMax || payload.tg_thu_thuat_max || tgTtMin) || tgTtMin;
+      const kc = parseInt(payload.khoangCach || payload.khoang_cach) || 0;
+      const rut = String(payload.canRutMay || payload.can_rut_may || "Không");
+      const phu = String(payload.canNguoiPhu || payload.can_nguoi_phu || "Không");
+      const dsPhu = String(payload.dsNguoiPhu || payload.ds_nguoi_phu || "");
 
       await db.prepare(`INSERT INTO thu_thuat (ten_thu_thuat, viet_tat, he, phan_loai, may, tg_thuc_hien, tg_thuc_hien_max, tg_thu_thuat, tg_thu_thuat_max, khoang_cach, can_rut_may, can_nguoi_phu, ds_nguoi_phu)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -730,13 +759,29 @@ async function handleApiAction(action, args, env, request, ctx) {
 
     case "addPhong":
     case "editPhong": {
-      let offset = (typeof args[0] === "number" || (typeof args[0] === "string" && /^\d+$/.test(args[0]) && args.length >= 7)) ? 1 : 0;
-      const tenPhong = String(args[offset] || "");
-      const bacSi = String(args[offset + 1] || "");
-      const ktv = String(args[offset + 2] || "");
-      const danhSachMay = String(args[offset + 3] || "");
-      const soGiuong = parseInt(args[offset + 4]) || 0;
-      const danhSachGiuong = String(args[offset + 5] || "");
+      let payload = {};
+      if (typeof args[0] === "object" && args[0] !== null) {
+        payload = args[0];
+      } else if (typeof args[1] === "object" && args[1] !== null) {
+        payload = args[1];
+      } else {
+        let offset = (typeof args[0] === "number" || (typeof args[0] === "string" && /^\d+$/.test(args[0]) && args.length >= 7)) ? 1 : 0;
+        payload = {
+          tenPhong: args[offset],
+          bacSi: args[offset + 1],
+          ktv: args[offset + 2],
+          danhSachMay: args[offset + 3],
+          soGiuong: args[offset + 4],
+          danhSachGiuong: args[offset + 5]
+        };
+      }
+      const tenPhong = String(payload.tenPhong || payload.ten_phong || payload.name || "").trim();
+      if (!tenPhong) return error("Tên phòng không hợp lệ");
+      const bacSi = String(payload.bacSi || payload.bac_si || "");
+      const ktv = String(payload.ktv || "");
+      const danhSachMay = String(payload.danhSachMay || payload.danh_sach_may || "");
+      const soGiuong = parseInt(payload.soGiuong || payload.so_giuong) || 0;
+      const danhSachGiuong = String(payload.danhSachGiuong || payload.danh_sach_giuong || "");
 
       await db.prepare(`INSERT INTO phong (ten_phong, bac_si, ktv, danh_sach_may, so_giuong, danh_sach_giuong)
         VALUES (?, ?, ?, ?, ?, ?)
@@ -1038,10 +1083,11 @@ async function handleApiAction(action, args, env, request, ctx) {
     }
 
     case "deleteBenhNhan": {
-      // Signature: (rowIndex, ten, namSinh) or (name)
-      const ten = typeof args[1] === "string" && args[1] ? args[1] : (typeof args[0] === "string" && !/^\d+$/.test(args[0]) ? args[0] : null);
+      let payload = {};
+      if (typeof args[0] === "object" && args[0] !== null) payload = args[0];
+      const ten = String(payload.ten || payload.name || args[1] || (typeof args[0] === "string" && !/^\d+$/.test(args[0]) ? args[0] : "")).trim();
       if (ten) {
-        await db.prepare("DELETE FROM benh_nhan WHERE name = ?").bind(ten).run();
+        await db.prepare("DELETE FROM benh_nhan WHERE name = ? OR id = ?").bind(ten, ten).run();
         await bumpDataVersion(db);
       } else {
         const idx = typeof args[0] === "number" ? args[0] : parseInt(args[0]);
@@ -1053,7 +1099,7 @@ async function handleApiAction(action, args, env, request, ctx) {
           }
         }
       }
-      return success(true);
+      return success({ message: "Xóa bệnh nhân thành công" });
     }
 
     case "saveReorderedData": {

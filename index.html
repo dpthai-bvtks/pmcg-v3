@@ -633,13 +633,8 @@
                                         <option>Thủ công</option>
                                     </select></div>
                                 <div class="form-group"><label>TG thực hiện:</label><input type="number" id="proc-person-time" placeholder="Phút (Ví dụ mắc máy 5p)"></div>
-                                <div class="form-group">
-                                    <label>TG thủ thuật (Tối thiểu - Tối đa):</label>
-                                    <div style="display: flex; gap: 8px;">
-                                        <input type="number" id="proc-machine-time" placeholder="Min (Ví dụ 25p)" style="flex:1;">
-                                        <input type="number" id="proc-machine-time-max" placeholder="Max (Ví dụ 30p)" style="flex:1;">
-                                    </div>
-                                </div>
+                                <div class="form-group"><label>TG TT tối thiểu:</label><input type="number" id="proc-machine-time" placeholder="Phút (Ví dụ 25 phút)"></div>
+                                <div class="form-group"><label>TG TT tối đa:</label><input type="number" id="proc-machine-time-max" placeholder="Phút (Ví dụ 30 phút)"></div>
                                 <div class="form-group"><label>Khoảng cách ca:</label><input type="number" id="proc-gap" placeholder="Phút (VD: 9)"></div>
                                 <div style="margin: 15px 0 10px 5px;">
                                     <label class="checkbox-item"><input type="checkbox" id="proc-unplug-cb" value="Có">
@@ -663,7 +658,8 @@
                                         <th>Tên Thủ Thuật</th>
                                         <th>Viết Tắt</th>
                                         <th>Thời gian thực hiện</th>
-                                        <th>Thời gian thủ thuật (Min - Max)</th>
+                                        <th>TG TT (Tối thiểu)</th>
+                                        <th>TG TT (Tối đa)</th>
                                         <th>Khoảng cách</th>
                                         <th>Rút Máy</th>
                                         <th>Người Phụ</th>
@@ -672,7 +668,7 @@
                                 </thead>
                                 <tbody id="procedures-list">
                                     <tr>
-                                        <td colspan="9" align="center">Đang tải...</td>
+                                        <td colspan="10" align="center">Đang tải...</td>
                                     </tr>
                                 </tbody>
                             </table>

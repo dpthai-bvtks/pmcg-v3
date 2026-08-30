@@ -3272,12 +3272,14 @@ window.renderSttOrderControl = function (type, i, total) {
         function renderProceduresTable_Original() {
             const tbody = document.getElementById('procedures-list');
             if (!tbody) return;
-            if (!dataCache.proc.length) { tbody.innerHTML = renderEmptyRow(9); return; }
+            if (!dataCache.proc.length) { tbody.innerHTML = renderEmptyRow(10); return; }
 
             tbody.innerHTML = dataCache.proc.map((item, i) => {
                 const idx = dataCache.proc.indexOf(item);
                 const isRutMay = (item.canRutMay === 'Có' || item.canRutMay === 1 || item.canRutMay === '1' || item.canRutMay === true || item[9] === 'Có' || item[9] === 1 || item[9] === '1');
                 const isNguoiPhu = (item.canNguoiPhu === 'Có' || item.canNguoiPhu === 1 || item.canNguoiPhu === '1' || item.canNguoiPhu === true || item[10] === 'Có' || item[10] === 1 || item[10] === '1');
+                const rutText = isRutMay ? 'Có' : 'Không';
+                const phuText = isNguoiPhu ? 'Có' : 'Không';
                 let tgMin = parseInt(item.thoiGianThuThuatMin || item.thoiGianThuThuat || item[7]) || 0;
                 let tgMax = parseInt(item.thoiGianThuThuatMax || item[12] || 0) || 0;
 
@@ -3294,16 +3296,18 @@ window.renderSttOrderControl = function (type, i, total) {
                     }
                 }
 
-                const timeDisplay = (tgMax > tgMin && tgMax > 0)
-                    ? `<span class="proc-time-range-badge">⏱ ${tgMin} - ${tgMax} phút</span>`
-                    : `<span class="proc-time-single">${tgMin} phút</span>`;
+                const minDisplay = `<span class="proc-time-single">${tgMin} phút</span>`;
+                const maxDisplay = (tgMax > tgMin)
+                    ? `<span class="proc-time-range-badge">${tgMax} phút</span>`
+                    : `<span class="proc-time-single">${tgMax} phút</span>`;
 
                 return `<tr class="draggable-row editable-row" data-drag-idx="${i}" onclick="if(!window._isDraggingRow) editProc(${idx})" title="Bấm sửa (Kéo thả nút ☰ hoặc bấm ▲/▼ để đổi thứ tự, Phím Delete để xóa)">
             <td>${renderSttOrderControl("procedures", i, dataCache.proc.length)}</td>
             <td>${escapeHtml(item.ten || item[1] || '')}</td>
             <td><strong>${escapeHtml(item.vietTat || item[2] || '')}</strong></td>
             <td>${item.thoiGianThucHien || item[6] || 0} phút</td>
-            <td align="center">${timeDisplay}</td>
+            <td align="center">${minDisplay}</td>
+            <td align="center">${maxDisplay}</td>
             <td>${item.khoangCach || item[8] || 0} phút</td>
             <td align="center">${rutText}</td>
             <td align="center">${phuText}</td>

@@ -3395,42 +3395,31 @@ window.renderSttOrderControl = function (type, i, total) {
         }
 
         function deleteProcedure(i) {
-            
+            const item = dataCache.proc[i];
+            if (!item) return;
+            const ten = String(item.ten || item.name || item[1] || '').trim();
 
-            showCustomConfirm("Xác nhận xóa thủ thuật", "Bác sĩ có chắc chắn muốn xóa thủ thuật này không?", function () {
-
+            showCustomConfirm("Xác nhận xóa thủ thuật", `Bác sĩ có chắc chắn muốn xóa thủ thuật "${ten}" không?`, function () {
                 if (window.showGlobalLoading) window.showGlobalLoading("Đang xóa thủ thuật...");
-
                 const btnSave = document.getElementById('btn-save-proc');
-
                 if (btnSave) { btnSave.disabled = true; btnSave.innerText = "Đang xóa..."; }
 
-                dataCache.proc.splice(i, 1); renderProceduresTable(); renderProcedureCheckboxes();
+                dataCache.proc.splice(i, 1);
+                renderProceduresTable();
+                renderProcedureCheckboxes();
 
                 google.script.run
-
                     .withSuccessHandler(() => {
-
                         if (window.hideGlobalLoading) window.hideGlobalLoading();
-
                         if (btnSave) { btnSave.disabled = false; btnSave.innerText = "Thêm"; }
-
-                        if (typeof loadProcedures === 'function') loadProcedures();
-
+                        if (typeof showToastSuccess === 'function') showToastSuccess(`Đã xóa thủ thuật "${ten}" thành công!`);
                     })
-
                     .withFailureHandler(e => {
-
                         if (window.hideGlobalLoading) window.hideGlobalLoading();
-
                         if (btnSave) { btnSave.disabled = false; btnSave.innerText = "Thêm"; }
-
-                        alert('Lỗi: ' + e);
-
-                    }).deleteThuThuat(i);
-
+                        alert('Lỗi xóa thủ thuật: ' + e);
+                    }).deleteThuThuat(i, ten);
             });
-
         }
 
 

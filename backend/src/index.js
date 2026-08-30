@@ -697,8 +697,11 @@ async function handleApiAction(action, args, env, request, ctx) {
     }
 
     case "deleteThuThuat": {
-      const ten = String(args[1] || args[0] || "");
-      await db.prepare("DELETE FROM thu_thuat WHERE ten_thu_thuat = ?").bind(ten).run();
+      let payload = {};
+      if (typeof args[0] === "object" && args[0] !== null) payload = args[0];
+      let offset = (typeof args[0] === "number" || (typeof args[0] === "string" && /^\d+$/.test(args[0]))) ? 1 : 0;
+      const ten = String(payload.ten || payload.name || args[offset] || args[0] || "").trim();
+      await db.prepare("DELETE FROM thu_thuat WHERE ten_thu_thuat = ? OR id = ?").bind(ten, ten).run();
       await bumpDataVersion(db);
       return success({ message: "Xóa thủ thuật thành công" });
     }

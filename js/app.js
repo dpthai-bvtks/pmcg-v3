@@ -3278,21 +3278,33 @@ window.renderSttOrderControl = function (type, i, total) {
                 const idx = dataCache.proc.indexOf(item);
                 const isRutMay = (item.canRutMay === 'Có' || item.canRutMay === 1 || item.canRutMay === '1' || item.canRutMay === true || item[9] === 'Có' || item[9] === 1 || item[9] === '1');
                 const isNguoiPhu = (item.canNguoiPhu === 'Có' || item.canNguoiPhu === 1 || item.canNguoiPhu === '1' || item.canNguoiPhu === true || item[10] === 'Có' || item[10] === 1 || item[10] === '1');
-                const rutText = isRutMay ? 'Có' : 'Không';
-                const phuText = isNguoiPhu ? 'Có' : 'Không';
-                const tgMin = parseInt(item.thoiGianThuThuatMin || item.thoiGianThuThuat || item[7]) || 0;
-                const tgMax = parseInt(item.thoiGianThuThuatMax || item[12] || tgMin) || tgMin;
+                let tgMin = parseInt(item.thoiGianThuThuatMin || item.thoiGianThuThuat || item[7]) || 0;
+                let tgMax = parseInt(item.thoiGianThuThuatMax || item[12] || 0) || 0;
+
+                // Smart YHCT duration range fallback if not explicitly saved yet
+                if (!tgMax || tgMax <= tgMin) {
+                    const tenLower = String(item.ten || item.name || item[1] || '').toLowerCase();
+                    if (tenLower.includes('điện châm') || tenLower === 'đc' || tenLower === 'dctb') {
+                        if (tgMin === 25) tgMax = 30;
+                        else if (tgMin === 30) tgMax = 35;
+                    } else if (tenLower.includes('parafin') || tenLower === 'pa') {
+                        if (tgMin === 20) tgMax = 25;
+                    } else {
+                        tgMax = tgMin;
+                    }
+                }
+
                 const timeDisplay = (tgMax > tgMin && tgMax > 0)
-                    ? `<span class="proc-time-range-badge">⏱ ${tgMin} - ${tgMax} p</span>`
-                    : `<span class="proc-time-single">${tgMin} p</span>`;
+                    ? `<span class="proc-time-range-badge">⏱ ${tgMin} - ${tgMax} phút</span>`
+                    : `<span class="proc-time-single">${tgMin} phút</span>`;
 
                 return `<tr class="draggable-row editable-row" data-drag-idx="${i}" onclick="if(!window._isDraggingRow) editProc(${idx})" title="Bấm sửa (Kéo thả nút ☰ hoặc bấm ▲/▼ để đổi thứ tự, Phím Delete để xóa)">
             <td>${renderSttOrderControl("procedures", i, dataCache.proc.length)}</td>
             <td>${escapeHtml(item.ten || item[1] || '')}</td>
             <td><strong>${escapeHtml(item.vietTat || item[2] || '')}</strong></td>
-            <td>${item.thoiGianThucHien || item[6] || 0} p</td>
+            <td>${item.thoiGianThucHien || item[6] || 0} phút</td>
             <td align="center">${timeDisplay}</td>
-            <td>${item.khoangCach || item[8] || 0} p</td>
+            <td>${item.khoangCach || item[8] || 0} phút</td>
             <td align="center">${rutText}</td>
             <td align="center">${phuText}</td>
             <td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteProcedure(${idx})">Xóa</button></td>

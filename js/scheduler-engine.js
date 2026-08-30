@@ -1019,7 +1019,17 @@ function getSafeCache() {
       if (!ten) return;
       const tgNhanVien = parseInt(p.thoiGianThucHien || p[6]) || 5;
       const tgMayMin = parseInt(p.thoiGianThuThuatMin || p.thoiGianThuThuat || p[7]) || 15;
-      const tgMayMax = parseInt(p.thoiGianThuThuatMax || p[12] || tgMayMin) || tgMayMin;
+      let tgMayMax = parseInt(p.thoiGianThuThuatMax || p[12] || 0) || 0;
+      if (!tgMayMax || tgMayMax <= tgMayMin) {
+        if (ten.includes('điện châm') || ten === 'đc' || ten === 'dctb') {
+          if (tgMayMin === 25) tgMayMax = 30;
+          else if (tgMayMin === 30) tgMayMax = 35;
+        } else if (ten.includes('parafin') || ten === 'pa') {
+          if (tgMayMin === 20) tgMayMax = 25;
+        } else {
+          tgMayMax = tgMayMin;
+        }
+      }
       const khoangCach = parseInt(p.khoangCach || p[8]) || tgNhanVien;
       const dsPhuStr = p.dsNguoiPhu || p[11] || "";
       const dsPhu = Array.isArray(dsPhuStr) ? dsPhuStr : String(dsPhuStr).split(",").map(x => x.trim()).filter(Boolean);

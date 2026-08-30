@@ -1397,6 +1397,118 @@ function getSafeCache() {
       return runClientScheduling(dateVal, strategyKey, skipProcsStr, crowdedOverride, existingSched);
     }
   }
+
+  function runExtraScheduling(dateVal, existingSched = []) {
+    return runClientScheduling(dateVal, 'opt_rare', '', -1, existingSched);
+  }
+
+  function runSaturdayScheduling(payload = {}, dateVal = '') {
+    const startTime = performance.now();
+    const targetDate = dateVal || new Date().toISOString().slice(0, 10);
+    const { database: baseDb } = buildDbFromCache();
+
+    baseDb.roomBeds = {};
+    baseDb.roomStaff = {};
+    const allBeds = [];
+    const rooms = (typeof dataCache !== 'undefined' && dataCache.room) ? dataCache.room : [];
+    rooms.forEach(r => {
+      const roomName = r.tenPhong || r.ten || r[1] || "";
+      const soGiuong = parseInt(r.soGiuong || r[5]) || 15;
+      const bedStr = r.danhSachGiuong || r[6] ? String(r.danhSachGiuong || r[6]).trim() : "";
+      const beds = (bedStr && bedStr !== 'None') ? bedStr.split(",").map(x => x.trim()).filter(Boolean) : Array.from({ length: soGiuong }, (_, i) => `Giường ${i + 1}`);
+      beds.forEach(b => allBeds.push(`${roomName}|${b}`));
+    });
+    baseDb.roomBeds["PHONG_CHUNG_T7"] = allBeds;
+    baseDb.roomStaff["PHONG_CHUNG_T7"] = [];
+
+    const allStaff = (typeof dataCache !== 'undefined' && dataCache.staff) ? dataCache.staff : [];
+    baseDb.rawStaff = [];
+    (payload.allowed_staff || []).forEach(tenNhanVien => {
+      const staffRow = allStaff.find(r => (r.ten || r.name || r[1]) === tenNhanVien);
+      if (staffRow) {
+        const shiftStr = (payload.staff_shifts_dict?.[tenNhanVien] || []).map(sh => `${sh[0]}-${sh[1]}`).join(', ');
+        const skills = staffRow.kyNang || staffRow.skills || staffRow[2] || "";
+        const role = staffRow.vaiTro || staffRow.role || staffRow[3] || "KTV";
+        baseDb.rawStaff.push([staffRow.ten || staffRow.name || staffRow[1], role, skills, shiftStr, "", "Đi làm"]);
+      }
+    });
+
+    baseDb.rawPatients = [];
+    (payload.final_pats || []).forEach((bn, idx) => {
+      const readyTime = (bn.gioVao ? t2m(bn.gioVao) : 0) + 1;
+      const pName = String(bn.ten).toUpperCase();
+      const pNs = bn.ns || "";
+      const pRoom = bn.phong || "";
+      const pId = bn.id || (pName + "_" + pNs + "_" + pRoom + "_" + idx);
+      baseDb.rawPatients.push({
+        pId: pId,
+        name: pName,
+        ns: pNs,
+        ngayVao: bn.ngayVao || "",
+        room: "PHONG_CHUNG_T7",
+        arrive: readyTime,
+        leave: 9999,
+        busy: [[0, readyTime]],
+        pending: bn.tt ? String(bn.tt).split(",").map(x => x.trim()).filter(Boolean) : [],
+        free_at: readyTime
+      });
+    });
+
+    const best = runBestIteration(baseDb, targetDate, [], 2, -1);
+    const decodeRoom = item => {
+      if (item.PHONG === "PHONG_CHUNG_T7" && item.GIUONG?.includes("|")) {
+        const parts = item.GIUONG.split("|");
+        return { realRoom: parts[0], realBed: parts[1] };
+      }
+      return { realRoom: item.PHONG, realBed: item.GIUONG };
+    };
+
+    if (!best) {
+      return { scheduleCount: 0, unscheduledCount: 0, sched: [], schedule: [], rot: [], unscheduled: [], elapsedMs: 0 };
+    }
+
+    const rawRot = (best.rot || []).map(u => {
+      if (u.phong === "PHONG_CHUNG_T7" || u.room === "PHONG_CHUNG_T7") {
+        const orig = (payload.final_pats || []).find(p => p.ten.toUpperCase() === u.bn.toUpperCase());
+        if (orig) { u.phong = orig.phong; u.room = orig.phong; }
+      }
+      return { ...u, ngay: u.ngay || targetDate };
+    });
+
+    const diagnosedRot = (typeof UnscheduledDiagnosticEngine !== 'undefined')
+      ? UnscheduledDiagnosticEngine.diagnose(rawRot, baseDb)
+      : rawRot;
+
+    const formattedSched = (best.sched || []).map(item => {
+      const { realRoom, realBed } = decodeRoom(item);
+      return {
+        ngay: item.NGAY || targetDate,
+        tenBN: item.HOTEN,
+        namSinh: item.NAMSINH,
+        phong: realRoom,
+        thuThuat: item.DICHVU,
+        gioDienRa: item.GIODIENRA,
+        gioKetThuc: item.GIOKETTHUC,
+        nvChinh: item["NV CHÍNH"],
+        nvPhu: item["NV PHỤ"],
+        may: item.MAY,
+        giuong: realBed
+      };
+    });
+
+    const elapsed = Math.round(performance.now() - startTime);
+
+    return {
+      scheduleCount: formattedSched.length,
+      unscheduledCount: diagnosedRot.length,
+      sched: formattedSched,
+      schedule: formattedSched,
+      rot: diagnosedRot,
+      unscheduled: diagnosedRot,
+      elapsedMs: elapsed
+    };
+  }
+
   return {
     t2m,
     m2t,

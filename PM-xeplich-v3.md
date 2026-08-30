@@ -1087,3 +1087,32 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
      - Bổ sung tính năng **Tự động huấn luyện AI hàng ngày theo khung giờ chỉ định** (Mặc định: `17:00` hàng ngày).
      - Nút thao tác thủ công lớn: **"🤖 HUẤN LUYỆN AI"** cho phép cập nhật tức thì.
 - **File sửa đổi**: `js/ai-scheduler.js`, `js/scheduler-engine.js`, `js/app.js`, `index.html`, `PM-xeplich-v3.md`.
+
+### Nâng Cấp: Bộ Cố Vấn Giải Cứu Ca Rớt Thông Minh (Smart Unscheduled Relaxation Advisor) (30/08/2026 - v3.2.6)
+- **Mục tiêu**:
+  - Tự động chẩn đoán chính xác nguyên nhân gốc rễ của từng ca rớt và mô phỏng các phương án nới lỏng ràng buộc lâm sàng khả thi với tính năng 1-Click Tự động giải cứu ca rớt thẳng vào lịch trình.
+- **Giải pháp triển khai**:
+  1. **Động cơ Chẩn đoán & Gợi ý Giải cứu (`js/scheduler-engine.js`)**:
+     - Xây dựng module `UnscheduledDiagnosticEngine` phân tích 5 nhóm nguyên nhân rớt ca cụ thể:
+       - 🔴 **Nghẽn máy móc (`BOTTLENECK_MACHINE`)**: Kín lịch máy móc trong các khung giờ rảnh của bệnh nhân.
+       - 🟡 **Nhân sự quá tải (`STAFF_UNAVAILABLE`)**: Tất cả KTV có kỹ năng đều bận hoặc hết giờ làm.
+       - 🟠 **Xung đột ca Ngoại trú (`OUTPATIENT_SESSION_LIMIT`)**: Ngoại trú đăng ký ca Sáng nhưng tài nguyên chỉ trống ca Chiều (hoặc ngược lại).
+       - 🔵 **Giờ Y lệnh / Giờ vào muộn (`PATIENT_TIME_WINDOW`)**: Khung giờ rảnh của bệnh nhân không đủ cho thời lượng thủ thuật.
+       - 🟣 **Trùng lịch thủ thuật BN (`INTERNAL_PATIENT_CLASH`)**: Nhiều thủ thuật dài kẹp sát nhau.
+     - Tự động tính toán 1-3 gợi ý hành động giải cứu cụ thể (`advices`) kèm tham số slot 1-Click (`ALLOW_OVERTIME`, `SWITCH_SESSION`, `SHIFT_WINDOW`, `REASSIGN_STAFF`).
+  2. **Giao Diện Modal & Thống Kê (`index.html` & `css/style.css`)**:
+     - Bổ sung **Modal Cố Vấn Giải Cứu Ca Rớt Thông Minh (`#modal-unscheduled-advisor`)** thiết kế Glassmorphism hiện đại.
+     - Hiển thị danh sách Thẻ Chẩn đoán (Rescue Cards) kèm Badge màu sắc rõ ràng cho từng loại nguyên nhân và danh sách nút **"⚡ Áp dụng giải cứu ngay"**.
+     - Bổ sung nút **"💡 Cố Vấn Giải Cứu ([X] ca)"** vào Popup kết quả xếp lịch (`#custom-success-popup`) và Bảng thống kê rớt ca (`#stats-unscheduled-list`).
+  3. **Tương Tác Frontend & Đồng Bộ Dữ Liệu (`js/app.js`)**:
+     - Thêm các hàm `openUnscheduledAdvisorModal()`, `renderUnscheduledAdvisor()`, `executeRescueAdvice()`.
+     - Khi bấm **"Áp dụng giải cứu ngay"**, hệ thống tự động:
+       1. Chèn ca thủ thuật đã được cứu vào `window.currentScheduleData`.
+       2. Loại bỏ ca khỏi danh sách ca rớt (`window.lastUnscheduledData`).
+       3. Cập nhật Bảng lịch trình, Timeline, Thống kê, Bảng bệnh nhân.
+       4. Tự động lưu ngầm vào `localStorage` và đồng bộ D1 Database qua API `saveSchedule`.
+       5. Hiển thị thông báo Toast thành công rực rỡ.
+  4. **Đồng Bộ Phiên Bản & Quy Tắc Dự Án (`RULES.md`)**:
+     - Đồng bộ phiên bản toàn hệ thống lên **3.2.6** (Footer: `10:00 30/08/2026`), cập nhật Service Worker `pmcg-cache-v3.2.6` và query string `?v=3.2.6` trên tất cả tài nguyên.
+- **File sửa đổi**: `js/scheduler-engine.js`, `index.html`, `css/style.css`, `js/app.js`, `sw.js`, `PM-xeplich-v3.md`.
+

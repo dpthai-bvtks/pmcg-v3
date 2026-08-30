@@ -5378,7 +5378,11 @@ window.renderSttOrderControl = function (type, i, total) {
                 <div>❌ Không xếp được: <b style="color:#c0392b; font-size:18px;">${unschCount}</b> ca</div>
                 <hr style="border:0; border-top:1px dashed #ccc; margin:10px 0;">
                 <div style="font-size:13px; color:#16a085;">🚀 Động cơ: <b>${engineInfo}</b></div>
-                <div style="font-size:13px; color:#7f8c8d; margin-top:3px;">⏱ Thời gian: <b>${timeTaken}</b> giây</div>`;
+                <div style="font-size:13px; color:#7f8c8d; margin-top:3px;">⏱ Thời gian: <b>${timeTaken}</b> giây</div>
+                ${unschCount > 0 ? `
+                <button type="button" onclick="openUnscheduledAdvisorModal(); document.getElementById('custom-success-popup').style.display='none';" style="margin-top:12px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color:#fff; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; font-weight:700; width:100%; box-shadow:0 4px 10px rgba(59,130,246,0.3); font-size:13.5px; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    💡 Cố Vấn Giải Cứu (${unschCount} ca rớt)
+                </button>` : ''}`;
                 const popup = document.getElementById('custom-success-popup');
                 if (popup) popup.style.display = 'flex';
 
@@ -5470,7 +5474,11 @@ window.renderSttOrderControl = function (type, i, total) {
                 <div>✅ Xếp bổ sung thành công: <b style="color:#27ae60; font-size:18px;">${addedCount}</b> ca</div>
                 <div>❌ Không xếp được lần này: <b style="color:#c0392b; font-size:18px;">${newUnsch.length}</b> ca</div>
                 <hr style="border:0; border-top:1px dashed #ccc; margin:10px 0;">
-                <div style="font-size:14px; color:#7f8c8d;">Tổng số ca rớt hiện tại: <b>${totalFail}</b> ca</div>`;
+                <div style="font-size:14px; color:#7f8c8d;">Tổng số ca rớt hiện tại: <b>${totalFail}</b> ca</div>
+                ${totalFail > 0 ? `
+                <button type="button" onclick="openUnscheduledAdvisorModal(); document.getElementById('custom-success-popup').style.display='none';" style="margin-top:12px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color:#fff; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; font-weight:700; width:100%; box-shadow:0 4px 10px rgba(59,130,246,0.3); font-size:13.5px; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    💡 Cố Vấn Giải Cứu (${totalFail} ca rớt)
+                </button>` : ''}`;
                 const popup = document.getElementById('custom-success-popup');
                 if (popup) popup.style.display = 'flex';
             } catch(err) {
@@ -5513,13 +5521,31 @@ window.renderSttOrderControl = function (type, i, total) {
 
             un_tbody.innerHTML = fail === 0
 
-                ? `<tr><td colspan="5" align="center" style="padding:20px;">Không có ca rớt</td></tr>`
+                ? `<tr><td colspan="6" align="center" style="padding:20px;">Không có ca rớt</td></tr>`
 
                 : unscheduled.map((raw, i) => {
 
                     const item = normalizeDroppedItem(raw);
 
-                    return `<tr class="row-dropped"><td align="center">${i + 1}</td><td><strong>${item.bn}</strong></td><td>${item.tt}</td><td align="center">${item.room || item.phong}</td><td style="font-size:11px;">${item.reason}</td></tr>`;
+                    const causeBadge = item.causeTitle 
+                        ? `<span class="rescue-badge-cause cause-${item.causeCode || 'STAFF_UNAVAILABLE'}">${item.causeTitle}</span>` 
+                        : `<span class="rescue-badge-cause cause-STAFF_UNAVAILABLE">🟡 Chưa xếp được</span>`;
+
+                    return `<tr class="row-dropped">
+                        <td align="center">${i + 1}</td>
+                        <td><strong>${escapeHtml(item.bn)}</strong></td>
+                        <td>${escapeHtml(item.tt)}</td>
+                        <td align="center">${escapeHtml(item.room || item.phong)}</td>
+                        <td style="font-size:11px;">
+                            ${causeBadge}
+                            <div style="margin-top:3px; color:#475569;">${escapeHtml(item.reason)}</div>
+                        </td>
+                        <td align="center">
+                            <button type="button" onclick="openUnscheduledAdvisorModal()" class="btn btn-sm btn-primary" style="padding:4px 10px; font-size:11px; font-weight:700; border-radius:6px; background:#3b82f6; border:none; color:#fff; cursor:pointer;">
+                                💡 Cố Vấn
+                            </button>
+                        </td>
+                    </tr>`;
 
                 }).join('');
 
@@ -5562,6 +5588,177 @@ window.renderSttOrderControl = function (type, i, total) {
             }).join('');
 
         }
+
+        // ============================================================
+        // 💡 BỘ CỐ VẤN GIẢI CỨU CA RỚT THÔNG MINH (SMART UNSCHEDULED ADVISOR)
+        // ============================================================
+
+        function openUnscheduledAdvisorModal() {
+            const modal = document.getElementById('modal-unscheduled-advisor');
+            if (modal) {
+                modal.style.display = 'flex';
+                renderUnscheduledAdvisor();
+            }
+        }
+
+        function closeUnscheduledAdvisorModal() {
+            const modal = document.getElementById('modal-unscheduled-advisor');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function renderUnscheduledAdvisor() {
+            const bodyEl = document.getElementById('advisor-modal-body');
+            const badgeEl = document.getElementById('advisor-badge-count');
+            if (!bodyEl) return;
+
+            const unscheduled = (window.lastUnscheduledData || []).map(normalizeDroppedItem);
+            const count = unscheduled.length;
+
+            if (badgeEl) {
+                badgeEl.innerText = `${count} ca rớt`;
+                badgeEl.style.background = count > 0 ? '#ef4444' : '#10b981';
+            }
+
+            if (count === 0) {
+                bodyEl.innerHTML = `
+                <div style="text-align: center; padding: 50px 20px;">
+                    <div style="font-size: 60px; margin-bottom: 16px;">🎉</div>
+                    <h4 style="color: #10b981; font-size: 20px; font-weight: 800; margin: 0 0 10px 0;">TUYỆT VỜI! KHÔNG CÓ CA THỦ THUẬT NÀO BỊ RỚT</h4>
+                    <p style="color: #64748b; font-size: 14px; margin: 0;">Tất cả ca bệnh trong ngày đều đã được xếp lịch thành công 100%.</p>
+                </div>`;
+                return;
+            }
+
+            let html = '';
+            unscheduled.forEach((item, rotIndex) => {
+                const bnName = escapeHtml(item.bn || 'Chưa rõ');
+                const procName = escapeHtml(item.tt || 'Thủ thuật');
+                const roomName = escapeHtml(item.room || item.phong || 'Chưa xếp phòng');
+                const causeCode = item.causeCode || 'STAFF_UNAVAILABLE';
+                const causeTitle = item.causeTitle || '🟡 Chưa xếp được';
+                const causeDetail = escapeHtml(item.causeDetail || item.reason || 'Thiếu tài nguyên hoặc hết khung giờ rảnh.');
+
+                const advices = (item.advices && item.advices.length > 0) ? item.advices : [
+                    {
+                        id: 1,
+                        title: `⚡ Cho phép KTV làm lố 10 phút cuối ca sáng (11:30 - 11:40)`,
+                        description: `Nới lỏng khung giờ làm việc ca sáng để hoàn tất ca [${procName}] cho BN ${bnName}.`,
+                        patch: { gioDienRa: "11:30", gioKetThuc: "12:00", nvChinh: "KTV Phụ Trách", may: "Thủ công", giuong: "Giường 1", phong: roomName }
+                    },
+                    {
+                        id: 2,
+                        title: `⚡ Chuyển ca sang buổi Chiều (13:30 - 14:00)`,
+                        description: `Xếp ca [${procName}] vào đầu giờ chiều khi có máy và nhân sự rảnh rỗi.`,
+                        patch: { gioDienRa: "13:30", gioKetThuc: "14:00", nvChinh: "KTV Phụ Trách", may: "Thủ công", giuong: "Giường 1", phong: roomName }
+                    }
+                ];
+
+                html += `
+                <div class="rescue-card">
+                    <div class="rescue-card-header">
+                        <div>
+                            <h4 class="rescue-pat-name">🏥 BN: ${bnName} ${item.ns ? `(${item.ns})` : ''} - Phòng ${roomName}</h4>
+                            <div class="rescue-proc-name">📋 Thủ thuật bị rớt: <strong>${procName}</strong></div>
+                        </div>
+                        <span class="rescue-badge-cause cause-${causeCode}">${causeTitle}</span>
+                    </div>
+
+                    <div class="rescue-cause-detail">
+                        🔍 <strong>Chẩn đoán nguyên nhân:</strong> ${causeDetail}
+                    </div>
+
+                    <div style="font-weight: 700; font-size: 13px; color: #334155; margin-bottom: 8px;">
+                        💡 Gợi ý phương án giải cứu (1-Click Tự động xếp lịch):
+                    </div>
+
+                    <div class="rescue-advices-list">
+                        ${advices.map((advice, adviceIdx) => `
+                            <div class="rescue-advice-item">
+                                <div class="rescue-advice-info">
+                                    <div class="rescue-advice-title">${escapeHtml(advice.title)}</div>
+                                    <div class="rescue-advice-desc">${escapeHtml(advice.description)}</div>
+                                </div>
+                                <button type="button" class="btn-rescue-apply" onclick="executeRescueAdvice(${rotIndex}, ${adviceIdx})">
+                                    ⚡ Áp dụng giải cứu ngay
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`;
+            });
+
+            bodyEl.innerHTML = html;
+        }
+
+        function executeRescueAdvice(rotIndex, adviceIndex) {
+            const unscheduled = window.lastUnscheduledData || [];
+            if (rotIndex < 0 || rotIndex >= unscheduled.length) return;
+
+            const rotItem = unscheduled[rotIndex];
+            const advices = (rotItem.advices && rotItem.advices.length > 0) ? rotItem.advices : [];
+            const advice = advices[adviceIndex] || {
+                patch: { gioDienRa: "11:30", gioKetThuc: "12:00", nvChinh: "KTV Phụ Trách", may: "Thủ công", giuong: "Giường 1", phong: rotItem.room || rotItem.phong || "" }
+            };
+            const patch = advice.patch || {};
+
+            const targetDate = rotItem.ngay || (document.getElementById('schedule-date')?.value) || new Date().toISOString().slice(0, 10);
+
+            const rescuedRow = {
+                ngay: targetDate,
+                tenBN: rotItem.bn || rotItem.tenBN || "",
+                namSinh: rotItem.ns || rotItem.namSinh || "",
+                phong: patch.phong || rotItem.room || rotItem.phong || "",
+                thuThuat: rotItem.tt || rotItem.thuThuat || "",
+                gioDienRa: patch.gioDienRa || "11:30",
+                gioKetThuc: patch.gioKetThuc || "12:00",
+                nvChinh: patch.nvChinh || "KTV Phụ Trách",
+                nvPhu: patch.nvPhu || "",
+                may: patch.may || "Thủ công",
+                giuong: patch.giuong || "Giường 1"
+            };
+
+            if (!window.currentScheduleData) window.currentScheduleData = [];
+            window.currentScheduleData.push(rescuedRow);
+            if (typeof dataCache !== 'undefined' && dataCache.schedule) {
+                dataCache.schedule.push(rescuedRow);
+            }
+
+            unscheduled.splice(rotIndex, 1);
+            setUnscheduledData(unscheduled, targetDate);
+
+            localStorage.setItem('meds_success', JSON.stringify(window.currentScheduleData));
+            try {
+                const cachedStr = localStorage.getItem('times_bootstrap_cache');
+                if (cachedStr) {
+                    const b = JSON.parse(cachedStr);
+                    b.schedule = window.currentScheduleData;
+                    localStorage.setItem('times_bootstrap_cache', JSON.stringify(b));
+                }
+            } catch(e) {}
+
+            filterSchedule();
+            if (typeof renderStats === 'function') renderStats(window.lastUnscheduledData);
+            if (typeof renderPatientsTable === 'function') renderPatientsTable();
+            if (typeof loadDashboard === 'function') loadDashboard();
+
+            const backendSched = window.currentScheduleData.map(x => [ x.ngay || targetDate, x.tenBN || '', x.namSinh || '', x.phong || '', x.thuThuat || '', x.gioDienRa || '', x.gioKetThuc || '', x.nvChinh || '', x.nvPhu || '', x.may || '', x.giuong || '' ]);
+            callApi('saveSchedule', [targetDate, backendSched], null, null);
+
+            if (typeof showToast === 'function') {
+                showToast(`⚡ Đã giải cứu thành công ca [${rescuedRow.thuThuat}] cho BN ${rescuedRow.tenBN}!`, 'success');
+            } else {
+                alert(`⚡ Đã giải cứu thành công ca [${rescuedRow.thuThuat}] cho BN ${rescuedRow.tenBN}!`);
+            }
+
+            renderUnscheduledAdvisor();
+        }
+
+        window.openUnscheduledAdvisorModal = openUnscheduledAdvisorModal;
+        window.closeUnscheduledAdvisorModal = closeUnscheduledAdvisorModal;
+        window.renderUnscheduledAdvisor = renderUnscheduledAdvisor;
+        window.executeRescueAdvice = executeRescueAdvice;
 
 
 

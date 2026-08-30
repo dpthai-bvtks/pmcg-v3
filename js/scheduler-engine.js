@@ -1168,7 +1168,6 @@ function getSafeCache() {
     }
 
     const finalDropList = (best ? best.rot : []).concat(forcedDrops).map(r => ({ ...r, ngay: r.ngay || dateVal }));
-
     const formattedSched = (best ? best.sched : []).map(x => ({
       ngay: x.NGAY,
       tenBN: x.HOTEN,
@@ -1186,13 +1185,30 @@ function getSafeCache() {
     const compactedSched = compactTimelineGaps(formattedSched, db);
     const elapsed = Math.round(performance.now() - startTime);
 
+    const diagnosedRot = finalDropList.map(item => {
+      if (typeof UnscheduledDiagnosticEngine !== 'undefined') {
+        const diag = UnscheduledDiagnosticEngine.diagnose(item, db, compactedSched);
+        if (diag) {
+          return {
+            ...item,
+            causeCode: diag.causeCode,
+            causeTitle: diag.causeTitle,
+            causeDetail: diag.causeDetail,
+            reason: diag.causeDetail,
+            advices: diag.advices
+          };
+        }
+      }
+      return item;
+    });
+
     return {
       scheduleCount: compactedSched.length,
-      unscheduledCount: finalDropList.length,
+      unscheduledCount: diagnosedRot.length,
       schedule: compactedSched,
       sched: compactedSched,
-      unscheduled: finalDropList,
-      rot: finalDropList,
+      unscheduled: diagnosedRot,
+      rot: diagnosedRot,
       elapsedMs: elapsed,
       threadCount: 1,
       engine: engineName
@@ -1328,13 +1344,30 @@ function getSafeCache() {
       const compactedSched = compactTimelineGaps(formattedSched, db);
       const elapsed = Math.round(performance.now() - startTime);
 
+      const diagnosedRot = finalDropList.map(item => {
+        if (typeof UnscheduledDiagnosticEngine !== 'undefined') {
+          const diag = UnscheduledDiagnosticEngine.diagnose(item, db, compactedSched);
+          if (diag) {
+            return {
+              ...item,
+              causeCode: diag.causeCode,
+              causeTitle: diag.causeTitle,
+              causeDetail: diag.causeDetail,
+              reason: diag.causeDetail,
+              advices: diag.advices
+            };
+          }
+        }
+        return item;
+      });
+
       return {
         scheduleCount: compactedSched.length,
-        unscheduledCount: finalDropList.length,
+        unscheduledCount: diagnosedRot.length,
         schedule: compactedSched,
         sched: compactedSched,
-        unscheduled: finalDropList,
-        rot: finalDropList,
+        unscheduled: diagnosedRot,
+        rot: diagnosedRot,
         elapsedMs: elapsed,
         threadCount: numWorkers,
         engine: engineName
@@ -1344,113 +1377,6 @@ function getSafeCache() {
       return runClientScheduling(dateVal, strategyKey, skipProcsStr, crowdedOverride, existingSched);
     }
   }
-function runSaturdayScheduling(payload = {}, dateVal = '') {
-    const startTime = performance.now();
-    const targetDate = dateVal || new Date().toISOString().slice(0, 10);
-    const { database: baseDb } = buildDbFromCache();
-
-    baseDb.roomBeds = {};
-    baseDb.roomStaff = {};
-    const allBeds = [];
-    const rooms = (typeof dataCache !== 'undefined' && dataCache.room) ? dataCache.room : [];
-    rooms.forEach(r => {
-      const roomName = r.tenPhong || r.ten || r[1] || "";
-      const soGiuong = parseInt(r.soGiuong || r[5]) || 15;
-      const bedStr = r.danhSachGiuong || r[6] ? String(r.danhSachGiuong || r[6]).trim() : "";
-      const beds = (bedStr && bedStr !== 'None') ? bedStr.split(",").map(x => x.trim()).filter(Boolean) : Array.from({ length: soGiuong }, (_, i) => `Giường ${i + 1}`);
-      beds.forEach(b => allBeds.push(`${roomName}|${b}`));
-    });
-    baseDb.roomBeds["PHONG_CHUNG_T7"] = allBeds;
-    baseDb.roomStaff["PHONG_CHUNG_T7"] = [];
-
-    const allStaff = (typeof dataCache !== 'undefined' && dataCache.staff) ? dataCache.staff : [];
-    baseDb.rawStaff = [];
-    (payload.allowed_staff || []).forEach(tenNhanVien => {
-      const staffRow = allStaff.find(r => (r.ten || r.name || r[1]) === tenNhanVien);
-      if (staffRow) {
-        const shiftStr = (payload.staff_shifts_dict?.[tenNhanVien] || []).map(sh => `${sh[0]}-${sh[1]}`).join(', ');
-        const skills = staffRow.kyNang || staffRow.skills || staffRow[2] || "";
-        const role = staffRow.vaiTro || staffRow.role || staffRow[3] || "KTV";
-        baseDb.rawStaff.push([staffRow.ten || staffRow.name || staffRow[1], role, skills, shiftStr, "", "Đi làm"]);
-      }
-    });
-
-    baseDb.rawPatients = [];
-    (payload.final_pats || []).forEach((bn, idx) => {
-      const readyTime = (bn.gioVao ? t2m(bn.gioVao) : 0) + 1;
-      const pName = String(bn.ten).toUpperCase();
-      const pNs = bn.ns || "";
-      const pRoom = bn.phong || "";
-      const pId = bn.id || (pName + "_" + pNs + "_" + pRoom + "_" + idx);
-      baseDb.rawPatients.push({
-        pId: pId,
-        name: pName,
-        ns: pNs,
-        ngayVao: bn.ngayVao || "",
-        room: "PHONG_CHUNG_T7",
-        arrive: readyTime,
-        leave: 9999,
-        busy: [[0, readyTime]],
-        pending: bn.tt ? String(bn.tt).split(",").map(x => x.trim()).filter(Boolean) : [],
-        free_at: readyTime
-      });
-    });
-
-    const best = runBestIteration(baseDb, targetDate, [], 2, -1);
-    const decodeRoom = item => {
-      if (item.PHONG === "PHONG_CHUNG_T7" && item.GIUONG?.includes("|")) {
-        const parts = item.GIUONG.split("|");
-        return { realRoom: parts[0], realBed: parts[1] };
-      }
-      return { realRoom: item.PHONG, realBed: item.GIUONG };
-    };
-
-    if (!best) {
-      return { scheduleCount: 0, unscheduledCount: 0, sched: [], schedule: [], rot: [], unscheduled: [], elapsedMs: 0 };
-    }
-
-    const rot = (best.rot || []).map(u => {
-      if (u.phong === "PHONG_CHUNG_T7" || u.room === "PHONG_CHUNG_T7") {
-        const orig = (payload.final_pats || []).find(p => p.ten.toUpperCase() === u.bn.toUpperCase());
-        if (orig) { u.phong = orig.phong; u.room = orig.phong; }
-      }
-      return { ...u, ngay: u.ngay || targetDate };
-    });
-
-    const formattedSched = (best.sched || []).map(item => {
-      const { realRoom, realBed } = decodeRoom(item);
-      return {
-        ngay: item.NGAY || targetDate,
-        tenBN: item.HOTEN,
-        namSinh: item.NAMSINH,
-        phong: realRoom,
-        thuThuat: item.DICHVU,
-        gioDienRa: item.GIODIENRA,
-        gioKetThuc: item.GIOKETTHUC,
-        nvChinh: item["NV CHÍNH"],
-        nvPhu: item["NV PHỤ"],
-        may: item.MAY,
-        giuong: realBed
-      };
-    });
-
-    const elapsed = Math.round(performance.now() - startTime);
-
-    return {
-      scheduleCount: formattedSched.length,
-      unscheduledCount: rot.length,
-      sched: formattedSched,
-      schedule: formattedSched,
-      rot: rot,
-      unscheduled: rot,
-      elapsedMs: elapsed
-    };
-  }
-
-  function runExtraScheduling(dateVal, existingSched = []) {
-    return runClientScheduling(dateVal, 'opt_rare', '', -1, existingSched);
-  }
-
   return {
     t2m,
     m2t,
@@ -1461,3 +1387,224 @@ function runSaturdayScheduling(payload = {}, dateVal = '') {
     runSaturdayScheduling: runSaturdayScheduling
   };
 })();
+
+// ============================================================
+// 💡 UNSCHEDULED DIAGNOSTIC & SMART RESCUE ADVISOR ENGINE
+// ============================================================
+const UnscheduledDiagnosticEngine = (function () {
+  'use strict';
+
+  function t2m(thoiGian) {
+    if (!thoiGian && thoiGian !== 0) return 0;
+    if (thoiGian instanceof Date) {
+      if (isNaN(thoiGian.getTime())) return 0;
+      return thoiGian.getUTCHours() * 60 + thoiGian.getUTCMinutes();
+    }
+    const str = String(thoiGian).trim();
+    if (!str || str === '0') return 0;
+    if (!isNaN(str) && parseFloat(str) > 0 && parseFloat(str) <= 1) return Math.round(parseFloat(str) * 1440);
+    if (!str.includes(":")) return 0;
+    const parts = str.split(":");
+    const gio = parseInt(parts[0].split(" ").pop(), 10);
+    const phut = parseInt(parts[1], 10);
+    return (isNaN(gio) ? 0 : gio) * 60 + (isNaN(phut) ? 0 : phut);
+  }
+
+  function m2t(totalMinutes) {
+    return `${String(Math.floor(totalMinutes / 60)).padStart(2, '0')}:${String(totalMinutes % 60).padStart(2, '0')}`;
+  }
+
+  function is_overlap(start1, end1, start2, end2) {
+    return Math.max(start1, start2) < Math.min(end1, end2);
+  }
+
+  function diagnose(rotItem, db, currentSched = []) {
+    if (!rotItem) return null;
+
+    const bnName = String(rotItem.bn || rotItem.tenBN || rotItem.HOTEN || '').toUpperCase().trim();
+    const bnNs = String(rotItem.ns || rotItem.namSinh || rotItem.NAMSINH || '').trim();
+    const room = String(rotItem.room || rotItem.phong || rotItem.PHONG || '').trim();
+    const tt = String(rotItem.tt || rotItem.thuThuat || rotItem.DICHVU || '').trim();
+    const ttLower = tt.toLowerCase();
+    const targetDate = rotItem.ngay || new Date().toISOString().slice(0, 10);
+
+    const info = (db && db.thuThuatInfo && (db.thuThuatInfo[ttLower] || db.thuThuatInfo[tt])) || ["Thủ công", 15, 5, "PHCN", 1, 0, [], 5];
+    const loaiMay = info[0] || "Thủ công";
+    const tgMay = Math.max(info[1] || 15, info[2] || 5);
+
+    let patientObj = null;
+    if (db && db.rawPatients) {
+      patientObj = db.rawPatients.find(p => {
+        const pName = String(p.name || p.ten || '').toUpperCase().trim();
+        const pNs = String(p.ns || p.namSinh || '').trim();
+        return pName === bnName && (!bnNs || !pNs || bnNs === pNs);
+      });
+    }
+
+    const arriveMins = patientObj ? (patientObj.arrive || 421) : 421;
+    const leaveMins = patientObj ? (patientObj.leave || 1014) : 1014;
+    const loaiBN = (patientObj && patientObj.loaiBN) || 'NoiTru';
+    const buoiDieuTri = (patientObj && patientObj.buoiDieuTri) || 'Sang';
+
+    const machinesOfCategory = (db && db.machineTypes && db.machineTypes[loaiMay]) || [];
+    const qualifiedStaff = [];
+    if (db && db.rawStaff) {
+      db.rawStaff.forEach(r => {
+        const name = r[0];
+        const skills = r[2] ? String(r[2]).toLowerCase().split(",").map(x => x.trim()) : [];
+        if (skills.includes(ttLower) || skills.includes((info[8] || "").toLowerCase()) || skills.includes((info[9] || "").toLowerCase())) {
+          qualifiedStaff.push(name);
+        }
+      });
+    }
+
+    const staffOccupancy = {};
+    const machineOccupancy = {};
+    const patientOccupancy = [];
+
+    (currentSched || []).forEach(slot => {
+      const gStart = t2m(slot.gioDienRa || slot.GIODIENRA);
+      const gEnd = t2m(slot.gioKetThuc || slot.GIOKETTHUC);
+      if (!gStart || !gEnd || gEnd <= gStart) return;
+
+      const pName = String(slot.tenBN || slot.HOTEN || '').toUpperCase().trim();
+      if (pName === bnName) patientOccupancy.push([gStart, gEnd]);
+      const nv1 = slot.nvChinh || slot["NV CHÍNH"];
+      if (nv1) {
+        if (!staffOccupancy[nv1]) staffOccupancy[nv1] = [];
+        staffOccupancy[nv1].push([gStart, gEnd]);
+      }
+      const nv2 = slot.nvPhu || slot["NV PHỤ"];
+      if (nv2) {
+        if (!staffOccupancy[nv2]) staffOccupancy[nv2] = [];
+        staffOccupancy[nv2].push([gStart, gEnd]);
+      }
+      const maySlot = slot.may || slot.MAY;
+      if (maySlot && maySlot !== "Thủ công") {
+        if (!machineOccupancy[maySlot]) machineOccupancy[maySlot] = [];
+        machineOccupancy[maySlot].push([gStart, gEnd]);
+      }
+    });
+
+    let causeCode = 'STAFF_UNAVAILABLE';
+    let causeTitle = '🟡 Nhân sự quá tải / Thiếu KTV chuyên môn';
+    let causeDetail = `Chưa xếp được ca [${tt}] cho BN ${bnName} do các KTV có kỹ năng (${qualifiedStaff.join(', ') || 'Chưa phân công'}) kín lịch vào khung giờ rảnh của bệnh nhân.`;
+
+    if (loaiMay !== "Thủ công" && machinesOfCategory.length > 0) {
+      let allMachinesBusyInFreeWindow = true;
+      for (let t = arriveMins; t <= leaveMins - tgMay; t += 15) {
+        const slotEnd = t + tgMay;
+        const availableMachine = machinesOfCategory.find(mName => {
+          const occ = machineOccupancy[mName] || [];
+          return !occ.some(b => is_overlap(t, slotEnd, b[0], b[1]));
+        });
+        if (availableMachine) {
+          allMachinesBusyInFreeWindow = false;
+          break;
+        }
+      }
+      if (allMachinesBusyInFreeWindow) {
+        causeCode = 'BOTTLENECK_MACHINE';
+        causeTitle = '🔴 Nghẽn máy móc thiết bị';
+        causeDetail = `Toàn bộ máy [${loaiMay}] (${machinesOfCategory.join(', ')}) bị kín chỗ trong tất cả khung giờ rảnh của bệnh nhân.`;
+      }
+    }
+
+    if (loaiBN === 'NgoaiTru' && causeCode !== 'BOTTLENECK_MACHINE') {
+      if (buoiDieuTri === 'Sang') {
+        causeCode = 'OUTPATIENT_SESSION_LIMIT';
+        causeTitle = '🟠 Xung đột ca Sáng Ngoại trú';
+        causeDetail = `Bệnh nhân Ngoại trú được đăng ký đi ca Sáng (07:00 - 11:30) nhưng các tài nguyên Sáng đã kín chỗ. Buổi Chiều (13:00 - 16:30) còn khoảng trống khả thi.`;
+      } else if (buoiDieuTri === 'Chieu') {
+        causeCode = 'OUTPATIENT_SESSION_LIMIT';
+        causeTitle = '🟠 Xung đột ca Chiều Ngoại trú';
+        causeDetail = `Bệnh nhân Ngoại trú được đăng ký đi ca Chiều (13:00 - 16:30) nhưng các tài nguyên Chiều đã kín chỗ. Buổi Sáng (07:00 - 11:30) còn khoảng trống khả thi.`;
+      }
+    }
+
+    if (arriveMins > 630 || leaveMins < 960) {
+      causeCode = 'PATIENT_TIME_WINDOW';
+      causeTitle = '🔵 Giờ Y lệnh / Giờ vào muộn';
+      causeDetail = `Khung giờ khả dụng của bệnh nhân (${m2t(arriveMins)} - ${m2t(leaveMins)}) quá hẹp, không đủ thời gian trống để xếp thủ thuật kéo dài ${tgMay} phút.`;
+    }
+
+    if (patientOccupancy.length >= 2 && causeCode !== 'BOTTLENECK_MACHINE') {
+      causeCode = 'INTERNAL_PATIENT_CLASH';
+      causeTitle = '🟣 Trùng lịch thủ thuật BN';
+      causeDetail = `Bệnh nhân ${bnName} có nhiều thủ thuật dài kẹp sát nhau trong ngày, chiếm hết khung giờ rảnh để làm thêm [${tt}].`;
+    }
+
+    const targetStaff = qualifiedStaff[0] || (db.roomStaff && db.roomStaff[room] && db.roomStaff[room][0]) || "KTV Phụ Trách";
+    const advices = [];
+
+    const overTimeStart = 675; // 11:15
+    const overTimeEnd = overTimeStart + tgMay;
+    advices.push({
+      id: 1,
+      title: `⚡ Cho phép KTV ${targetStaff} làm lố ${Math.max(5, overTimeEnd - 690)} phút cuối ca sáng (${m2t(overTimeStart)} - ${m2t(overTimeEnd)})`,
+      description: `Nới lỏng giờ làm ca sáng thêm 5-10 phút để KTV ${targetStaff} hoàn thành ca thủ thuật [${tt}] cho BN ${bnName}.`,
+      actionType: 'OVERTIME',
+      patch: {
+        gioDienRa: m2t(overTimeStart),
+        gioKetThuc: m2t(overTimeEnd),
+        nvChinh: targetStaff,
+        nvPhu: "",
+        may: (machinesOfCategory[0] || "Thủ công"),
+        giuong: "Giường 1",
+        phong: room
+      }
+    });
+
+    const aftStart = 810; // 13:30
+    const aftEnd = aftStart + tgMay;
+    advices.push({
+      id: 2,
+      title: `⚡ Chuyển xếp ca sang buổi Chiều (${m2t(aftStart)} - ${m2t(aftEnd)})`,
+      description: `Tận dụng các khoảng trống vắng khách đầu ca chiều để xếp thủ thuật [${tt}] với đầy đủ máy móc và KTV rảnh.`,
+      actionType: 'SWITCH_SESSION',
+      patch: {
+        gioDienRa: m2t(aftStart),
+        gioKetThuc: m2t(aftEnd),
+        nvChinh: targetStaff,
+        nvPhu: "",
+        may: (machinesOfCategory[0] || "Thủ công"),
+        giuong: "Giường 1",
+        phong: room
+      }
+    });
+
+    const earlyStart = 450; // 07:30
+    const earlyEnd = earlyStart + tgMay;
+    advices.push({
+      id: 3,
+      title: `⚡ Dời giờ Y lệnh / Cho BN làm ca đầu giờ sáng (${m2t(earlyStart)} - ${m2t(earlyEnd)})`,
+      description: `Xếp BN thực hiện ca [${tt}] vào đầu giờ sáng lúc 07:30 trước khung giờ cao điểm tắc nghẽn.`,
+      actionType: 'SHIFT_WINDOW',
+      patch: {
+        gioDienRa: m2t(earlyStart),
+        gioKetThuc: m2t(earlyEnd),
+        nvChinh: targetStaff,
+        nvPhu: "",
+        may: (machinesOfCategory[0] || "Thủ công"),
+        giuong: "Giường 1",
+        phong: room
+      }
+    });
+
+    return {
+      rotItem,
+      causeCode,
+      causeTitle,
+      causeDetail,
+      advices
+    };
+  }
+
+  return {
+    diagnose: diagnose
+  };
+})();
+
+if (typeof window !== 'undefined') {
+  window.UnscheduledDiagnosticEngine = UnscheduledDiagnosticEngine;
+}

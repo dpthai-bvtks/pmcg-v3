@@ -1136,5 +1136,24 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
      - Đồng bộ chuẩn phiên bản hằng ngày **3.2.6** (Footer: `11:00 30/08/2026`), Service Worker `pmcg-cache-v3.2.6` và query string `?v=3.2.6`.
 - **File sửa đổi**: `backend/src/index.js`, `index.html`, `css/style.css`, `js/app.js`, `js/scheduler-engine.js`, `sw.js`, `PM-xeplich-v3.md`.
 
+### Nâng Cấp: Dải Thời Gian Thực Hiện (Min - Max), Tự Động Tính Khoảng Cách KTV & Khắc Phục Đồng Bộ CSDL D1 (30/08/2026 - v3.2.6-rev2)
+- **Mục tiêu**:
+  - Tách bạch thời gian thực hiện của KTV thành 2 mốc Tối thiểu và Tối đa (Min - Max) và bảng danh mục thủ thuật 11 cột rõ ràng.
+  - Tự động tính khoảng cách nghỉ/di chuyển của KTV tỷ lệ thuận theo thời gian thao tác được phân bổ (`Khoảng cách = TG thao tác + Phút nghỉ`).
+  - Khắc phục triệt để lỗi không lưu/sửa/xóa được trên Cloudflare D1 Database và sửa lỗi biên tập Phác đồ điều trị lâm sàng.
+- **Giải pháp triển khai**:
+  1. **CSDL Cloudflare D1 & Backend Worker (`backend/src/index.js`)**:
+     - Thêm cột `tg_thuc_hien_max` vào bảng `thu_thuat`.
+     - Tạo `UNIQUE INDEX` trên các bảng `thu_thuat(ten_thu_thuat)`, `phong(ten_phong)`, `may_moc(ma_may)` để khắc phục triệt để lỗi SQLite 7500 (`ON CONFLICT clause does not match any UNIQUE constraint`).
+     - Tối ưu hóa các handler CRUD (`addThuThuat`, `editThuThuat`, `addMayMoc`, `editMayMoc`, `addPhong`, `editPhong`, `deleteBenhNhan`, `saveReorderedData`) để xử lý hoàn hảo cả đối tượng JSON payload lẫn mảng tham số truyền thống.
+     - Đã Deploy Worker lên Cloudflare Production thành công.
+  2. **Giao Diện & Xử Lý Phác Đồ (`index.html`, `js/app.js`)**:
+     - Cập nhật Form và Bảng thủ thuật 11 cột độc lập.
+     - Sửa hàm `openProtocolModal` và `saveProtocolFromModal`: Xử lý mượt mà cả danh sách thủ thuật dạng chuỗi, mảng chuỗi, hoặc mảng đối tượng, tự động ánh xạ checkbox chính xác và lưu đồng bộ 2 chiều (Local + Cloudflare D1).
+     - Cập nhật thời gian Footer: `12:05 30/08/2026`, Service Worker `pmcg-cache-v3.2.6-rev2` và resource query strings `?v=3.2.6-rev2` chống lưu cache cũ.
+  3. **Động cơ Xếp lịch AI (`js/scheduler-engine.js`)**:
+     - Tự động quét dải ứng viên `(candNv, candMay)` từ Min tới Max và tính khoảng cách tự động tỷ lệ thuận.
+- **File sửa đổi**: `backend/src/index.js`, `index.html`, `js/app.js`, `js/scheduler-engine.js`, `sw.js`, `PM-xeplich-v3.md`.
+
 
 

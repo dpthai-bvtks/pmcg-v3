@@ -2695,7 +2695,14 @@ window.renderSttOrderControl = function (type, i, total) {
 
                 machine: () => { document.getElementById('group-qty').style.display = 'flex'; document.getElementById('btn-save-machine').innerText = "Thêm"; document.getElementById('btn-cancel-machine').style.display = "none"; },
 
-                proc: () => { document.getElementById('btn-save-proc').innerText = "Thêm"; document.getElementById('btn-cancel-proc').style.display = "none"; document.getElementById('proc-system').value = 'YHCT'; document.getElementById('proc-category').value = 'Chưa phân loại'; document.getElementById('proc-machine').value = 'Thủ công'; },
+                proc: () => { 
+                    document.getElementById('btn-save-proc').innerText = "Thêm"; 
+                    document.getElementById('btn-cancel-proc').style.display = "none"; 
+                    document.getElementById('proc-system').value = 'YHCT'; 
+                    document.getElementById('proc-category').value = 'Chưa phân loại'; 
+                    document.getElementById('proc-machine').value = 'Thủ công'; 
+                    if (document.getElementById('proc-continuous-cb')) document.getElementById('proc-continuous-cb').checked = false;
+                },
 
                 staff: () => { document.getElementById('btn-save-staff').innerText = "Thêm"; document.getElementById('btn-cancel-staff').style.display = "none"; document.getElementById('staff-quyen').value = 'Cả hai'; document.getElementById('staff-role').value = 'Bác sĩ'; document.getElementById('staff-status').value = 'Đi làm'; },
 
@@ -3581,10 +3588,20 @@ window.renderSttOrderControl = function (type, i, total) {
             if (typeof renderProtocolSelectOptions === 'function') renderProtocolSelectOptions();
         }
 
+        function toggleContinuousProc(isChecked) {
+            if (isChecked) {
+                const thMin = document.getElementById('proc-person-time')?.value;
+                const thMax = document.getElementById('proc-person-time-max')?.value;
+                if (thMin) document.getElementById('proc-machine-time').value = thMin;
+                if (thMax) document.getElementById('proc-machine-time-max').value = thMax;
+            }
+        }
+        window.toggleContinuousProc = toggleContinuousProc;
+
         function renderProceduresTable_Original() {
             const tbody = document.getElementById('procedures-list');
             if (!tbody) return;
-            if (!dataCache.proc.length) { tbody.innerHTML = renderEmptyRow(11); return; }
+            if (!dataCache.proc.length) { tbody.innerHTML = renderEmptyRow(12); return; }
 
             tbody.innerHTML = dataCache.proc.map((item, i) => {
                 const idx = dataCache.proc.indexOf(item);
@@ -3613,6 +3630,11 @@ window.renderSttOrderControl = function (type, i, total) {
                     }
                 }
 
+                const isLienTuc = (item.lienTuc === 'Có' || item.lienTuc === 1 || item.lienTuc === '1' || item.lienTuc === true || item[14] === 'Có' || item[14] === 1 || (tgThMin === tgMin && tgThMax === tgMax && tgThMin >= 10));
+                const lienTucDisplay = isLienTuc 
+                    ? `<span class="badge" style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; font-weight:700; font-size:11px; padding:2px 8px; border-radius:10px;">Có (1:1)</span>`
+                    : `<span style="color:#94a3b8; font-size:11.5px;">Không</span>`;
+
                 const thMinDisplay = `<span class="proc-time-single">${tgThMin} phút</span>`;
                 const thMaxDisplay = (tgThMax > tgThMin)
                     ? `<span class="proc-time-range-badge">${tgThMax} phút</span>`
@@ -3632,6 +3654,7 @@ window.renderSttOrderControl = function (type, i, total) {
             <td align="center">${minDisplay}</td>
             <td align="center">${maxDisplay}</td>
             <td>${item.khoangCach || item[8] || 0} phút</td>
+            <td align="center">${lienTucDisplay}</td>
             <td align="center">${rutText}</td>
             <td align="center">${phuText}</td>
             <td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteProcedure(${idx})">Xóa</button></td>
@@ -3659,6 +3682,7 @@ window.renderSttOrderControl = function (type, i, total) {
             const kc = parseInt(document.getElementById('proc-gap').value) || 0;
             const rut = document.getElementById('proc-unplug-cb').checked ? 'Có' : 'Không';
             const phu = document.getElementById('proc-assist-cb').checked ? 'Có' : 'Không';
+            const lienTuc = document.getElementById('proc-continuous-cb').checked ? 'Có' : 'Không';
             const dsPhu = (rut === 'Có' || phu === 'Có') ? 'Tất cả Điều dưỡng' : '';
 
             if (!ten) return alert("Nhập tên thủ thuật");
@@ -3671,18 +3695,19 @@ window.renderSttOrderControl = function (type, i, total) {
                 thoiGianThuThuat: tgThuThuatMin,
                 thoiGianThuThuatMin: tgThuThuatMin,
                 thoiGianThuThuatMax: tgThuThuatMax,
-                khoangCach: kc, canRutMay: rut, canNguoiPhu: phu, dsNguoiPhu: dsPhu
+                khoangCach: kc, canRutMay: rut, canNguoiPhu: phu, dsNguoiPhu: dsPhu,
+                lienTuc: lienTuc
             };
 
             if (editIndex.proc > -1) {
                 dataCache.proc[editIndex.proc] = obj;
                 if (typeof callApi === 'function') {
-                    callApi('editThuThuat', [editIndex.proc, ten, vt, he, loai, may, tgThucHienMin, tgThuThuatMin, kc, rut, phu, dsPhu, tgThuThuatMax, tgThucHienMax]);
+                    callApi('editThuThuat', [editIndex.proc, ten, vt, he, loai, may, tgThucHienMin, tgThuThuatMin, kc, rut, phu, dsPhu, tgThuThuatMax, tgThucHienMax, lienTuc]);
                 }
             } else {
                 dataCache.proc.push(obj);
                 if (typeof callApi === 'function') {
-                    callApi('addThuThuat', [ten, vt, he, loai, may, tgThucHienMin, tgThuThuatMin, kc, rut, phu, dsPhu, tgThuThuatMax, tgThucHienMax]);
+                    callApi('addThuThuat', [ten, vt, he, loai, may, tgThucHienMin, tgThuThuatMin, kc, rut, phu, dsPhu, tgThuThuatMax, tgThucHienMax, lienTuc]);
                 }
             }
 
@@ -3718,9 +3743,11 @@ window.renderSttOrderControl = function (type, i, total) {
 
             const isRutMay = (item.canRutMay === 'Có' || item.canRutMay === 1 || item.canRutMay === '1' || item.canRutMay === true || item[9] === 'Có' || item[9] === 1 || item[9] === '1');
             const isNguoiPhu = (item.canNguoiPhu === 'Có' || item.canNguoiPhu === 1 || item.canNguoiPhu === '1' || item.canNguoiPhu === true || item[10] === 'Có' || item[10] === 1 || item[10] === '1');
+            const isLienTuc = (item.lienTuc === 'Có' || item.lienTuc === 1 || item.lienTuc === '1' || item.lienTuc === true || item[14] === 'Có' || item[14] === 1 || (item.thoiGianThucHienMin === item.thoiGianThuThuatMin && (item.thoiGianThucHienMax || item.thoiGianThucHienMin) === (item.thoiGianThuThuatMax || item.thoiGianThuThuatMin) && item.thoiGianThucHienMin >= 10));
 
             document.getElementById('proc-unplug-cb').checked = isRutMay;
             document.getElementById('proc-assist-cb').checked = isNguoiPhu;
+            if (document.getElementById('proc-continuous-cb')) document.getElementById('proc-continuous-cb').checked = isLienTuc;
             document.getElementById('btn-save-proc').innerText = "Lưu Sửa";
             document.getElementById('btn-cancel-proc').style.display = "inline-block";
         }

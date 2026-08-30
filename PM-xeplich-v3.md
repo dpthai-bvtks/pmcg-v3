@@ -1270,5 +1270,23 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   - Cập nhật thời gian Footer: `12:55 30/08/2026`, Service Worker: `CACHE_NAME = 'pmcg-cache-v3.2.6-rev8'` và query strings `?v=3.2.6-rev8`.
 - **File sửa đổi**: `js/scheduler-engine.js`, `index.html`, `sw.js`, `PM-xeplich-v3.md`.
 
+### Bổ Sung Cột & Thuộc Tính "Làm Liên Tục (1:1)" Cho Danh Mục Thủ Thuật (30/08/2026 - v3.2.6-rev9)
+- **Yêu cầu của người dùng**:
+  - Tạo thêm 1 cột riêng biệt trong bảng Thủ thuật và form Thêm/Sửa để thể hiện thủ thuật đó có làm việc liên tục 1:1 hay không, phục vụ cho việc thêm/bớt và mở rộng danh mục thủ thuật linh hoạt về sau.
+- **Phân tích nguyên nhân & Giải pháp**:
+  - **Backend / Cloudflare D1 Database**:
+    - Bổ sung cột `lien_tuc INTEGER DEFAULT 0` vào bảng `thu_thuat` trong `schema.sql` và migration tự động `ALTER TABLE thu_thuat ADD COLUMN lien_tuc INTEGER DEFAULT 0` trong `backend/src/index.js`.
+    - Cập nhật các API `getBootstrapData`, `getThuThuat`, `addThuThuat`, `editThuThuat` để lưu và trả về thuộc tính `lienTuc` ('Có' / 'Không').
+    - Deploy Cloudflare Worker Backend thành công.
+  - **Frontend UI & Form (`index.html`, `js/app.js`)**:
+    - Thêm checkbox `🔄 Làm liên tục 1:1 (TG Thực Hiện = TG Thủ Thuật)` (`#proc-continuous-cb`) trong form nhập liệu thủ thuật.
+    - Thêm hàm tự động đồng bộ `toggleContinuousProc(isChecked)`: Khi tick chọn Làm liên tục, tự động đồng bộ dải thời gian Thủ thuật theo dải thời gian Thực hiện.
+    - Thêm cột `LÀM LIÊN TỤC` vào bảng danh mục thủ thuật `#procedures-table` với Badge `Có (1:1)` màu xanh lá hoặc `Không` màu xám.
+    - Cập nhật các hàm `saveProcedure`, `editProc`, `cancelEdit('proc')`, `renderProceduresTable_Original()`.
+  - **Thuật toán xếp lịch (`js/scheduler-engine.js`)**:
+    - Đọc cờ `isLienTuc` từ danh mục thủ thuật và khóa cứng thời gian `tgNv === tgMay` cho mọi trường hợp được cấu hình làm việc liên tục 1:1.
+  - Cập nhật thời gian Footer: `13:00 30/08/2026`, Service Worker: `CACHE_NAME = 'pmcg-cache-v3.2.6-rev9'` và query strings `?v=3.2.6-rev9`.
+- **File sửa đổi**: `backend/src/index.js`, `index.html`, `js/app.js`, `js/scheduler-engine.js`, `sw.js`, `PM-xeplich-v3.md`.
+
 
 

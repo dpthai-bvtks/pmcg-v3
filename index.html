@@ -637,7 +637,9 @@
                                 <div class="form-group"><label>TG TT tối thiểu:</label><input type="number" id="proc-machine-time" placeholder="Phút (Ví dụ 25 phút)"></div>
                                 <div class="form-group"><label>TG TT tối đa:</label><input type="number" id="proc-machine-time-max" placeholder="Phút (Ví dụ 30 phút)"></div>
                                 <div class="form-group"><label>Khoảng cách nghỉ:</label><input type="number" id="proc-gap" placeholder="Số phút nghỉ/di chuyển (VD: 1)"></div>
-                                <div style="margin: 15px 0 10px 5px;">
+                                <div style="margin: 15px 0 10px 5px; display: flex; flex-direction: column; gap: 6px;">
+                                    <label class="checkbox-item"><input type="checkbox" id="proc-continuous-cb" value="Có" onchange="toggleContinuousProc(this.checked)">
+                                        <span style="color:#0284c7; font-weight:bold;">🔄 Làm liên tục 1:1 (TG Thực Hiện = TG Thủ Thuật)</span></label>
                                     <label class="checkbox-item"><input type="checkbox" id="proc-unplug-cb" value="Có">
                                         <span style="color:#2980b9; font-weight:bold;">Có Điều dưỡng rút/tháo máy</span></label>
                                     <label class="checkbox-item"><input type="checkbox" id="proc-assist-cb" value="Có">
@@ -663,6 +665,7 @@
                                         <th>TG TT (Min)</th>
                                         <th>TG TT (Max)</th>
                                         <th>Khoảng cách nghỉ</th>
+                                        <th>Làm Liên Tục</th>
                                         <th>Rút Máy</th>
                                         <th>Người Phụ</th>
                                         <th>Thao Tác</th>
@@ -670,7 +673,7 @@
                                 </thead>
                                 <tbody id="procedures-list">
                                     <tr>
-                                        <td colspan="11" align="center">Đang tải...</td>
+                                        <td colspan="12" align="center">Đang tải...</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -3082,7 +3085,7 @@
 
                     <p><span class="f-icon">🏷️</span> <span id="app-footer-version">Phiên bản: 3.2.6</span></p>
 
-                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 12:55 30/08/2026</span></p>
+                    <p><span class="f-icon">⏱</span> <span id="sys-last-update">Cập nhật lần cuối: 13:00 30/08/2026</span></p>
 
                     <p><span class="f-icon">👨‍💻</span> <span>Thiết kế & Phát triển: <b>Bác sĩ Thái</b></span></p>
 
@@ -3520,20 +3523,20 @@
     <div id="sidebar-tooltip"></div>
 
     <!-- JavaScript Modules -->
-    <script src="js/offline-sync-engine.js?v=3.2.6-rev8"></script>
-    <script src="js/ai-scheduler.js?v=3.2.6-rev8"></script>
-    <script src="js/cp-solver.js?v=3.2.6-rev8"></script>
-    <script src="js/scheduler-engine.js?v=3.2.6-rev8"></script>
-    <script src="js/app.js?v=3.2.6-rev8"></script>
-    <script src="js/init.js?v=3.2.6-rev8"></script>
-    <script src="js/sync.js?v=3.2.6-rev8"></script>
-    <script src="js/thongke.js?v=3.2.6-rev8"></script>
+    <script src="js/offline-sync-engine.js?v=3.2.6-rev9"></script>
+    <script src="js/ai-scheduler.js?v=3.2.6-rev9"></script>
+    <script src="js/cp-solver.js?v=3.2.6-rev9"></script>
+    <script src="js/scheduler-engine.js?v=3.2.6-rev9"></script>
+    <script src="js/app.js?v=3.2.6-rev9"></script>
+    <script src="js/init.js?v=3.2.6-rev9"></script>
+    <script src="js/sync.js?v=3.2.6-rev9"></script>
+    <script src="js/thongke.js?v=3.2.6-rev9"></script>
 
     <!-- PWA Service Worker Registration -->
     <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js?v=3.2.6-rev8')
+            navigator.serviceWorker.register('./sw.js?v=3.2.6-rev9')
                 .then(reg => console.log('[PWA] Service Worker đăng ký thành công! Scope:', reg.scope))
                 .catch(err => console.warn('[PWA] Service Worker đăng ký thất bại:', err));
         });

@@ -406,7 +406,9 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
     const isDienCham = tenThuThuat.toLowerCase().includes('điện châm') || tenThuThuat.toLowerCase() === 'đc' || (info[8] && String(info[8]).toLowerCase().includes('điện châm'));
     
     // Kiểm tra tính chất làm việc liên tục 1:1 (KTV/Bác sĩ làm trực tiếp toàn bộ thời gian thủ thuật, ví dụ: TTG, TTK, XBBH, XBV, HH, SA, CC...)
-    const isContinuous = (baseTgMay === tgNvMin && tgMayMax === tgNvMax) 
+    const isExplicitContinuous = info[13] === 1 || info[13] === '1' || info[13] === 'Có' || info[13] === true;
+    const isContinuous = isExplicitContinuous 
+                      || (baseTgMay === tgNvMin && tgMayMax === tgNvMax) 
                       || (loaiMay === 'Thủ công' && baseTgMay === tgNvMin)
                       || (baseTgMay === tgNvMin && tgNvMin >= 10);
     
@@ -1062,6 +1064,8 @@ function getSafeCache() {
       const dsPhuStr = p.dsNguoiPhu || p[11] || "";
       const dsPhu = Array.isArray(dsPhuStr) ? dsPhuStr : String(dsPhuStr).split(",").map(x => x.trim()).filter(Boolean);
 
+      const isLienTuc = (p.lienTuc === 'Có' || p.lienTuc === 1 || p.lienTuc === '1' || p.lienTuc === true || p[14] === 'Có' || p[14] === 1 || p[14] === '1') ? 1 : 0;
+
       database.thuThuatInfo[ten] = [
         p.may || p[5] || "Thủ công",
         Math.max(1, tgMayMin),
@@ -1075,7 +1079,8 @@ function getSafeCache() {
         p.vietTat || p[2] || "",
         Math.max(1, Math.max(tgMayMin, tgMayMax)),
         Math.max(1, Math.max(tgNvMin, tgNvMax)),
-        gapMinutes
+        gapMinutes,
+        isLienTuc
       ];
     });
 

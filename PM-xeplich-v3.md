@@ -1296,5 +1296,15 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   - Cập nhật thời gian Footer: `13:05 30/08/2026`, Service Worker: `CACHE_NAME = 'pmcg-cache-v3.2.6-rev10'` và query strings `?v=3.2.6-rev10`.
 - **File sửa đổi**: `js/app.js`, `index.html`, `sw.js`, `PM-xeplich-v3.md`.
 
+### Nâng Cấp Hệ Thống: Chuyển Toàn Bộ Frontend Sang Cloudflare Pages (30/08/2026 - v3.2.6-rev11)
+- **Yêu cầu của người dùng**:
+  - Chuyển hẳn việc deploy Frontend từ GitHub Pages sang Cloudflare Pages để đạt tốc độ deploy siêu tốc (2-4 giây) và chuẩn bị gắn tên miền tùy chỉnh `xeplichthuthuat.io.vn`.
+- **Phân tích nguyên nhân & Giải pháp**:
+  - Khởi tạo project Cloudflare Pages `pmcg-v3` trên tài khoản Cloudflare.
+  - Cấu hình các lệnh deploy tự động trong `backend/package.json` (`npm run deploy:web` và `npm run deploy:all`).
+  - Đã deploy toàn bộ 73 tệp tin Frontend lên `https://pmcg-v3.pages.dev` đạt 100% thành công.
+  - Cập nhật thời gian Footer: `13:15 30/08/2026`, Service Worker: `CACHE_NAME = 'pmcg-cache-v3.2.6-rev11'` và query strings `?v=3.2.6-rev11`.
+- **File sửa đổi**: `backend/package.json`, `index.html`, `sw.js`, `PM-xeplich-v3.md`.
+
 
 

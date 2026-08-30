@@ -2973,7 +2973,7 @@ window.renderSttOrderControl = function (type, i, total) {
         window.initProtocolsData = initProtocolsData;
 
         function syncProtocolsToCloud(showToastMsg = false) {
-            const list = window.dataCache && window.dataCache.protocols ? window.dataCache.protocols : [];
+            const list = (window.dataCache && window.dataCache.protocols) ? window.dataCache.protocols : ((typeof dataCache !== 'undefined' && dataCache.protocols) ? dataCache.protocols : []);
             if (!list.length) return;
             const jsonStr = JSON.stringify(list);
             if (typeof callApi === 'function') {
@@ -2992,6 +2992,8 @@ window.renderSttOrderControl = function (type, i, total) {
         window.syncProtocolsToCloud = syncProtocolsToCloud;
 
         function saveProtocolsData(newList) {
+            if (!window.dataCache) window.dataCache = {};
+            if (typeof dataCache !== 'undefined') dataCache.protocols = newList;
             window.dataCache.protocols = newList;
             try {
                 localStorage.setItem('meds_protocols', JSON.stringify(newList));
@@ -3012,14 +3014,27 @@ window.renderSttOrderControl = function (type, i, total) {
         function renderProtocolsTable() {
             const tbody = document.getElementById('protocols-list');
             if (!tbody) return;
-            const list = (window.dataCache && window.dataCache.protocols) ? window.dataCache.protocols : [];
+            const list = (window.dataCache && window.dataCache.protocols) ? window.dataCache.protocols : ((typeof dataCache !== 'undefined' && dataCache.protocols) ? dataCache.protocols : []);
             if (!list.length) {
                 tbody.innerHTML = '<tr><td colspan="4" align="center" style="color:#64748b; padding:15px;">Chưa có phác đồ điều trị nào. Hãy bấm "➕ Thêm Phác Đồ Mới" để tạo.</td></tr>';
                 return;
             }
             tbody.innerHTML = list.map((item, i) => {
-                const procsArr = Array.isArray(item.procs) ? item.procs : (typeof item.procs === 'string' ? item.procs.split(',').map(s => s.trim()).filter(Boolean) : []);
-                const procsHtml = procsArr.map(p => `<span class="badge" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; font-size:11.5px; padding:2px 8px; border-radius:12px; margin:2px 3px; display:inline-block;">${escapeHtml(p)}</span>`).join('');
+                let procsArr = [];
+                if (Array.isArray(item.procs)) {
+                    procsArr = item.procs;
+                } else if (typeof item.procs === 'string') {
+                    try {
+                        const parsed = JSON.parse(item.procs);
+                        procsArr = Array.isArray(parsed) ? parsed : item.procs.split(',').map(s => s.trim()).filter(Boolean);
+                    } catch(e) {
+                        procsArr = item.procs.split(',').map(s => s.trim()).filter(Boolean);
+                    }
+                }
+                const procsHtml = procsArr.map(p => {
+                    const pName = (typeof p === 'object' && p !== null) ? (p.name || p.ten || '') : String(p || '');
+                    return `<span class="badge" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; font-size:11.5px; padding:2px 8px; border-radius:12px; margin:2px 3px; display:inline-block;">${escapeHtml(pName)}</span>`;
+                }).join('');
                 const sttHtml = (typeof window.renderSttOrderControl === 'function') ? window.renderSttOrderControl("protocols", i, list.length) : `<span style="font-weight:700;">${i + 1}</span>`;
                 return `<tr class="draggable-row editable-row" data-drag-idx="${i}">
                     <td>${sttHtml}</td>
@@ -3033,9 +3048,9 @@ window.renderSttOrderControl = function (type, i, total) {
             }).join('');
 
             if (typeof initTableDragAndDrop === 'function') {
-                initTableDragAndDrop('protocols-list', window.dataCache.protocols, () => {
+                initTableDragAndDrop('protocols-list', (window.dataCache && window.dataCache.protocols) ? window.dataCache.protocols : dataCache.protocols, () => {
                     renderProtocolsTable();
-                    saveProtocolsData(window.dataCache.protocols);
+                    saveProtocolsData((window.dataCache && window.dataCache.protocols) ? window.dataCache.protocols : dataCache.protocols);
                 });
             }
         }
@@ -3052,7 +3067,7 @@ window.renderSttOrderControl = function (type, i, total) {
             const idxInput = document.getElementById('protocol-edit-index');
 
             idxInput.value = idx;
-            const list = (window.dataCache && window.dataCache.protocols) ? window.dataCache.protocols : [];
+            const list = (window.dataCache && window.dataCache.protocols) ? window.dataCache.protocols : ((typeof dataCache !== 'undefined' && dataCache.protocols) ? dataCache.protocols : []);
             const isEdit = idx >= 0 && idx < list.length;
             const currentItem = isEdit ? list[idx] : null;
 
@@ -3061,7 +3076,7 @@ window.renderSttOrderControl = function (type, i, total) {
 
             // Render checkboxes from dataCache.proc
             let yhctHtml = '', phcnHtml = '';
-            const allProcs = (window.dataCache && window.dataCache.proc) ? window.dataCache.proc : [];
+            const allProcs = (window.dataCache && window.dataCache.proc) ? window.dataCache.proc : ((typeof dataCache !== 'undefined' && dataCache.proc) ? dataCache.proc : []);
             let selectedProcs = [];
             if (isEdit && currentItem && currentItem.procs) {
                 if (Array.isArray(currentItem.procs)) {
@@ -3083,7 +3098,10 @@ window.renderSttOrderControl = function (type, i, total) {
                 if (!ten) return;
 
                 const escapedTen = escapeHtml(ten);
-                const isChecked = selectedProcs.some(sp => matchProc(ten, sp));
+                const isChecked = selectedProcs.some(sp => {
+                    const spName = (typeof sp === 'object' && sp !== null) ? (sp.name || sp.ten || '') : String(sp || '');
+                    return typeof matchProc === 'function' ? matchProc(ten, spName) : (ten.trim().toLowerCase() === spName.trim().toLowerCase());
+                });
                 const cbHtml = `<label class="checkbox-item" style="font-size:12px; margin-bottom:4px; display:flex; align-items:center; gap:6px; cursor:pointer;">
                     <input type="checkbox" class="modal-proc-cb" data-ten="${escapedTen}" value="${escapedTen}" ${isChecked ? 'checked' : ''}>
                     <span>${escapedTen}</span>
@@ -3115,19 +3133,23 @@ window.renderSttOrderControl = function (type, i, total) {
 
             if (!name) {
                 if (typeof window.showToast === 'function') window.showToast('⚠️ Vui lòng nhập tên phác đồ!', 'warning');
+                else alert('Vui lòng nhập tên phác đồ!');
                 nameInput.focus();
                 return;
             }
 
             const checkedCbs = Array.from(document.querySelectorAll('#modal-protocol-editor .modal-proc-cb:checked'));
-            const selectedProcs = checkedCbs.map(cb => cb.value.trim());
+            const selectedProcs = checkedCbs.map(cb => (cb.getAttribute('data-ten') || cb.value || '').trim()).filter(Boolean);
 
             if (!selectedProcs.length) {
                 if (typeof window.showToast === 'function') window.showToast('⚠️ Vui lòng chọn ít nhất 1 thủ thuật cho phác đồ!', 'warning');
+                else alert('Vui lòng chọn ít nhất 1 thủ thuật cho phác đồ!');
                 return;
             }
 
-            const list = (window.dataCache && window.dataCache.protocols) ? [...window.dataCache.protocols] : [];
+            const currentList = (window.dataCache && window.dataCache.protocols) ? window.dataCache.protocols : ((typeof dataCache !== 'undefined' && dataCache.protocols) ? dataCache.protocols : []);
+            const list = Array.isArray(currentList) ? [...currentList] : [];
+            
             if (idx >= 0 && idx < list.length) {
                 list[idx] = { ...list[idx], name, procs: selectedProcs };
             } else {
@@ -3147,7 +3169,8 @@ window.renderSttOrderControl = function (type, i, total) {
         window.saveProtocolFromModal = saveProtocolFromModal;
 
         function deleteProtocol(idx) {
-            const list = (window.dataCache && window.dataCache.protocols) ? [...window.dataCache.protocols] : [];
+            const currentList = (window.dataCache && window.dataCache.protocols) ? window.dataCache.protocols : ((typeof dataCache !== 'undefined' && dataCache.protocols) ? dataCache.protocols : []);
+            const list = Array.isArray(currentList) ? [...currentList] : [];
             if (idx < 0 || idx >= list.length) return;
             const target = list[idx];
 

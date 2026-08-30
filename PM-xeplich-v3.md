@@ -1153,7 +1153,33 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
      - Cập nhật thời gian Footer: `12:05 30/08/2026`, Service Worker `pmcg-cache-v3.2.6-rev2` và resource query strings `?v=3.2.6-rev2` chống lưu cache cũ.
   3. **Động cơ Xếp lịch AI (`js/scheduler-engine.js`)**:
      - Tự động quét dải ứng viên `(candNv, candMay)` từ Min tới Max và tính khoảng cách tự động tỷ lệ thuận.
-- **File sửa đổi**: `backend/src/index.js`, `index.html`, `js/app.js`, `js/scheduler-engine.js`, `sw.js`, `PM-xeplich-v3.md`.
+### Sửa Lỗi: Khắc Phục Triệt Để Lỗi Thêm Mới & Chỉnh Sửa Phác Đồ Trong Tab Thủ Thuật (30/08/2026 - v3.2.6-rev3)
+- **Yêu cầu của người dùng**:
+  - Kiểm tra và khắc phục lỗi không thể sửa chữa / thêm mới phác đồ trong tab Thủ thuật.
+- **Phân tích nguyên nhân gốc rễ**:
+  1. **Lỗi Ghi Đè từ Cache Ngoại Tuyến (`times_bootstrap_cache`)**: Khi lưu phác đồ, `saveProtocolsData()` chỉ lưu vào `localStorage['meds_protocols']` mà không cập nhật `times_bootstrap_cache`. Khi chuyển tab, F5 reload hoặc khi polling kích hoạt `restoreOfflineCache()`, dữ liệu phác đồ cũ trong `times_bootstrap_cache` lập tức ghi đè lên `dataCache.protocols`, khiến phác đồ mới bị biến mất hoặc hoàn tác về cũ.
+  2. **Lỗi Phân Loại Hệ Thủ Thuật trong Modal**: Phân loại hệ `he === 'YHCT'` so sánh nhạy cảm chữ hoa/thường, khiến các thủ thuật có hệ viết thường (`'yhct'`) bị dồn toàn bộ sang cột PHCN.
+  3. **Xung Đột Đồng Bộ Đám Mây**: `syncProtocolsToCloud()` gọi đồng thời cả `saveProtocolsData` và `saveSystemSettings`, gây ra 2 request tuần tự làm version dữ liệu tăng 2 lần liên tục và gây race condition.
+  4. **Thiếu Tự Động Render Khi Chuyển Tab**: Khi chuyển tab sang `tab-procedures`, hệ thống chưa gọi `renderProtocolsTable()`.
+- **Giải pháp cụ thể đã thực hiện**:
+  1. **Cập nhật `saveProtocolsData()`**:
+     - Lưu đồng thời vào `window.dataCache.protocols`, `dataCache.protocols`, `localStorage['meds_protocols']`.
+     - **🔥 Cập nhật trực tiếp `times_bootstrap_cache`** trong `localStorage` để chống triệt để tình trạng cache cũ ghi đè.
+     - Lưu vào Dexie Cache và phát sóng qua `OfflineSyncEngine.broadcastLiveEvent('PROTOCOLS_UPDATED')`.
+  2. **Chuẩn hóa Modal Thêm Mới / Chỉnh Sửa Phác Đồ**:
+     - Lấy danh sách thủ thuật an toàn từ `dataCache.proc` / `dataCache.procedures`.
+     - Chuẩn hóa phân loại YHCT / PHCN không phân biệt hoa thường và hỗ trợ từ khóa Đông y, Cổ truyền.
+     - Tự động gán ID duy nhất và lưu danh sách thủ thuật dạng mảng chuỗi sạch.
+     - Tự động focus và bôi đen ô tên phác đồ khi mở modal.
+  3. **Nâng cao Trải Nghiệm Người Dùng (UX/UI)**:
+     - Hỗ trợ phím **Enter** trong ô nhập tên để lưu ngay phác đồ.
+     - Hỗ trợ phím **Escape** hoặc click ra ngoài màn mờ (backdrop) để đóng modal.
+     - Hỗ trợ **nhấp đúp chuột (Double Click)** vào bất kỳ dòng phác đồ nào trên bảng để mở sửa nhanh.
+     - Tự động kích hoạt `renderProtocolsTable()` mỗi khi chuyển sang tab Thủ thuật (`tab-procedures`).
+  4. **Tối ưu Đồng Bộ Đám Mây (`syncProtocolsToCloud`)**:
+     - Tinh gọn gọi API đơn nhất `saveProtocolsData` lên Cloudflare D1 Backend.
+     - Đồng bộ phiên bản toàn hệ thống: Footer `12:30 30/08/2026`, Service Worker `pmcg-cache-v3.2.6-rev3` và query string `?v=3.2.6-rev3`.
+- **File sửa đổi**: `js/app.js`, `index.html`, `sw.js`, `PM-xeplich-v3.md`.
 
 
 

@@ -2037,6 +2037,11 @@ window.renderSttOrderControl = function (type, i, total) {
                             renderStats(window.lastUnscheduledData);
                         }
 
+                        if (targetTab === 'tab-procedures') {
+                            if (typeof renderProceduresTable === 'function') renderProceduresTable();
+                            if (typeof renderProtocolsTable === 'function') renderProtocolsTable();
+                        }
+
                         if (targetTab === 'tab-rooms' && typeof renderDynamicMachineInputs === 'function') {
                             renderDynamicMachineInputs();
                         }
@@ -2278,8 +2283,9 @@ window.renderSttOrderControl = function (type, i, total) {
             if (rawProtocols) {
                 try {
                     const parsed = typeof rawProtocols === 'string' ? JSON.parse(rawProtocols) : rawProtocols;
-                    if (Array.isArray(parsed) && parsed.length > 0) {
+                    if (Array.isArray(parsed)) {
                         window.dataCache.protocols = parsed;
+                        if (typeof dataCache !== 'undefined') dataCache.protocols = parsed;
                         try { localStorage.setItem('meds_protocols', JSON.stringify(parsed)); } catch(e) {}
                         if (typeof renderProtocolsTable === 'function') renderProtocolsTable();
                         if (typeof renderProtocolSelectOptions === 'function') renderProtocolSelectOptions();
@@ -2366,8 +2372,9 @@ window.renderSttOrderControl = function (type, i, total) {
                         if (rawCachedProto) {
                             try {
                                 const parsed = typeof rawCachedProto === 'string' ? JSON.parse(rawCachedProto) : rawCachedProto;
-                                if (Array.isArray(parsed) && parsed.length > 0) {
+                                if (Array.isArray(parsed)) {
                                     dataCache.protocols = parsed;
+                                    if (window.dataCache) window.dataCache.protocols = parsed;
                                     if (typeof renderProtocolsTable === 'function') renderProtocolsTable();
                                     if (typeof renderProtocolSelectOptions === 'function') renderProtocolSelectOptions();
                                 }
@@ -2444,8 +2451,9 @@ window.renderSttOrderControl = function (type, i, total) {
                         if (rawServerProto) {
                             try {
                                 const parsed = typeof rawServerProto === 'string' ? JSON.parse(rawServerProto) : rawServerProto;
-                                if (Array.isArray(parsed) && parsed.length > 0) {
+                                if (Array.isArray(parsed)) {
                                     dataCache.protocols = parsed;
+                                    if (window.dataCache) window.dataCache.protocols = parsed;
                                     try { localStorage.setItem('meds_protocols', JSON.stringify(parsed)); } catch(e) {}
                                     if (typeof renderProtocolsTable === 'function') renderProtocolsTable();
                                     if (typeof renderProtocolSelectOptions === 'function') renderProtocolSelectOptions();
@@ -2953,32 +2961,91 @@ window.renderSttOrderControl = function (type, i, total) {
             { id: '13', name: 'Phác đồ 13', procs: ['Điện xung', 'Tập thở PHCN'] }
         ];
 
+        let _protocolModalListenersSetup = false;
+
         function initProtocolsData() {
             if (!window.dataCache) window.dataCache = {};
-            if (!window.dataCache.protocols || !window.dataCache.protocols.length) {
+            if (typeof dataCache === 'undefined') window.dataCache = window.dataCache || {};
+
+            let loadedProtocols = null;
+            try {
+                const saved = localStorage.getItem('meds_protocols');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed)) loadedProtocols = parsed;
+                }
+            } catch (e) {}
+
+            if (!loadedProtocols) {
                 try {
-                    const saved = localStorage.getItem('meds_protocols');
-                    if (saved) {
-                        window.dataCache.protocols = JSON.parse(saved);
+                    const bStr = localStorage.getItem('times_bootstrap_cache');
+                    if (bStr) {
+                        const b = JSON.parse(bStr);
+                        const raw = (b.settings && b.settings.clinical_protocols) || b.protocols;
+                        if (raw) {
+                            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                            if (Array.isArray(parsed)) loadedProtocols = parsed;
+                        }
                     }
-                } catch (e) {}
+                } catch(e) {}
             }
-            if (!window.dataCache.protocols || !window.dataCache.protocols.length) {
-                window.dataCache.protocols = JSON.parse(JSON.stringify(DEFAULT_PROTOCOLS));
+
+            if (!loadedProtocols || !loadedProtocols.length) {
+                loadedProtocols = JSON.parse(JSON.stringify(DEFAULT_PROTOCOLS));
             }
+
+            window.dataCache.protocols = loadedProtocols;
+            if (typeof dataCache !== 'undefined') dataCache.protocols = loadedProtocols;
 
             renderProtocolsTable();
             renderProtocolSelectOptions();
+
+            // Thiết lập sự kiện bàn phím & backdrop modal một lần duy nhất
+            if (!_protocolModalListenersSetup) {
+                _protocolModalListenersSetup = true;
+                const modal = document.getElementById('modal-protocol-editor');
+                if (modal) {
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) closeProtocolModal();
+                    });
+                }
+                const nameInput = document.getElementById('protocol-name-input');
+                if (nameInput) {
+                    nameInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            saveProtocolFromModal();
+                        }
+                    });
+                }
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        const m = document.getElementById('modal-protocol-editor');
+                        if (m && m.style.display !== 'none') closeProtocolModal();
+                    }
+                });
+
+                // Lắng nghe sự kiện đồng bộ thời gian thực từ các Tab khác
+                if (typeof window.OfflineSyncEngine !== 'undefined' && typeof window.OfflineSyncEngine.registerLiveListener === 'function') {
+                    window.OfflineSyncEngine.registerLiveListener((type, payload) => {
+                        if (type === 'PROTOCOLS_UPDATED' && payload && Array.isArray(payload.protocols)) {
+                            window.dataCache.protocols = payload.protocols;
+                            if (typeof dataCache !== 'undefined') dataCache.protocols = payload.protocols;
+                            try { localStorage.setItem('meds_protocols', JSON.stringify(payload.protocols)); } catch(e) {}
+                            renderProtocolsTable();
+                            renderProtocolSelectOptions();
+                        }
+                    });
+                }
+            }
         }
         window.initProtocolsData = initProtocolsData;
 
         function syncProtocolsToCloud(showToastMsg = false) {
             const list = (window.dataCache && window.dataCache.protocols) ? window.dataCache.protocols : ((typeof dataCache !== 'undefined' && dataCache.protocols) ? dataCache.protocols : []);
-            if (!list.length) return;
             const jsonStr = JSON.stringify(list);
             if (typeof callApi === 'function') {
-                callApi('saveProtocolsData', [list], () => {}, () => {});
-                callApi('saveSystemSettings', [{ clinical_protocols: jsonStr }], res => {
+                callApi('saveProtocolsData', [list], res => {
                     if (showToastMsg && typeof window.showToast === 'function') {
                         window.showToast(`☁️ Đã đồng bộ ${list.length} phác đồ lên đám mây thành công!`);
                     }
@@ -2992,20 +3059,44 @@ window.renderSttOrderControl = function (type, i, total) {
         window.syncProtocolsToCloud = syncProtocolsToCloud;
 
         function saveProtocolsData(newList) {
+            if (!Array.isArray(newList)) newList = [];
             if (!window.dataCache) window.dataCache = {};
             if (typeof dataCache !== 'undefined') dataCache.protocols = newList;
             window.dataCache.protocols = newList;
+
+            // 1. Lưu localStorage riêng của phác đồ
             try {
                 localStorage.setItem('meds_protocols', JSON.stringify(newList));
-                if (typeof window.OfflineSyncEngine !== 'undefined' && window.OfflineSyncEngine.saveToLocalCache) {
-                    window.OfflineSyncEngine.saveToLocalCache('protocols', newList);
-                    window.OfflineSyncEngine.broadcastLiveEvent('PROTOCOLS_UPDATED', { count: newList.length });
+            } catch (e) {}
+
+            // 2. 🔥 Cập nhật trực tiếp vào times_bootstrap_cache để chống bị ghi đè bởi cache cũ
+            try {
+                const cachedStr = localStorage.getItem('times_bootstrap_cache');
+                if (cachedStr) {
+                    const b = JSON.parse(cachedStr);
+                    if (b) {
+                        b.protocols = newList;
+                        if (!b.settings) b.settings = {};
+                        b.settings.clinical_protocols = JSON.stringify(newList);
+                        localStorage.setItem('times_bootstrap_cache', JSON.stringify(b));
+                    }
                 }
             } catch (e) {}
 
-            // ĐỒNG BỘ LÊN CLOUDFLARE D1 BACKEND CHO MỌI THIẾT BỊ
+            // 3. Lưu vào IndexedDB Dexie Cache nếu có
+            if (typeof window.OfflineSyncEngine !== 'undefined') {
+                if (typeof window.OfflineSyncEngine.saveCache === 'function') {
+                    window.OfflineSyncEngine.saveCache('protocols', newList);
+                }
+                if (typeof window.OfflineSyncEngine.broadcastLiveEvent === 'function') {
+                    window.OfflineSyncEngine.broadcastLiveEvent('PROTOCOLS_UPDATED', { protocols: newList, count: newList.length });
+                }
+            }
+
+            // 4. Đồng bộ lên Cloudflare D1 Backend
             syncProtocolsToCloud(false);
 
+            // 5. Cập nhật giao diện bảng và dropdown chọn phác đồ
             renderProtocolsTable();
             renderProtocolSelectOptions();
         }
@@ -3036,7 +3127,7 @@ window.renderSttOrderControl = function (type, i, total) {
                     return `<span class="badge" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; font-size:11.5px; padding:2px 8px; border-radius:12px; margin:2px 3px; display:inline-block;">${escapeHtml(pName)}</span>`;
                 }).join('');
                 const sttHtml = (typeof window.renderSttOrderControl === 'function') ? window.renderSttOrderControl("protocols", i, list.length) : `<span style="font-weight:700;">${i + 1}</span>`;
-                return `<tr class="draggable-row editable-row" data-drag-idx="${i}">
+                return `<tr class="draggable-row editable-row" data-drag-idx="${i}" ondblclick="openProtocolModal(${i})" title="Bấm nút 'Sửa' hoặc nhấp đúp chuột để chỉnh sửa phác đồ">
                     <td>${sttHtml}</td>
                     <td><strong>${escapeHtml(item.name || `Phác đồ ${i + 1}`)}</strong></td>
                     <td>${procsHtml || '<em style="color:#94a3b8;">Chưa chọn thủ thuật</em>'}</td>
@@ -3074,9 +3165,10 @@ window.renderSttOrderControl = function (type, i, total) {
             titleEl.innerHTML = isEdit ? `<span>✏️ Chỉnh Sửa Phác Đồ</span>` : `<span>📋 Thêm Phác Đồ Mới</span>`;
             nameInput.value = isEdit ? (currentItem.name || '') : `Phác đồ ${list.length + 1}`;
 
-            // Render checkboxes from dataCache.proc
+            // Render checkboxes từ danh mục thủ thuật
             let yhctHtml = '', phcnHtml = '';
-            const allProcs = (window.dataCache && window.dataCache.proc) ? window.dataCache.proc : ((typeof dataCache !== 'undefined' && dataCache.proc) ? dataCache.proc : []);
+            const allProcs = (window.dataCache && (window.dataCache.proc || window.dataCache.procedures)) ? (window.dataCache.proc || window.dataCache.procedures) : ((typeof dataCache !== 'undefined' && (dataCache.proc || dataCache.procedures)) ? (dataCache.proc || dataCache.procedures) : []);
+            
             let selectedProcs = [];
             if (isEdit && currentItem && currentItem.procs) {
                 if (Array.isArray(currentItem.procs)) {
@@ -3093,7 +3185,7 @@ window.renderSttOrderControl = function (type, i, total) {
 
             allProcs.forEach(p => {
                 if (!p) return;
-                const ten = p.ten || p[1] || '';
+                const ten = p.ten || p.name || p[1] || '';
                 const he = p.he || p[3] || 'PHCN';
                 if (!ten) return;
 
@@ -3107,7 +3199,9 @@ window.renderSttOrderControl = function (type, i, total) {
                     <span>${escapedTen}</span>
                 </label>`;
 
-                if (he === 'YHCT') yhctHtml += cbHtml;
+                const heUpper = String(he || '').trim().toUpperCase();
+                const isYhct = heUpper === 'YHCT' || heUpper.includes('CỔ TRUYỀN') || heUpper.includes('ĐÔNG Y');
+                if (isYhct) yhctHtml += cbHtml;
                 else phcnHtml += cbHtml;
             });
 
@@ -3115,7 +3209,10 @@ window.renderSttOrderControl = function (type, i, total) {
             if (phcnContainer) phcnContainer.innerHTML = phcnHtml || '<em style="color:#94a3b8; font-size:11.5px;">Chưa có thủ thuật PHCN</em>';
 
             modal.style.display = 'flex';
-            setTimeout(() => { nameInput.focus(); }, 50);
+            setTimeout(() => { 
+                nameInput.focus(); 
+                nameInput.select();
+            }, 50);
         }
         window.openProtocolModal = openProtocolModal;
 
@@ -3151,10 +3248,11 @@ window.renderSttOrderControl = function (type, i, total) {
             const list = Array.isArray(currentList) ? [...currentList] : [];
             
             if (idx >= 0 && idx < list.length) {
-                list[idx] = { ...list[idx], name, procs: selectedProcs };
+                const currentId = list[idx] ? list[idx].id : ('proto_' + Date.now());
+                list[idx] = { id: currentId, name, procs: selectedProcs };
             } else {
                 list.push({
-                    id: String(Date.now()),
+                    id: 'proto_' + Date.now(),
                     name,
                     procs: selectedProcs
                 });
@@ -3163,7 +3261,7 @@ window.renderSttOrderControl = function (type, i, total) {
             saveProtocolsData(list);
             closeProtocolModal();
             if (typeof window.showToast === 'function') {
-                window.showToast(`✅ Đã lưu: ${name} (${selectedProcs.length} thủ thuật)`);
+                window.showToast(`✅ Đã lưu phác đồ: ${name} (${selectedProcs.length} thủ thuật)`);
             }
         }
         window.saveProtocolFromModal = saveProtocolFromModal;
@@ -3191,7 +3289,18 @@ window.renderSttOrderControl = function (type, i, total) {
             
             let optionsHtml = '<option value="">-- Chọn Phác đồ --</option>';
             list.forEach((item, i) => {
-                const procsSummary = (item.procs || []).join(', ');
+                let procsArr = [];
+                if (Array.isArray(item.procs)) {
+                    procsArr = item.procs;
+                } else if (typeof item.procs === 'string') {
+                    try {
+                        const parsed = JSON.parse(item.procs);
+                        procsArr = Array.isArray(parsed) ? parsed : item.procs.split(',').map(s => s.trim()).filter(Boolean);
+                    } catch(e) {
+                        procsArr = item.procs.split(',').map(s => s.trim()).filter(Boolean);
+                    }
+                }
+                const procsSummary = procsArr.map(p => (typeof p === 'object' && p !== null) ? (p.name || p.ten || '') : String(p || '')).filter(Boolean).join(', ');
                 optionsHtml += `<option value="${i}">${escapeHtml(item.name || `Phác đồ ${i + 1}`)}: ${escapeHtml(procsSummary)}</option>`;
             });
             sel.innerHTML = optionsHtml;
@@ -3215,7 +3324,17 @@ window.renderSttOrderControl = function (type, i, total) {
             if (isNaN(idx) || idx < 0 || idx >= list.length) return;
 
             const pObj = list[idx];
-            const targetProcs = pObj.procs || [];
+            let targetProcs = [];
+            if (Array.isArray(pObj.procs)) {
+                targetProcs = pObj.procs;
+            } else if (typeof pObj.procs === 'string') {
+                try {
+                    const parsed = JSON.parse(pObj.procs);
+                    targetProcs = Array.isArray(parsed) ? parsed : pObj.procs.split(',').map(s => s.trim()).filter(Boolean);
+                } catch(e) {
+                    targetProcs = pObj.procs.split(',').map(s => s.trim()).filter(Boolean);
+                }
+            }
 
             // Bỏ chọn trước khi áp dụng
             document.querySelectorAll('.pat-proc-cb').forEach(cb => { cb.checked = false; });
@@ -3223,7 +3342,10 @@ window.renderSttOrderControl = function (type, i, total) {
             let matchedCount = 0;
             document.querySelectorAll('.pat-proc-cb').forEach(cb => {
                 const cbVal = String(cb.value || '').trim();
-                const isMatch = targetProcs.some(target => matchProc(cbVal, target));
+                const isMatch = targetProcs.some(target => {
+                    const targetName = (typeof target === 'object' && target !== null) ? (target.name || target.ten || '') : String(target || '');
+                    return typeof matchProc === 'function' ? matchProc(cbVal, targetName) : (cbVal.toLowerCase() === targetName.toLowerCase());
+                });
                 if (isMatch) {
                     cb.checked = true;
                     matchedCount++;

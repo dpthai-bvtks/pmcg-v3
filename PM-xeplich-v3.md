@@ -1306,5 +1306,19 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   - Cập nhật thời gian Footer: `13:15 30/08/2026`, Service Worker: `CACHE_NAME = 'pmcg-cache-v3.2.6-rev11'` và query strings `?v=3.2.6-rev11`.
 - **File sửa đổi**: `backend/package.json`, `index.html`, `sw.js`, `PM-xeplich-v3.md`.
 
+### Chuẩn Hóa Bộ Quy Tắc: Tái Cấu Trúc Toàn Diện RULES.md Cho Nền Tảng Cloudflare & GitHub (30/08/2026 - v3.2.6-rev12)
+- **Yêu cầu của người dùng**:
+  - Viết lại toàn bộ file `RULES.md` bắt buộc AI phải tự động deploy lên Cloudflare, thông báo kết quả chi tiết cho người dùng và vẫn duy trì sao lưu đẩy code lên GitHub `main`.
+- **Phân tích nguyên nhân & Giải pháp**:
+  - Tái cấu trúc `RULES.md` thành 6 điều khoản chuẩn mực:
+    1. Kiểm tra trước khi đẩy code (`node -c` rà soát lỗi).
+    2. Đồng bộ Footer timestamp, Cache Buster query strings và Service Worker Cache.
+    3. Tự động deploy lên Cloudflare Pages (`npm run deploy:web`) và Backend Worker (`npm run deploy:all`).
+    4. Sao lưu & Quản lý phiên bản trên GitHub repository `main`.
+    5. Ghi chép nhật ký phát triển chi tiết vào `PM-xeplich-v3.md`.
+    6. Dọn dẹp thư mục & Báo cáo kết quả rõ ràng, súc tích.
+  - Cập nhật thời gian Footer: `14:18 30/08/2026`, Service Worker: `CACHE_NAME = 'pmcg-cache-v3.2.6-rev12'` và query strings `?v=3.2.6-rev12`.
+- **File sửa đổi**: `RULES.md`, `index.html`, `sw.js`, `PM-xeplich-v3.md`.
+
 
 

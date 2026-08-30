@@ -1260,5 +1260,15 @@ ormalizeMonthKeys chuẩn vào Worker backend, khắc phục lỗi chuỗi thán
   - Cập nhật thời gian Footer: `12:48 30/08/2026`, Service Worker: `CACHE_NAME = 'pmcg-cache-v3.2.6-rev7'` và query strings `?v=3.2.6-rev7`.
 - **File sửa đổi**: `index.html`, `js/app.js`, `sw.js`, `PM-xeplich-v3.md`.
 
+### Nâng Cấp Thuật Toán Xếp Lịch: Khóa Tuyệt Đối TG Thực Hiện = TG Thủ Thuật Cho Thủ Thuật Làm Việc Liên Tục 1:1 (30/08/2026 - v3.2.6-rev8)
+- **Yêu cầu của người dùng**:
+  - Đối với các thủ thuật có tính chất làm việc liên tục 1:1 (như Tập trợ giúp, Tập kháng trở, Xoa bóp bấm huyệt, Xoa bóp vùng, Tập thở, Siêu âm, Cấy chỉ...): Khi co giãn thời gian Min/Max, thời gian Thực Hiện (nhân viên bận) BẮT BUỘC PHẢI BẰNG thời gian Thủ Thuật (bệnh nhân điều trị). Tuyệt đối không được xảy ra tình trạng Thực Hiện lấy Min (15 phút) nhưng Thủ Thuật lấy Max (20 phút), dẫn đến 5 phút cuối bệnh nhân bị bỏ lại tự tập một mình.
+- **Phân tích nguyên nhân & Giải pháp**:
+  - Trong bộ sinh cặp thời lượng `candidatePairs` của `js/scheduler-engine.js`, vòng lặp 2 chiều `for (m) { for (nv) }` sinh ra các cặp lệch nhau như `{ tgMay: 20, tgNv: 15 }`.
+  - Đã bổ sung bộ nhận diện thủ thuật liên tục `isContinuous` (khi `baseTgMay === tgNvMin && tgMayMax === tgNvMax` hoặc `loaiMay === 'Thủ công' && baseTgMay === tgNvMin` hoặc `baseTgMay === tgNvMin && tgNvMin >= 10`).
+  - Khi `isContinuous = true`, bộ sinh thời lượng khóa cứng 1:1: Mỗi mức thời lượng `d` từ `minDur` đến `maxDur` đều sinh ra cặp song hành `{ tgMay: d, tgNv: d }`. Nhân viên luôn bận trọn vẹn từ đầu đến cuối thủ thuật, `hasTeardown = false`.
+  - Cập nhật thời gian Footer: `12:55 30/08/2026`, Service Worker: `CACHE_NAME = 'pmcg-cache-v3.2.6-rev8'` và query strings `?v=3.2.6-rev8`.
+- **File sửa đổi**: `js/scheduler-engine.js`, `index.html`, `sw.js`, `PM-xeplich-v3.md`.
+
 
 

@@ -405,8 +405,20 @@ function _turbo_core_logic(db, ngayXep, seedVal, existingSched = [], scenario = 
     
     const isDienCham = tenThuThuat.toLowerCase().includes('điện châm') || tenThuThuat.toLowerCase() === 'đc' || (info[8] && String(info[8]).toLowerCase().includes('điện châm'));
     
+    // Kiểm tra tính chất làm việc liên tục 1:1 (KTV/Bác sĩ làm trực tiếp toàn bộ thời gian thủ thuật, ví dụ: TTG, TTK, XBBH, XBV, HH, SA, CC...)
+    const isContinuous = (baseTgMay === tgNvMin && tgMayMax === tgNvMax) 
+                      || (loaiMay === 'Thủ công' && baseTgMay === tgNvMin)
+                      || (baseTgMay === tgNvMin && tgNvMin >= 10);
+    
     let candidatePairs = [];
-    if (tgMayMax > baseTgMay || tgNvMax > tgNvMin) {
+    if (isContinuous) {
+      // Đối với thủ thuật liên tục: Thời gian thực hiện (NV bận) BẮT BUỘC BẰNG Thời gian thủ thuật (BN điều trị)
+      const minDur = Math.max(baseTgMay, tgNvMin);
+      const maxDur = Math.max(tgMayMax, tgNvMax);
+      for (let d = minDur; d <= maxDur; d++) {
+        candidatePairs.push({ tgMay: d, tgNv: d });
+      }
+    } else if (tgMayMax > baseTgMay || tgNvMax > tgNvMin) {
       for (let m = baseTgMay; m <= tgMayMax; m++) {
         for (let nv = tgNvMin; nv <= tgNvMax; nv++) {
           if (nv <= m) {
